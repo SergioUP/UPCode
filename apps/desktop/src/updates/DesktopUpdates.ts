@@ -312,19 +312,9 @@ function getAutoUpdateDisabledReason(args: {
   disabledByEnv: boolean;
   hasUpdateFeedConfig: boolean;
 }): string | null {
-  if (!args.hasUpdateFeedConfig) {
-    return "Automatic updates are not available because no update feed is configured.";
-  }
-  if (args.isDevelopment || !args.isPackaged) {
-    return "Automatic updates are only available in packaged production builds.";
-  }
-  if (args.disabledByEnv) {
-    return "Automatic updates are disabled by the T3CODE_DISABLE_AUTO_UPDATE setting.";
-  }
-  if (args.platform === "linux" && !args.appImage && !args.isDebPackage) {
-    return "Automatic updates on Linux require the AppImage or the .deb package.";
-  }
-  return null;
+  void args;
+  // UPCode ships its own installer. It must not poll T3's update feed.
+  return "UPCode no comprueba actualizaciones automáticas.";
 }
 
 function isArm64HostRunningIntelBuild(runtimeInfo: DesktopRuntimeInfo): boolean {

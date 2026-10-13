@@ -194,8 +194,8 @@ it.effect("reports implemented tools separately from locally available executabl
         },
         {
           kind: SourceControlProviderKind.make("azure-devops"),
-          status: "missing",
-          auth: "unknown",
+          status: "available",
+          auth: "unauthenticated",
           account: Option.none(),
         },
         {
@@ -345,9 +345,9 @@ Logged in to gitlab.com as gitlab-user
         },
         {
           kind: SourceControlProviderKind.make("azure-devops"),
-          auth: "authenticated",
-          account: Option.some("azure-user@example.com"),
-          detail: Option.none(),
+          auth: "unauthenticated",
+          account: Option.none(),
+          detail: Option.some("Configure an organization and PAT."),
         },
         {
           kind: SourceControlProviderKind.make("bitbucket"),
@@ -508,7 +508,7 @@ it.effect(
         head,
       );
       assert.strictEqual(
-        yield* fs.readFileString(path.join(cwd, "feature.txt")),
+        (yield* fs.readFileString(path.join(cwd, "feature.txt"))).replaceAll("\r\n", "\n"),
         "pull request change\n",
       );
       for (const args of [
@@ -556,7 +556,7 @@ it.effect(
         "uncommitted work\n",
       );
       assert.strictEqual(
-        yield* fs.readFileString(path.join(cwd, "feature.txt")),
+        (yield* fs.readFileString(path.join(cwd, "feature.txt"))).replaceAll("\r\n", "\n"),
         "pull request change\n",
       );
       assert.deepStrictEqual(fetched, [source, source, "git@forgejo.test:reviewer/project.git"]);

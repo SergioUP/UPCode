@@ -649,7 +649,7 @@ const resolveWslStartConfig = Effect.fn("desktop.backendConfiguration.resolveWsl
     mode: "desktop" as const,
     noBrowser: true,
     port: input.port,
-    // Omit t3Home so the Linux backend uses its own home dir instead of
+    // Set the Linux-side home at launch so it never shares the official T3 state or
     // the Windows-side baseDir (which would be a /mnt/c path and share
     // the SQLite file with the primary).
     host: wslBindHost,
@@ -747,14 +747,14 @@ const resolveWslStartConfig = Effect.fn("desktop.backendConfiguration.resolveWsl
     }
   }
 
-  // Build an explicit copy of process.env minus T3CODE_HOME (dev-runner
+  // Build an explicit copy of process.env minus desktop home overrides (dev-runner
   // exports the Windows-side base dir for the primary; if it leaks into
   // the WSL backend the Linux side ends up sharing C:\Users\...\.t3 via
   // /mnt/c, which means both backends read/write the same database and
   // their env-ids collide).
   const parentEnvWithoutT3Home: Record<string, string | undefined> = {};
   for (const [key, value] of Object.entries(process.env)) {
-    if (key === "T3CODE_HOME") continue;
+    if (key === "T3CODE_HOME" || key === "UPCODE_HOME") continue;
     parentEnvWithoutT3Home[key] = value;
   }
   const wslEnv = mergeWslEnv(parentEnvWithoutT3Home.WSLENV, forwardedEnvNames);
@@ -770,7 +770,7 @@ const resolveWslStartConfig = Effect.fn("desktop.backendConfiguration.resolveWsl
       ...forwardedEnv,
       ...(wslEnv !== undefined ? { WSLENV: wslEnv } : {}),
     },
-    // env is already a complete process.env minus T3CODE_HOME; pass it
+    // env is already a complete process.env minus desktop home overrides; pass it
     // verbatim instead of letting the spawner re-merge process.env on top.
     extendEnv: false,
     bootstrap,
@@ -827,6 +827,10 @@ const resolveWslStartConfig = Effect.fn("desktop.backendConfiguration.resolveWsl
     args: [
       ...distroArgs,
       "--exec",
+      "sh",
+      "-c",
+      'export T3CODE_HOME="$HOME/.upcode"; exec "$@"',
+      "upcode-wsl",
       "env",
       `PATH=${launchPath}`,
       ...command,

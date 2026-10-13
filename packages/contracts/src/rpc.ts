@@ -25,6 +25,16 @@ import * as Schema from "effect/Schema";
 import * as Rpc from "effect/rpc/Rpc";
 import * as RpcGroup from "effect/rpc/RpcGroup";
 import * as RpcMiddleware from "effect/rpc/RpcMiddleware";
+import {
+  AzureDevOpsBranch,
+  AzureDevOpsProject,
+  AzureDevOpsPullRequest,
+  AzureDevOpsPullRequestDetail,
+  AzureDevOpsRepository,
+  AzureDevOpsWorkItem,
+  AzureDevOpsWorkItemLink,
+  AzureDevOpsWorkspaceError,
+} from "./azureDevOps.ts";
 import { NonNegativeInt, TrimmedNonEmptyString } from "./baseSchemas.ts";
 import {
   CodexAuthCallbackInput,
@@ -486,6 +496,17 @@ export const WS_METHODS = {
   serverGetSettings: "server.getSettings",
   serverUpdateSettings: "server.updateSettings",
   serverDiscoverSourceControl: "server.discoverSourceControl",
+  azureDevOpsConfig: "azureDevOps.config",
+  azureDevOpsListProjects: "azureDevOps.listProjects",
+  azureDevOpsListWorkItems: "azureDevOps.listWorkItems",
+  azureDevOpsGetWorkItem: "azureDevOps.getWorkItem",
+  azureDevOpsListRepositories: "azureDevOps.listRepositories",
+  azureDevOpsListBranches: "azureDevOps.listBranches",
+  azureDevOpsListPullRequests: "azureDevOps.listPullRequests",
+  azureDevOpsGetPullRequestDetail: "azureDevOps.getPullRequestDetail",
+  azureDevOpsUpdateWorkItem: "azureDevOps.updateWorkItem",
+  azureDevOpsThreadLinks: "azureDevOps.threadLinks",
+  azureDevOpsLinkThread: "azureDevOps.linkThread",
   serverSearchAcpRegistry: "server.searchAcpRegistry",
   serverPrepareAcpRegistryAgent: "server.prepareAcpRegistryAgent",
   serverUninstallAcpRegistryManagedBinary: "server.uninstallAcpRegistryManagedBinary",
@@ -780,6 +801,85 @@ const WsServerDiscoverSourceControlRpc = Rpc.make(WS_METHODS.serverDiscoverSourc
   payload: Schema.Struct({}),
   success: SourceControlDiscoveryResult,
   error: EnvironmentAuthorizationError,
+});
+
+const azureReadError = Schema.Union([
+  AzureDevOpsWorkspaceError,
+  ServerSettingsError,
+  EnvironmentAuthorizationError,
+]);
+const AzureProjectInput = Schema.Struct({ project: TrimmedNonEmptyString });
+const WsAzureDevOpsConfigRpc = Rpc.make(WS_METHODS.azureDevOpsConfig, {
+  payload: Schema.Struct({}),
+  success: Schema.Struct({ organization: Schema.String, connected: Schema.Boolean }),
+  error: azureReadError,
+});
+const WsAzureDevOpsListProjectsRpc = Rpc.make(WS_METHODS.azureDevOpsListProjects, {
+  payload: Schema.Struct({}),
+  success: Schema.Array(AzureDevOpsProject),
+  error: azureReadError,
+});
+const WsAzureDevOpsListWorkItemsRpc = Rpc.make(WS_METHODS.azureDevOpsListWorkItems, {
+  payload: Schema.Struct({ ...AzureProjectInput.fields, assignedToMe: Schema.Boolean }),
+  success: Schema.Array(AzureDevOpsWorkItem),
+  error: azureReadError,
+});
+const WsAzureDevOpsGetWorkItemRpc = Rpc.make(WS_METHODS.azureDevOpsGetWorkItem, {
+  payload: Schema.Struct({ ...AzureProjectInput.fields, id: Schema.Int }),
+  success: AzureDevOpsWorkItem,
+  error: azureReadError,
+});
+const WsAzureDevOpsListRepositoriesRpc = Rpc.make(WS_METHODS.azureDevOpsListRepositories, {
+  payload: AzureProjectInput,
+  success: Schema.Array(AzureDevOpsRepository),
+  error: azureReadError,
+});
+const WsAzureDevOpsListBranchesRpc = Rpc.make(WS_METHODS.azureDevOpsListBranches, {
+  payload: Schema.Struct({ ...AzureProjectInput.fields, repositoryId: TrimmedNonEmptyString }),
+  success: Schema.Array(AzureDevOpsBranch),
+  error: azureReadError,
+});
+const WsAzureDevOpsListPullRequestsRpc = Rpc.make(WS_METHODS.azureDevOpsListPullRequests, {
+  payload: Schema.Struct({
+    ...AzureProjectInput.fields,
+    repositoryId: Schema.optionalKey(TrimmedNonEmptyString),
+  }),
+  success: Schema.Array(AzureDevOpsPullRequest),
+  error: azureReadError,
+});
+const WsAzureDevOpsGetPullRequestDetailRpc = Rpc.make(WS_METHODS.azureDevOpsGetPullRequestDetail, {
+  payload: Schema.Struct({
+    ...AzureProjectInput.fields,
+    repositoryId: TrimmedNonEmptyString,
+    id: Schema.Int,
+  }),
+  success: AzureDevOpsPullRequestDetail,
+  error: azureReadError,
+});
+const WsAzureDevOpsUpdateWorkItemRpc = Rpc.make(WS_METHODS.azureDevOpsUpdateWorkItem, {
+  payload: Schema.Struct({
+    ...AzureProjectInput.fields,
+    id: Schema.Int,
+    comment: Schema.optionalKey(Schema.String),
+    state: Schema.optionalKey(Schema.String),
+    title: Schema.optionalKey(Schema.String),
+    description: Schema.optionalKey(Schema.String),
+  }),
+  success: AzureDevOpsWorkItem,
+  error: azureReadError,
+});
+const WsAzureDevOpsThreadLinksRpc = Rpc.make(WS_METHODS.azureDevOpsThreadLinks, {
+  payload: Schema.Struct({}),
+  success: Schema.Record(Schema.String, AzureDevOpsWorkItemLink),
+  error: azureReadError,
+});
+const WsAzureDevOpsLinkThreadRpc = Rpc.make(WS_METHODS.azureDevOpsLinkThread, {
+  payload: Schema.Struct({
+    threadId: TrimmedNonEmptyString,
+    link: Schema.NullOr(AzureDevOpsWorkItemLink),
+  }),
+  success: Schema.Record(Schema.String, AzureDevOpsWorkItemLink),
+  error: azureReadError,
 });
 
 const WsServerSearchAcpRegistryRpc = Rpc.make(WS_METHODS.serverSearchAcpRegistry, {
@@ -1905,6 +2005,17 @@ export const WsRpcGroup = RpcGroup.make(
   WsServerGetSettingsRpc,
   WsServerUpdateSettingsRpc,
   WsServerDiscoverSourceControlRpc,
+  WsAzureDevOpsConfigRpc,
+  WsAzureDevOpsListProjectsRpc,
+  WsAzureDevOpsListWorkItemsRpc,
+  WsAzureDevOpsGetWorkItemRpc,
+  WsAzureDevOpsListRepositoriesRpc,
+  WsAzureDevOpsListBranchesRpc,
+  WsAzureDevOpsListPullRequestsRpc,
+  WsAzureDevOpsGetPullRequestDetailRpc,
+  WsAzureDevOpsUpdateWorkItemRpc,
+  WsAzureDevOpsThreadLinksRpc,
+  WsAzureDevOpsLinkThreadRpc,
   WsServerSearchAcpRegistryRpc,
   WsServerPrepareAcpRegistryAgentRpc,
   WsServerUninstallAcpRegistryManagedBinaryRpc,

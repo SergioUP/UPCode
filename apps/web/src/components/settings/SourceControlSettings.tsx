@@ -509,6 +509,7 @@ export function SourceControlSettingsPanel() {
   // the settings rows above it fan out like everywhere else.
   const environmentId =
     environment?.connection.phase === "connected" ? environment.environmentId : null;
+  const azureDefinition = sourceControlClients.find("azure-devops");
   const aggregate = scope.environmentIds.length !== 1 && connectedEnvironments.length > 1;
   const environmentSuffix = aggregate && environment ? ` · ${environment.label}` : "";
   const discovery = useEnvironmentQuery(
@@ -564,6 +565,25 @@ export function SourceControlSettingsPanel() {
   return (
     <SettingsPageContainer>
       <ProjectDefaultsSettings category="source-control" />
+      {environmentId !== null && azureDefinition?.settings ? (
+        <SettingsSection
+          id={sourceControlHostSettingsSearchId("azure-devops")}
+          title="Azure DevOps"
+        >
+          <p className="px-4 py-3 text-sm text-muted-foreground">
+            Hacen falta los dos campos. El token puede quedar guardado y el menú seguir pidiendo
+            configuración si la organización está vacía: es el nombre de dev.azure.com/
+            {"{organización}"}. Se guarda al salir del campo. Git y los pull requests del proveedor
+            siguen usando Azure CLI.
+          </p>
+          <SourceControlHostSettings
+            key={environmentId}
+            environmentId={environmentId}
+            definition={{ ...azureDefinition, settings: azureDefinition.settings }}
+            onSaved={() => undefined}
+          />
+        </SettingsSection>
+      ) : null}
       {environmentId === null ? (
         <SettingsSection id={searchableSetting("source-control").id} title="Server environment">
           <p className="px-4 py-3 text-sm text-muted-foreground">
@@ -625,7 +645,7 @@ export function SourceControlSettingsPanel() {
                         ) : null}
                       </div>
                     </SettingsSearchTarget>
-                  ) : (
+                  ) : item.kind === "azure-devops" ? undefined : (
                     hostSettingsPanel(item.kind)
                   )}
                 </DiscoveryItemRow>

@@ -285,6 +285,7 @@ import {
   threadPullRequestPanelTarget,
 } from "./pullRequest/pullRequestDetail.logic";
 import { PullRequestDetailPanel } from "./pullRequest/PullRequestDetailPanel";
+import { WorkItemPanel } from "./chat/WorkItemPanel";
 import { PullRequestDetailGhost } from "./pullRequest/PullRequestGhosts";
 import { PullRequestsUnavailableState } from "./pullRequest/PullRequestsUnavailableState";
 import { RightPanelTabs } from "./RightPanelTabs";
@@ -11209,6 +11210,12 @@ export default function ChatView(props: ChatViewProps) {
       />
     ) : renderedRightPanelSurface?.kind === "pull-requests" && activeThreadRef ? (
       <ThreadPullRequestsPanel threadRef={activeThreadRef} />
+    ) : renderedRightPanelSurface?.kind === "work-item" && activeThreadRef ? (
+      <WorkItemPanel
+        key={activeThreadRef.threadId}
+        environmentId={activeThreadRef.environmentId}
+        threadId={activeThreadRef.threadId}
+      />
     ) : renderedRightPanelSurface?.kind === "device" ? (
       <Suspense fallback={null}>
         <DevicePanel

@@ -451,33 +451,20 @@ layer("AzureDevOpsPullRequestCli.layer", (it) => {
     }),
   );
 
-  it.effect("names a token sign-in by the viewer's own pull request", () =>
+  it.effect("returns a PAT authentication failure without trying another identity source", () =>
     Effect.gen(function* () {
       const notLoggedIn = new AzureDevOpsCli.AzureDevOpsCliAuthenticationError({
         operation: "execute",
         command: "az",
         cwd: "/w",
         argumentCount: 7,
-        cause: new Error("Please run 'az login' to setup account."),
+        cause: new Error("Azure DevOps rejected the PAT."),
       });
-      mockedExecute
-        .mockReturnValueOnce(Effect.fail(notLoggedIn))
-        .mockReturnValueOnce(
-          Effect.succeed(
-            output(
-              JSON.stringify([{ ...pullRequestRow, createdBy: { uniqueName: "bilal@acme.dev" } }]),
-            ),
-          ),
-        )
-        .mockReturnValueOnce(Effect.succeed(output("")))
-        .mockReturnValueOnce(Effect.succeed(output("[]")));
+      mockedExecute.mockReturnValueOnce(Effect.fail(notLoggedIn));
       const cli = yield* AzureDevOpsPullRequestCli.AzureDevOpsPullRequestCli;
-
-      assert.strictEqual(yield* cli.getViewer({ cwd: "/w" }), "bilal@acme.dev");
-      expect(argsOfCall(1)).toEqual(expect.arrayContaining(["--creator", "me", "--top", "1"]));
-      // Someone who has opened nothing has no name to compare rows against.
       const error = yield* Effect.flip(cli.getViewer({ cwd: "/w" }));
-      assert.strictEqual(error._tag, "AzureDevOpsViewerUnavailableError");
+      assert.strictEqual(error._tag, "AzureDevOpsCliAuthenticationError");
+      assert.strictEqual(mockedExecute.mock.calls.length, 1);
     }),
   );
 
