@@ -4,7 +4,11 @@ import { Link } from "@tanstack/react-router";
 import {
   ActivityIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
   ClipboardCopyIcon,
+  FileCodeIcon,
+  FileJsonIcon,
+  FileTextIcon,
   FileWarningIcon,
   PlusIcon,
   ShieldAlertIcon,
@@ -44,8 +48,38 @@ function prettyContent(evidence: IncidentEvidence): string {
   return evidence.content;
 }
 
-function EvidenceCard({ evidence }: { readonly evidence: IncidentEvidence }) {
-  const [open, setOpen] = useState(false);
+const FILE_EXTENSION: Record<IncidentEvidence["contentType"], string> = {
+  json: "json",
+  log: "log",
+  table: "md",
+  text: "md",
+  http: "http",
+  error: "log",
+};
+
+const evidenceFileName = (evidence: IncidentEvidence) =>
+  `${evidence.title}.${FILE_EXTENSION[evidence.contentType]}`;
+
+function EvidenceFileIcon({
+  contentType,
+}: {
+  readonly contentType: IncidentEvidence["contentType"];
+}) {
+  if (contentType === "json") return <FileJsonIcon className="size-3.5 shrink-0 text-amber-400" />;
+  if (contentType === "log" || contentType === "error")
+    return <FileWarningIcon className="size-3.5 shrink-0 text-red-400" />;
+  if (contentType === "http") return <FileCodeIcon className="size-3.5 shrink-0 text-sky-400" />;
+  return <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />;
+}
+
+/** Obsidian-style viewer: opens one collected file over the incident. */
+function EvidenceViewer({
+  evidence,
+  onClose,
+}: {
+  readonly evidence: IncidentEvidence;
+  readonly onClose: () => void;
+}) {
   const [copied, setCopied] = useState(false);
   const meta = Object.entries(evidence.metadata ?? {});
   const copy = async () => {
@@ -54,56 +88,58 @@ function EvidenceCard({ evidence }: { readonly evidence: IncidentEvidence }) {
     setTimeout(() => setCopied(false), 1500);
   };
   return (
-    <article className="overflow-hidden rounded-lg border bg-card">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-muted/50"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border bg-background shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
       >
-        <ChevronDownIcon
-          className={`size-3.5 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
-        />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-medium">{evidence.title}</span>
-          <span className="block text-[11px] text-muted-foreground">
-            {evidence.source} · {evidence.contentType} · {when(evidence.capturedAt)}
+        <header className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
+          <EvidenceFileIcon contentType={evidence.contentType} />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] font-medium">
+              {evidenceFileName(evidence)}
+            </span>
+            <span className="block text-[11px] text-muted-foreground">
+              {evidence.source} · {evidence.contentType} · {when(evidence.capturedAt)}
+            </span>
           </span>
-        </span>
-      </button>
-      {meta.length > 0 ? (
-        <div className="flex flex-wrap gap-1 border-t bg-muted/20 px-3 py-1.5">
-          {meta.map(([key, value]) => (
-            <span key={key} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px]">
-              <span className="text-muted-foreground">{key}</span> {value}
-            </span>
-          ))}
-        </div>
-      ) : null}
-      {evidence.summary ? (
-        <p className="border-t px-3 py-1.5 text-[11.5px] text-muted-foreground">
-          {evidence.summary}
-        </p>
-      ) : null}
-      {open ? (
-        <div className="border-t">
-          <div className="flex items-center justify-between bg-muted/40 px-3 py-1">
-            <span className="text-[10.5px] uppercase tracking-wide text-muted-foreground">
-              {evidence.contentType}
-            </span>
-            <button
-              type="button"
-              onClick={() => void copy()}
-              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-            >
-              <ClipboardCopyIcon className="size-3.5" /> {copied ? "Copiado" : "Copiar"}
-            </button>
+          <button
+            type="button"
+            onClick={() => void copy()}
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <ClipboardCopyIcon className="size-3.5" /> {copied ? "Copiado" : "Copiar"}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            Cerrar
+          </button>
+        </header>
+        {meta.length > 0 ? (
+          <div className="flex shrink-0 flex-wrap gap-1 border-b bg-muted/20 px-4 py-2">
+            {meta.map(([key, value]) => (
+              <span key={key} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px]">
+                <span className="text-muted-foreground">{key}</span> {value}
+              </span>
+            ))}
           </div>
-          <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words px-3 py-2 font-mono text-[11.5px] leading-relaxed">
-            {prettyContent(evidence)}
-          </pre>
-        </div>
-      ) : null}
-    </article>
+        ) : null}
+        {evidence.summary ? (
+          <p className="shrink-0 border-b px-4 py-2 text-[12px] text-muted-foreground">
+            {evidence.summary}
+          </p>
+        ) : null}
+        <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words px-4 py-3 font-mono text-[12px] leading-relaxed">
+          {prettyContent(evidence)}
+        </pre>
+      </div>
+    </div>
   );
 }
 
@@ -116,7 +152,9 @@ function InvestigationPanel({
   readonly incident: Incident;
   readonly onChanged: () => void;
 }) {
-  const [tab, setTab] = useState<"evidence" | "summary">("evidence");
+  const [tab, setTab] = useState<"files" | "summary">("files");
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [viewing, setViewing] = useState<IncidentEvidence | null>(null);
   const mutate = useAtomCommand(incidents.mutate);
   const sources = new Map<string, IncidentEvidence[]>();
   for (const entry of incident.evidence) {
@@ -126,91 +164,120 @@ function InvestigationPanel({
   }
 
   return (
-    <aside className="flex min-h-0 w-full flex-col overflow-hidden rounded-xl border bg-background lg:w-[400px]">
-      <div className="flex shrink-0 items-center gap-1 border-b px-2 py-1.5">
-        <ActivityIcon className="ml-1 size-3.5 text-red-500" />
-        <span className="text-[12px] font-semibold">Investigación</span>
-        <div className="ml-auto flex gap-1">
-          {(["evidence", "summary"] as const).map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setTab(key)}
-              className={`rounded-md px-2 py-1 text-[11px] ${
-                tab === key
-                  ? "bg-muted font-medium text-foreground"
-                  : "text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {key === "evidence" ? `Evidencia ${incident.evidence.length}` : "Resumen"}
-            </button>
-          ))}
+    <>
+      <aside className="flex min-h-0 w-full flex-col overflow-hidden rounded-xl border bg-background lg:w-[400px]">
+        <div className="flex shrink-0 items-center gap-1 border-b px-2 py-1.5">
+          <ActivityIcon className="ml-1 size-3.5 text-red-500" />
+          <span className="text-[12px] font-semibold">Investigación</span>
+          <div className="ml-auto flex gap-1">
+            {(
+              [
+                ["files", `Archivos ${incident.evidence.length}`],
+                ["summary", "Resumen"],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTab(key)}
+                className={`rounded-md px-2 py-1 text-[11px] ${
+                  tab === key
+                    ? "bg-muted font-medium text-foreground"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3">
         {tab === "summary" ? (
-          incident.summary ? (
-            <div className="whitespace-pre-wrap rounded-lg border bg-card p-3 text-[12.5px] leading-relaxed">
-              {incident.summary}
-            </div>
-          ) : (
-            <p className="text-[12.5px] text-muted-foreground">
-              El agente no ha escrito todavía un resumen de la investigación.
-            </p>
-          )
+          <div className="min-h-0 flex-1 overflow-y-auto p-3">
+            {incident.summary ? (
+              <div className="whitespace-pre-wrap rounded-lg border bg-card p-3 text-[12.5px] leading-relaxed">
+                {incident.summary}
+              </div>
+            ) : (
+              <p className="text-[12.5px] text-muted-foreground">
+                El agente no ha escrito todavía un resumen de la investigación.
+              </p>
+            )}
+          </div>
         ) : incident.evidence.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 p-4 text-center">
             <ShieldAlertIcon className="size-8 text-red-500/40" />
-            <p className="max-w-[16rem] text-[12.5px] text-muted-foreground">
-              Aquí aparecerán los datos que el agente recopile durante la investigación.
+            <p className="max-w-[17rem] text-[12.5px] text-muted-foreground">
+              Aquí se irán ordenando los ficheros que el agente recopile, en carpetas por fuente.
+              Doble clic en uno para abrirlo.
             </p>
           </div>
         ) : (
-          <>
-            <div className="flex flex-wrap gap-1.5">
-              {[...sources.entries()].map(([source, entries]) => (
-                <span
-                  key={source}
-                  className="rounded-full bg-red-500/10 px-2 py-0.5 text-[11px] text-red-500"
-                >
-                  {source} · {entries.length}
-                </span>
-              ))}
-            </div>
-            {[...sources.entries()].map(([source, entries]) => (
-              <section key={source} className="space-y-2">
-                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-red-500">
-                  {source}
-                </h3>
-                {entries.map((entry) => (
-                  <div key={entry.id} className="group relative">
-                    <EvidenceCard evidence={entry} />
-                    <button
-                      type="button"
-                      title="Eliminar evidencia"
-                      onClick={async () => {
-                        await mutate({
-                          environmentId,
-                          input: {
-                            action: "evidenceRemove",
-                            id: incident.id,
-                            evidenceId: entry.id,
-                          },
-                        });
-                        onChanged();
-                      }}
-                      className="absolute right-8 top-2 hidden rounded p-0.5 text-muted-foreground hover:text-destructive group-hover:block"
-                    >
-                      <Trash2Icon className="size-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </section>
-            ))}
-          </>
+          <div className="min-h-0 flex-1 overflow-y-auto py-1">
+            {[...sources.entries()].map(([source, entries]) => {
+              const isCollapsed = collapsed[source] === true;
+              return (
+                <div key={source} className="mb-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setCollapsed((prev) => ({ ...prev, [source]: !isCollapsed }))}
+                    className="flex w-full items-center gap-1 rounded px-1.5 py-1 text-left hover:bg-muted/60"
+                  >
+                    {isCollapsed ? (
+                      <ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                    ) : (
+                      <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                    )}
+                    <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-red-500">
+                      {source}
+                    </span>
+                    <span className="ml-auto text-[10.5px] text-muted-foreground">
+                      {entries.length}
+                    </span>
+                  </button>
+                  {isCollapsed
+                    ? null
+                    : entries.map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="group ml-3 flex items-center gap-1.5 rounded px-1.5 py-1 hover:bg-muted/60"
+                        >
+                          <EvidenceFileIcon contentType={entry.contentType} />
+                          <button
+                            type="button"
+                            title={`${evidenceFileName(entry)} — doble clic para abrir`}
+                            onDoubleClick={() => setViewing(entry)}
+                            className="min-w-0 flex-1 truncate text-left text-[12px]"
+                          >
+                            {evidenceFileName(entry)}
+                          </button>
+                          <button
+                            type="button"
+                            title="Eliminar evidencia"
+                            onClick={async () => {
+                              await mutate({
+                                environmentId,
+                                input: {
+                                  action: "evidenceRemove",
+                                  id: incident.id,
+                                  evidenceId: entry.id,
+                                },
+                              });
+                              onChanged();
+                            }}
+                            className="hidden rounded p-0.5 text-muted-foreground hover:text-destructive group-hover:block"
+                          >
+                            <Trash2Icon className="size-3" />
+                          </button>
+                        </div>
+                      ))}
+                </div>
+              );
+            })}
+          </div>
         )}
-      </div>
-    </aside>
+      </aside>
+      {viewing ? <EvidenceViewer evidence={viewing} onClose={() => setViewing(null)} /> : null}
+    </>
   );
 }
 
