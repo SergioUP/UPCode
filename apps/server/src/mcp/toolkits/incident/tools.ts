@@ -18,7 +18,7 @@ const shared = {
 const SaveIncidentEvidenceTool = Tool.make("t3_incident_save_evidence", {
   ...shared,
   description:
-    "Save a captured read-only investigation result as evidence on the incident that owns the calling conversation. Call it for every relevant result the user should be able to review later. Report what was queried so the investigation is auditable: `source` is the system (e.g. Shopify, ERP, PostgreSQL, Logs, Project files), `metadata` should name the request and the credential/config used, for example method=GET, url=..., query=SELECT ... LIMIT, status=200, credential=<config key or connection name>. NEVER put a password, token, private key or full connection string in `content`, `summary` or `metadata` — only the non-secret name of the credential used.",
+    "Save a captured read-only investigation result as evidence on the incident that owns the calling conversation. Call it INCREMENTALLY, the moment you obtain each relevant result, not in a batch at the end: the user watches this panel fill while you investigate, so a result saved late is a result the user could not follow. Report what was queried so the investigation is auditable: `source` is the system (e.g. Shopify, ERP, PostgreSQL, Logs, Project files), `metadata` should name the request and the credential/config used, for example method=GET, url=..., query=SELECT ... LIMIT, status=200, credential=<config key or connection name>. NEVER put a password, token, private key or full connection string in `content`, `summary` or `metadata` — only the non-secret name of the credential used.",
   parameters: Schema.Struct({
     title: Schema.String,
     source: Schema.String,
