@@ -47,6 +47,7 @@ function prettyContent(evidence: IncidentEvidence): string {
 function EvidenceCard({ evidence }: { readonly evidence: IncidentEvidence }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const meta = Object.entries(evidence.metadata ?? {});
   const copy = async () => {
     await navigator.clipboard.writeText(prettyContent(evidence)).catch(() => undefined);
     setCopied(true);
@@ -65,10 +66,19 @@ function EvidenceCard({ evidence }: { readonly evidence: IncidentEvidence }) {
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[13px] font-medium">{evidence.title}</span>
           <span className="block text-[11px] text-muted-foreground">
-            {evidence.contentType} · {when(evidence.capturedAt)}
+            {evidence.source} · {evidence.contentType} · {when(evidence.capturedAt)}
           </span>
         </span>
       </button>
+      {meta.length > 0 ? (
+        <div className="flex flex-wrap gap-1 border-t bg-muted/20 px-3 py-1.5">
+          {meta.map(([key, value]) => (
+            <span key={key} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px]">
+              <span className="text-muted-foreground">{key}</span> {value}
+            </span>
+          ))}
+        </div>
+      ) : null}
       {evidence.summary ? (
         <p className="border-t px-3 py-1.5 text-[11.5px] text-muted-foreground">
           {evidence.summary}
@@ -156,32 +166,48 @@ function InvestigationPanel({
             </p>
           </div>
         ) : (
-          [...sources.entries()].map(([source, entries]) => (
-            <section key={source} className="space-y-2">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-red-500">
-                {source}
-              </h3>
-              {entries.map((entry) => (
-                <div key={entry.id} className="group relative">
-                  <EvidenceCard evidence={entry} />
-                  <button
-                    type="button"
-                    title="Eliminar evidencia"
-                    onClick={async () => {
-                      await mutate({
-                        environmentId,
-                        input: { action: "evidenceRemove", id: incident.id, evidenceId: entry.id },
-                      });
-                      onChanged();
-                    }}
-                    className="absolute right-8 top-2 hidden rounded p-0.5 text-muted-foreground hover:text-destructive group-hover:block"
-                  >
-                    <Trash2Icon className="size-3.5" />
-                  </button>
-                </div>
+          <>
+            <div className="flex flex-wrap gap-1.5">
+              {[...sources.entries()].map(([source, entries]) => (
+                <span
+                  key={source}
+                  className="rounded-full bg-red-500/10 px-2 py-0.5 text-[11px] text-red-500"
+                >
+                  {source} · {entries.length}
+                </span>
               ))}
-            </section>
-          ))
+            </div>
+            {[...sources.entries()].map(([source, entries]) => (
+              <section key={source} className="space-y-2">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-red-500">
+                  {source}
+                </h3>
+                {entries.map((entry) => (
+                  <div key={entry.id} className="group relative">
+                    <EvidenceCard evidence={entry} />
+                    <button
+                      type="button"
+                      title="Eliminar evidencia"
+                      onClick={async () => {
+                        await mutate({
+                          environmentId,
+                          input: {
+                            action: "evidenceRemove",
+                            id: incident.id,
+                            evidenceId: entry.id,
+                          },
+                        });
+                        onChanged();
+                      }}
+                      className="absolute right-8 top-2 hidden rounded p-0.5 text-muted-foreground hover:text-destructive group-hover:block"
+                    >
+                      <Trash2Icon className="size-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </section>
+            ))}
+          </>
         )}
       </div>
     </aside>

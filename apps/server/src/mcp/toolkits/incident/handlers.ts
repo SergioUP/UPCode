@@ -38,6 +38,7 @@ export const layer = McpToolAccess.toLayer(IncidentToolkit, {
           contentType: params.contentType,
           content: params.content,
           ...(params.summary !== undefined ? { summary: params.summary } : {}),
+          ...(params.metadata !== undefined ? { metadata: { ...params.metadata } } : {}),
         })
         .pipe(Effect.mapError(unavailable));
       return { incidentId: updated.id, evidenceCount: updated.evidence.length };
