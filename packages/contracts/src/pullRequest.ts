@@ -1339,9 +1339,9 @@ const PROVIDER_REQUIREMENT = new Map<
   [
     "azure-devops",
     {
-      missing:
-        "Azure CLI (`az`) with the Azure DevOps extension is required. Install `az`, then run `az extension add --name azure-devops`.",
-      unauthenticated: "Azure CLI is not signed in. Run `az login` and retry.",
+      missing: "Configure an Azure DevOps organization and PAT in Source Control settings.",
+      unauthenticated:
+        "Azure DevOps PAT is not configured or was rejected. Check Source Control settings.",
     },
   ],
   [

@@ -234,6 +234,7 @@ import { pullRequestSyncKey } from "./pullRequest/pullRequestSyncKey.ts";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as PullRequestSyncReactor from "./orchestration-v2/PullRequestSyncReactor.ts";
 import * as SourceControlDiscovery from "./sourceControl/SourceControlDiscovery.ts";
+import * as AzureDevOpsWorkspace from "./azureDevOpsWorkspace.ts";
 import * as OtlpEndpointCheck from "./observability/OtlpEndpointCheck.ts";
 import * as SourceControlRepositoryService from "./sourceControl/SourceControlRepositoryService.ts";
 import * as SourceControlBuiltInDrivers from "./sourceControl/builtInDrivers.ts";
@@ -1300,6 +1301,7 @@ const layerWsRpc = (
       const lifecycleEvents = yield* ServerLifecycleEvents.ServerLifecycleEvents;
       const storageCleanup = yield* StorageCleanup.StorageCleanup;
       const serverSettings = yield* ServerSettings.ServerSettingsService;
+      const azureDevOpsWorkspace = yield* AzureDevOpsWorkspace.make;
       const startup = yield* ServerRuntimeStartup.ServerRuntimeStartup;
       const workspaceEntries = yield* WorkspaceEntries.WorkspaceEntries;
       const workspaceFileSystem = yield* WorkspaceFileSystem.WorkspaceFileSystem;
@@ -2430,6 +2432,35 @@ const layerWsRpc = (
             return ServerSettings.redactServerSettingsForClient(settings);
           }),
         [WS_METHODS.serverDiscoverSourceControl]: (_input) => sourceControlDiscovery.discover,
+        [WS_METHODS.azureDevOpsConfig]: () => azureDevOpsWorkspace.config,
+        [WS_METHODS.azureDevOpsListProjects]: () => azureDevOpsWorkspace.listProjects,
+        [WS_METHODS.azureDevOpsListWorkItems]: (input) =>
+          azureDevOpsWorkspace.listWorkItems(input.project, input.assignedToMe),
+        [WS_METHODS.azureDevOpsGetWorkItem]: (input) =>
+          azureDevOpsWorkspace.getWorkItem(input.project, input.id),
+        [WS_METHODS.azureDevOpsListRepositories]: (input) =>
+          azureDevOpsWorkspace.listRepositories(input.project),
+        [WS_METHODS.azureDevOpsListBranches]: (input) =>
+          azureDevOpsWorkspace.listBranches(input.project, input.repositoryId),
+        [WS_METHODS.azureDevOpsListPullRequests]: (input) =>
+          azureDevOpsWorkspace.listPullRequests(input.project, input.repositoryId),
+        [WS_METHODS.azureDevOpsGetPullRequestDetail]: (input) =>
+          azureDevOpsWorkspace.getPullRequestDetail(input.project, input.repositoryId, input.id),
+        [WS_METHODS.azureDevOpsUpdateWorkItem]: (input) =>
+          azureDevOpsWorkspace.updateWorkItem(input),
+        [WS_METHODS.azureDevOpsThreadLinks]: () =>
+          serverSettings.getSettings.pipe(
+            Effect.map((settings) => settings.azureDevOpsThreadLinks),
+          ),
+        [WS_METHODS.azureDevOpsLinkThread]: ({ threadId, link }) =>
+          Effect.gen(function* () {
+            const settings = yield* serverSettings.getSettings;
+            const links = { ...settings.azureDevOpsThreadLinks };
+            if (link === null) delete links[threadId];
+            else links[threadId] = link;
+            const updated = yield* serverSettings.updateSettings({ azureDevOpsThreadLinks: links });
+            return updated.azureDevOpsThreadLinks;
+          }),
         [WS_METHODS.serverGetTraceDiagnostics]: (_input) =>
           TraceDiagnostics.readTraceDiagnostics({
             traceFilePath: config.serverTracePath,

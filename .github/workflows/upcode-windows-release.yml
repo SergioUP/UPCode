@@ -1,0 +1,76 @@
+name: UPCode Windows release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semantic version for the UPCode installer (for example 0.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  windows_x64:
+    runs-on: windows-2025
+    timeout-minutes: 90
+    steps:
+      # The upstream tree contains orphaned vendored gitlinks under .repos;
+      # actions/checkout cleanup fails on them even with submodules disabled.
+      - name: Checkout
+        shell: bash
+        env:
+          CHECKOUT_REF: ${{ github.sha }}
+          GIT_TERMINAL_PROMPT: "0"
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          git fetch --no-tags --depth=1 origin "$CHECKOUT_REF"
+          git sparse-checkout set --no-cone '/*' '!/.repos/'
+          git -c checkout.workers=0 checkout --detach FETCH_HEAD
+      - uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: true
+          run-install: true
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: Check release version
+        shell: pwsh
+        env:
+          UPCODE_VERSION: ${{ inputs.version }}
+        run: |
+          if ($env:UPCODE_VERSION -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') { throw 'Use a stable semantic version such as 0.1.0.' }
+          git ls-remote --exit-code --tags origin "refs/tags/upcode-v$env:UPCODE_VERSION" *> $null
+          if ($LASTEXITCODE -eq 0) { throw 'This UPCode version already has a tag.' }
+          if ($LASTEXITCODE -ne 2) { throw 'Could not check existing tags.' }
+      - name: Align package versions
+        env:
+          UPCODE_VERSION: ${{ inputs.version }}
+        run: node scripts/update-release-package-versions.ts "$env:UPCODE_VERSION"
+      - name: Build Windows installer
+        env:
+          UPCODE_DESKTOP_UPDATE_REPOSITORY: ${{ github.repository }}
+          UPCODE_VERSION: ${{ inputs.version }}
+        run: vp run dist:desktop:artifact --platform win --target nsis --arch x64 --build-version "$env:UPCODE_VERSION" --verbose
+      - name: Upload installer for inspection
+        uses: actions/upload-artifact@v7
+        with:
+          name: upcode-windows-x64-${{ inputs.version }}
+          path: |
+            release/UPCode-*.exe
+            release/latest*.yml
+            release/*.blockmap
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPCODE_VERSION: ${{ inputs.version }}
+        run: |
+          $assets = @(Get-ChildItem -LiteralPath release -File | Where-Object { $_.Name -like 'UPCode-*.exe' -or $_.Name -like 'latest*.yml' -or $_.Name -like '*.blockmap' } | Select-Object -ExpandProperty FullName)
+          if (-not ($assets | Where-Object { $_ -like '*.exe' })) { throw 'No Windows installer was produced.' }
+          if (-not ($assets | Where-Object { $_ -like '*.yml' })) { throw 'No updater manifest was produced.' }
+          gh release create "upcode-v$env:UPCODE_VERSION" $assets --target $env:GITHUB_SHA --title "UPCode $env:UPCODE_VERSION" --generate-notes --latest

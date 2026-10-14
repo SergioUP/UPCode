@@ -3,7 +3,13 @@
  *
  * @module source-control-azure-devops/client/definition
  */
-import { SourceControlProviderKind } from "@t3tools/contracts";
+import {
+  makeProviderSettingsSchema,
+  SourceControlProviderKind,
+  TrimmedString,
+} from "@t3tools/contracts";
+import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
 import { canonicalRepositoryKey } from "@t3tools/shared/sourceControl";
 import {
   defineSourceControlClient,
@@ -25,8 +31,32 @@ function checkoutCommandId(args: string): string | null {
   return parts.find((part) => !part.startsWith("-")) ?? null;
 }
 
+/** PAT is only for the new Azure DevOps screen. Repository and pull-request commands stay on `az`. */
+export const settings = makeProviderSettingsSchema({
+  organization: TrimmedString.pipe(
+    Schema.withDecodingDefault(Effect.succeed("")),
+    Schema.annotateKey({
+      title: "Azure DevOps organization",
+      description: "Organization slug from dev.azure.com/{organization}.",
+      providerSettingsForm: { placeholder: "upango" },
+    }),
+  ),
+  personalAccessToken: TrimmedString.pipe(
+    Schema.withDecodingDefault(Effect.succeed("")),
+    Schema.annotateKey({
+      title: "Personal Access Token",
+      description:
+        "Solo para la pantalla Azure DevOps. Repositorios y pull requests del proveedor siguen usando Azure CLI.",
+      settingsSecret: true,
+      providerSettingsForm: { control: "password" },
+    }),
+  ),
+});
+export type AzureDevOpsSettings = typeof settings.Type;
+
 export const definition = defineSourceControlClient({
   kind: SourceControlProviderKind.make("azure-devops"),
+  settings,
   label: "Azure DevOps",
   pickerLabel: "Azure DevOps",
   icon: "azure-devops",

@@ -14,6 +14,7 @@ import {
 import { discardComposerDraft } from "../lib/discardComposerDraft";
 import { requestCustomSnooze } from "./CustomSnoozeDialog";
 import { useSupportsMultiplePullRequests } from "~/hooks/useSupportsMultiplePullRequests";
+import { ThreadWorkItemLink } from "./chat/ThreadWorkItemControl";
 import { resolveThreadCurrentPullRequestLink } from "@t3tools/shared/threadPullRequests";
 import { useAtomValue } from "@effect/atom-react";
 import { replaceComposerContextReferences } from "@t3tools/shared/composerContextReferences";
@@ -1845,6 +1846,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: {
             {/* The PR badge stays outside the hover-fading slot: it must
               remain visible AND clickable while the row is hovered. Only
               the time/jump label yields to the settle affordance. */}
+            <ThreadWorkItemLink environmentId={thread.environmentId} threadId={thread.id} />
             {prBadge}
             {sortable?.isDragging ? (
               dragDestination
@@ -2184,6 +2186,7 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: {
                 <span className="flex-1" />
               )}
               {terminalStatusIcon}
+              <ThreadWorkItemLink environmentId={thread.environmentId} threadId={thread.id} />
               {prBadge}
               {diff ? (
                 <span className="shrink-0 font-mono">

@@ -51,7 +51,7 @@ it.effect("maps Azure DevOps PR summaries into provider-neutral change requests"
   }),
 );
 
-it.effect("adds change-request context while retaining Azure CLI causes", () =>
+it.effect("adds change-request context while retaining Azure REST causes", () =>
   Effect.gen(function* () {
     const cause = new AzureDevOpsCli.AzureDevOpsCommandFailedError({
       operation: "execute",
@@ -83,7 +83,7 @@ it.effect("adds change-request context while retaining Azure CLI causes", () =>
         command: "az",
         cwd: "/repo",
         reference: "#42",
-        detail: "Azure DevOps CLI command failed.",
+        detail: "Azure DevOps REST request failed.",
       },
     );
     assert.strictEqual(error.cause, cause);
