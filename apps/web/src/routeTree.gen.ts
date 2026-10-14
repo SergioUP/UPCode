@@ -34,6 +34,7 @@ import { Route as SettingsAppearanceRouteImport } from './routes/settings.appear
 import { Route as ProjectsProjectKeyRouteImport } from './routes/projects.$projectKey'
 import { Route as ChatPullRequestsRouteImport } from './routes/_chat.pull-requests'
 import { Route as ChatNewRouteImport } from './routes/_chat.new'
+import { Route as ChatIncidentsRouteImport } from './routes/_chat.incidents'
 import { Route as ChatAzureDevopsRouteImport } from './routes/_chat.azure-devops'
 import { Route as ChatAzureDashboardRouteImport } from './routes/_chat.azure-dashboard'
 import { Route as ChatDraftDraftIdRouteImport } from './routes/_chat.draft.$draftId'
@@ -164,6 +165,11 @@ const ChatNewRoute = ChatNewRouteImport.update({
   path: '/new',
   getParentRoute: () => ChatRoute,
 } as any)
+const ChatIncidentsRoute = ChatIncidentsRouteImport.update({
+  id: '/incidents',
+  path: '/incidents',
+  getParentRoute: () => ChatRoute,
+} as any)
 const ChatAzureDevopsRoute = ChatAzureDevopsRouteImport.update({
   id: '/azure-devops',
   path: '/azure-devops',
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/welcome': typeof WelcomeRoute
   '/azure-dashboard': typeof ChatAzureDashboardRoute
   '/azure-devops': typeof ChatAzureDevopsRoute
+  '/incidents': typeof ChatIncidentsRoute
   '/new': typeof ChatNewRoute
   '/pull-requests': typeof ChatPullRequestsRoute
   '/projects/$projectKey': typeof ProjectsProjectKeyRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/welcome': typeof WelcomeRoute
   '/azure-dashboard': typeof ChatAzureDashboardRoute
   '/azure-devops': typeof ChatAzureDevopsRoute
+  '/incidents': typeof ChatIncidentsRoute
   '/new': typeof ChatNewRoute
   '/pull-requests': typeof ChatPullRequestsRoute
   '/projects/$projectKey': typeof ProjectsProjectKeyRoute
@@ -257,6 +265,7 @@ export interface FileRoutesById {
   '/welcome': typeof WelcomeRoute
   '/_chat/azure-dashboard': typeof ChatAzureDashboardRoute
   '/_chat/azure-devops': typeof ChatAzureDevopsRoute
+  '/_chat/incidents': typeof ChatIncidentsRoute
   '/_chat/new': typeof ChatNewRoute
   '/_chat/pull-requests': typeof ChatPullRequestsRoute
   '/projects/$projectKey': typeof ProjectsProjectKeyRoute
@@ -290,6 +299,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/azure-dashboard'
     | '/azure-devops'
+    | '/incidents'
     | '/new'
     | '/pull-requests'
     | '/projects/$projectKey'
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/azure-dashboard'
     | '/azure-devops'
+    | '/incidents'
     | '/new'
     | '/pull-requests'
     | '/projects/$projectKey'
@@ -350,6 +361,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/_chat/azure-dashboard'
     | '/_chat/azure-devops'
+    | '/_chat/incidents'
     | '/_chat/new'
     | '/_chat/pull-requests'
     | '/projects/$projectKey'
@@ -560,6 +572,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatNewRouteImport
       parentRoute: typeof ChatRoute
     }
+    '/_chat/incidents': {
+      id: '/_chat/incidents'
+      path: '/incidents'
+      fullPath: '/incidents'
+      preLoaderRoute: typeof ChatIncidentsRouteImport
+      parentRoute: typeof ChatRoute
+    }
     '/_chat/azure-devops': {
       id: '/_chat/azure-devops'
       path: '/azure-devops'
@@ -594,6 +613,7 @@ declare module '@tanstack/react-router' {
 interface ChatRouteChildren {
   ChatAzureDashboardRoute: typeof ChatAzureDashboardRoute
   ChatAzureDevopsRoute: typeof ChatAzureDevopsRoute
+  ChatIncidentsRoute: typeof ChatIncidentsRoute
   ChatNewRoute: typeof ChatNewRoute
   ChatPullRequestsRoute: typeof ChatPullRequestsRoute
   ChatIndexRoute: typeof ChatIndexRoute
@@ -604,6 +624,7 @@ interface ChatRouteChildren {
 const ChatRouteChildren: ChatRouteChildren = {
   ChatAzureDashboardRoute: ChatAzureDashboardRoute,
   ChatAzureDevopsRoute: ChatAzureDevopsRoute,
+  ChatIncidentsRoute: ChatIncidentsRoute,
   ChatNewRoute: ChatNewRoute,
   ChatPullRequestsRoute: ChatPullRequestsRoute,
   ChatIndexRoute: ChatIndexRoute,

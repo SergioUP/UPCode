@@ -236,6 +236,7 @@ import * as PullRequestSyncReactor from "./orchestration-v2/PullRequestSyncReact
 import * as SourceControlDiscovery from "./sourceControl/SourceControlDiscovery.ts";
 import * as AzureDevOpsWorkspace from "./azureDevOpsWorkspace.ts";
 import * as AzureDevOpsAzCli from "./azureDevOpsAzCli.ts";
+import * as IncidentStore from "./incidents/incidentStore.ts";
 import * as OtlpEndpointCheck from "./observability/OtlpEndpointCheck.ts";
 import * as SourceControlRepositoryService from "./sourceControl/SourceControlRepositoryService.ts";
 import * as SourceControlBuiltInDrivers from "./sourceControl/builtInDrivers.ts";
@@ -1304,6 +1305,7 @@ const layerWsRpc = (
       const serverSettings = yield* ServerSettings.ServerSettingsService;
       const azureDevOpsWorkspace = yield* AzureDevOpsWorkspace.make;
       const azureDevOpsAzCli = yield* AzureDevOpsAzCli.make;
+      const incidentStore = yield* IncidentStore.make;
       const startup = yield* ServerRuntimeStartup.ServerRuntimeStartup;
       const workspaceEntries = yield* WorkspaceEntries.WorkspaceEntries;
       const workspaceFileSystem = yield* WorkspaceFileSystem.WorkspaceFileSystem;
@@ -2441,6 +2443,8 @@ const layerWsRpc = (
         [WS_METHODS.azureDevOpsMyWorkItems]: () => azureDevOpsWorkspace.listAssignedWorkItems(),
         [WS_METHODS.azureDevOpsAzCliStatus]: () => azureDevOpsAzCli.status(),
         [WS_METHODS.azureDevOpsAzCliOpen]: () => azureDevOpsAzCli.open(),
+        [WS_METHODS.incidentsList]: () => incidentStore.list(),
+        [WS_METHODS.incidentsMutate]: (input) => incidentStore.mutateAll(input),
         [WS_METHODS.azureDevOpsGetWorkItem]: (input) =>
           azureDevOpsWorkspace.getWorkItem(input.project, input.id),
         [WS_METHODS.azureDevOpsListRepositories]: (input) =>

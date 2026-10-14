@@ -92,6 +92,8 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.azureDevOpsMyWorkItems]: AuthOrchestrationReadScope,
   [WS_METHODS.azureDevOpsAzCliStatus]: AuthOrchestrationReadScope,
   [WS_METHODS.azureDevOpsAzCliOpen]: AuthOrchestrationOperateScope,
+  [WS_METHODS.incidentsList]: AuthOrchestrationReadScope,
+  [WS_METHODS.incidentsMutate]: AuthOrchestrationOperateScope,
   [WS_METHODS.azureDevOpsGetWorkItem]: AuthOrchestrationReadScope,
   [WS_METHODS.azureDevOpsListRepositories]: AuthOrchestrationReadScope,
   [WS_METHODS.azureDevOpsListBranches]: AuthOrchestrationReadScope,

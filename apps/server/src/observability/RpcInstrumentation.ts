@@ -134,6 +134,8 @@ const RPC_AGGREGATES = {
   [WS_METHODS.azureDevOpsMyWorkItems]: "azure-devops",
   [WS_METHODS.azureDevOpsAzCliStatus]: "azure-devops",
   [WS_METHODS.azureDevOpsAzCliOpen]: "azure-devops",
+  [WS_METHODS.incidentsList]: "incidents",
+  [WS_METHODS.incidentsMutate]: "incidents",
   [WS_METHODS.azureDevOpsGetWorkItem]: "azure-devops",
   [WS_METHODS.azureDevOpsListRepositories]: "azure-devops",
   [WS_METHODS.azureDevOpsListBranches]: "azure-devops",

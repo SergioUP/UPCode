@@ -3,6 +3,7 @@ import {
   ChartNoAxesColumnIcon,
   LayoutDashboardIcon,
   SettingsIcon,
+  ShieldAlertIcon,
   ListTodoIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -215,6 +216,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigate({ to: "/azure-dashboard" });
   }, [closeMobileSidebar, navigate]);
 
+  const handleIncidentsClick = useCallback(() => {
+    closeMobileSidebar();
+    void navigate({ to: "/incidents" });
+  }, [closeMobileSidebar, navigate]);
+
   const handleBackClick = useCallback(() => {
     closeMobileSidebar();
     void navigateToMainApp();
@@ -257,6 +263,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             icon={<LayoutDashboardIcon />}
             label="Azure Dashboard"
             onClick={handleAzureDashboardClick}
+          />
+          <SidebarUtilityItem
+            icon={<ShieldAlertIcon className="text-red-500" />}
+            label="Incidents"
+            onClick={handleIncidentsClick}
           />
         </>
       )}

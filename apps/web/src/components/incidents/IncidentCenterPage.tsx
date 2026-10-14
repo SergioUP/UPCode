@@ -1,0 +1,442 @@
+import { useState } from "react";
+import type { EnvironmentId, Incident, IncidentEvidence, IncidentStatus } from "@t3tools/contracts";
+import { Link } from "@tanstack/react-router";
+import {
+  ActivityIcon,
+  ChevronDownIcon,
+  ClipboardCopyIcon,
+  FileWarningIcon,
+  PlusIcon,
+  ShieldAlertIcon,
+  Trash2Icon,
+} from "lucide-react";
+
+import { incidents } from "../../state/incidents";
+import { usePrimaryEnvironmentId } from "../../state/environments";
+import { useThreadShells } from "../../state/entities";
+import { useEnvironmentQuery } from "../../state/query";
+import { useAtomCommand } from "../../state/use-atom-command";
+import { SidebarInset } from "../ui/sidebar";
+import { WorkspacePageHeader } from "../WorkspacePageHeader";
+import { Button } from "../ui/button";
+import ChatView from "../ChatView";
+
+const STATUS: Record<IncidentStatus, { label: string; className: string }> = {
+  open: { label: "Abierta", className: "bg-muted text-muted-foreground" },
+  investigating: { label: "Investigando", className: "bg-amber-500/15 text-amber-500" },
+  resolved: { label: "Resuelta", className: "bg-emerald-500/15 text-emerald-500" },
+};
+
+const when = (value: string | null | undefined) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("es");
+};
+
+function prettyContent(evidence: IncidentEvidence): string {
+  if (evidence.contentType === "json") {
+    try {
+      return JSON.stringify(JSON.parse(evidence.content), null, 2);
+    } catch {
+      return evidence.content;
+    }
+  }
+  return evidence.content;
+}
+
+function EvidenceCard({ evidence }: { readonly evidence: IncidentEvidence }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    await navigator.clipboard.writeText(prettyContent(evidence)).catch(() => undefined);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <article className="overflow-hidden rounded-lg border bg-card">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-muted/50"
+      >
+        <ChevronDownIcon
+          className={`size-3.5 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-medium">{evidence.title}</span>
+          <span className="block text-[11px] text-muted-foreground">
+            {evidence.contentType} · {when(evidence.capturedAt)}
+          </span>
+        </span>
+      </button>
+      {evidence.summary ? (
+        <p className="border-t px-3 py-1.5 text-[11.5px] text-muted-foreground">
+          {evidence.summary}
+        </p>
+      ) : null}
+      {open ? (
+        <div className="border-t">
+          <div className="flex items-center justify-between bg-muted/40 px-3 py-1">
+            <span className="text-[10.5px] uppercase tracking-wide text-muted-foreground">
+              {evidence.contentType}
+            </span>
+            <button
+              type="button"
+              onClick={() => void copy()}
+              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+            >
+              <ClipboardCopyIcon className="size-3.5" /> {copied ? "Copiado" : "Copiar"}
+            </button>
+          </div>
+          <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words px-3 py-2 font-mono text-[11.5px] leading-relaxed">
+            {prettyContent(evidence)}
+          </pre>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function InvestigationPanel({
+  environmentId,
+  incident,
+  onChanged,
+}: {
+  readonly environmentId: EnvironmentId;
+  readonly incident: Incident;
+  readonly onChanged: () => void;
+}) {
+  const [tab, setTab] = useState<"evidence" | "summary">("evidence");
+  const mutate = useAtomCommand(incidents.mutate);
+  const sources = new Map<string, IncidentEvidence[]>();
+  for (const entry of incident.evidence) {
+    const list = sources.get(entry.source) ?? [];
+    list.push(entry);
+    sources.set(entry.source, list);
+  }
+
+  return (
+    <aside className="flex min-h-0 w-full flex-col overflow-hidden rounded-xl border bg-background lg:w-[400px]">
+      <div className="flex shrink-0 items-center gap-1 border-b px-2 py-1.5">
+        <ActivityIcon className="ml-1 size-3.5 text-red-500" />
+        <span className="text-[12px] font-semibold">Investigación</span>
+        <div className="ml-auto flex gap-1">
+          {(["evidence", "summary"] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className={`rounded-md px-2 py-1 text-[11px] ${
+                tab === key
+                  ? "bg-muted font-medium text-foreground"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {key === "evidence" ? `Evidencia ${incident.evidence.length}` : "Resumen"}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3">
+        {tab === "summary" ? (
+          incident.summary ? (
+            <div className="whitespace-pre-wrap rounded-lg border bg-card p-3 text-[12.5px] leading-relaxed">
+              {incident.summary}
+            </div>
+          ) : (
+            <p className="text-[12.5px] text-muted-foreground">
+              El agente no ha escrito todavía un resumen de la investigación.
+            </p>
+          )
+        ) : incident.evidence.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+            <ShieldAlertIcon className="size-8 text-red-500/40" />
+            <p className="max-w-[16rem] text-[12.5px] text-muted-foreground">
+              Aquí aparecerán los datos que el agente recopile durante la investigación.
+            </p>
+          </div>
+        ) : (
+          [...sources.entries()].map(([source, entries]) => (
+            <section key={source} className="space-y-2">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-red-500">
+                {source}
+              </h3>
+              {entries.map((entry) => (
+                <div key={entry.id} className="group relative">
+                  <EvidenceCard evidence={entry} />
+                  <button
+                    type="button"
+                    title="Eliminar evidencia"
+                    onClick={async () => {
+                      await mutate({
+                        environmentId,
+                        input: { action: "evidenceRemove", id: incident.id, evidenceId: entry.id },
+                      });
+                      onChanged();
+                    }}
+                    className="absolute right-8 top-2 hidden rounded p-0.5 text-muted-foreground hover:text-destructive group-hover:block"
+                  >
+                    <Trash2Icon className="size-3.5" />
+                  </button>
+                </div>
+              ))}
+            </section>
+          ))
+        )}
+      </div>
+    </aside>
+  );
+}
+
+function CreateIncident({ onCreated }: { readonly onCreated: () => void }) {
+  const environmentId = usePrimaryEnvironmentId();
+  const mutate = useAtomCommand(incidents.mutate);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const submit = async () => {
+    if (!environmentId || !description.trim()) return;
+    setBusy(true);
+    setError(null);
+    const result = await mutate({
+      environmentId,
+      input: {
+        action: "create",
+        title: title.trim() || description.trim().slice(0, 60),
+        description: description.trim(),
+      },
+    });
+    setBusy(false);
+    if (result._tag === "Success") {
+      setTitle("");
+      setDescription("");
+      onCreated();
+    } else setError("No se pudo crear la incidencia.");
+  };
+  return (
+    <div className="space-y-2 rounded-lg border border-red-500/25 bg-red-500/5 p-3">
+      <p className="text-[12px] font-medium">Nueva incidencia</p>
+      <input
+        className="w-full rounded-md border bg-background px-2 py-1.5 text-[13px]"
+        placeholder="Título (opcional)"
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+      />
+      <textarea
+        className="min-h-24 w-full rounded-md border bg-background px-2 py-1.5 text-[13px]"
+        placeholder="Describe el problema…"
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
+      />
+      <Button size="sm" disabled={busy || !description.trim()} onClick={() => void submit()}>
+        <PlusIcon /> Crear incidencia
+      </Button>
+      {error ? <p className="text-[11.5px] text-destructive">{error}</p> : null}
+    </div>
+  );
+}
+
+export function IncidentCenterPage() {
+  const environmentId = usePrimaryEnvironmentId();
+  const list = useEnvironmentQuery(
+    environmentId ? incidents.list({ environmentId, input: {} }) : null,
+  );
+  const mutate = useAtomCommand(incidents.mutate);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const threads = useThreadShells();
+  const linkableThreads = threads.filter(
+    (thread) => thread.environmentId === environmentId && thread.archivedAt === null,
+  );
+  const items = list.data ?? [];
+  const selected = items.find((incident) => incident.id === selectedId) ?? items[0] ?? null;
+
+  const setStatus = async (incident: Incident, status: IncidentStatus) => {
+    if (!environmentId) return;
+    await mutate({ environmentId, input: { action: "update", id: incident.id, status } });
+    list.refresh();
+  };
+
+  return (
+    <SidebarInset className="min-w-0">
+      <WorkspacePageHeader>
+        <ShieldAlertIcon className="size-4 text-red-500" />
+        <h1 className="text-base font-semibold">Incidents</h1>
+        <span className="text-xs text-muted-foreground">Investigación de solo lectura</span>
+      </WorkspacePageHeader>
+      <main className="flex h-[calc(100vh-var(--workspace-topbar-height))] gap-3 overflow-hidden px-4 py-3">
+        {/* left: incidents */}
+        <section className="flex w-[260px] shrink-0 flex-col gap-2 overflow-y-auto rounded-xl border bg-card p-2.5">
+          <Button size="sm" variant="outline" onClick={() => setCreating((value) => !value)}>
+            <PlusIcon /> Nueva incidencia
+          </Button>
+          {creating ? (
+            <CreateIncident
+              onCreated={() => {
+                setCreating(false);
+                list.refresh();
+              }}
+            />
+          ) : null}
+          {list.error ? <p className="text-[12px] text-destructive">{list.error}</p> : null}
+          {!environmentId ? (
+            <p className="text-[12px] text-muted-foreground">Conecta un entorno.</p>
+          ) : items.length === 0 && !creating ? (
+            <p className="px-1 text-[12px] text-muted-foreground">Sin incidencias todavía.</p>
+          ) : (
+            items.map((incident) => {
+              const status = STATUS[incident.status];
+              const active = selected?.id === incident.id;
+              return (
+                <button
+                  key={incident.id}
+                  type="button"
+                  onClick={() => setSelectedId(incident.id)}
+                  className={`rounded-lg border-l-2 px-2.5 py-2 text-left ${
+                    active ? "border-red-500 bg-red-500/10" : "border-transparent hover:bg-muted/60"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className={`rounded-full px-2 py-0.5 text-[10.5px] ${status.className}`}>
+                      {status.label}
+                    </span>
+                    <span className="ml-auto text-[10.5px] text-muted-foreground">
+                      {incident.evidence.length} ev.
+                    </span>
+                  </span>
+                  <span className="mt-1 block truncate text-[12.5px] font-medium">
+                    {incident.title}
+                  </span>
+                  <span className="block truncate text-[11px] text-muted-foreground">
+                    {when(incident.updatedAt)}
+                  </span>
+                </button>
+              );
+            })
+          )}
+        </section>
+
+        {/* center: conversation or detail */}
+        <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background">
+          {selected ? (
+            <>
+              <header className="flex shrink-0 items-center gap-2 border-b px-3 py-2">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-medium">{selected.title}</span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    {selected.branch ? `${selected.branch} · ` : ""}creada{" "}
+                    {when(selected.createdAt)}
+                  </span>
+                </span>
+                <select
+                  aria-label="Conversación vinculada"
+                  className="max-w-[180px] rounded-md border bg-background px-2 py-1 text-[11px]"
+                  value={selected.threadId ?? ""}
+                  onChange={async (event) => {
+                    if (!environmentId) return;
+                    await mutate({
+                      environmentId,
+                      input: {
+                        action: "update",
+                        id: selected.id,
+                        threadId: event.target.value || null,
+                      },
+                    });
+                    list.refresh();
+                  }}
+                >
+                  <option value="">Sin conversación</option>
+                  {linkableThreads.map((thread) => (
+                    <option key={thread.id} value={thread.id}>
+                      {thread.title || thread.id}
+                    </option>
+                  ))}
+                </select>
+                {selected.status !== "resolved" ? (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void setStatus(selected, "investigating")}
+                    >
+                      Investigando
+                    </Button>
+                    <Button size="sm" onClick={() => void setStatus(selected, "resolved")}>
+                      Resolver
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void setStatus(selected, "open")}
+                  >
+                    Reabrir
+                  </Button>
+                )}
+                <Button
+                  size="icon-xs"
+                  variant="ghost"
+                  aria-label="Eliminar incidencia"
+                  onClick={async () => {
+                    if (!environmentId) return;
+                    await mutate({ environmentId, input: { action: "delete", id: selected.id } });
+                    setSelectedId(null);
+                    list.refresh();
+                  }}
+                >
+                  <Trash2Icon className="size-3.5" />
+                </Button>
+              </header>
+              {selected.threadId && environmentId ? (
+                <div className="min-h-0 flex-1">
+                  <ChatView
+                    environmentId={environmentId}
+                    threadId={selected.threadId as never}
+                    routeKind="server"
+                  />
+                </div>
+              ) : (
+                <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                  <p className="max-w-2xl whitespace-pre-wrap text-[13px] leading-relaxed">
+                    {selected.description}
+                  </p>
+                  <div className="mt-4 flex items-start gap-2 rounded-lg border bg-card p-3 text-[12px] text-muted-foreground">
+                    <FileWarningIcon className="mt-0.5 size-4 shrink-0 text-amber-500" />
+                    <span>
+                      La conversación de investigación aún no está vinculada a esta incidencia. Abre
+                      un hilo en el proyecto y quedará aquí, junto al panel de evidencias. Ver{" "}
+                      <Link to="/settings/source-control" className="underline">
+                        ajustes
+                      </Link>{" "}
+                      si necesitas configurar accesos.
+                    </span>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+              <ShieldAlertIcon className="size-10 text-red-500/40" />
+              <p className="text-[13px] text-muted-foreground">
+                Crea una incidencia para empezar a investigar.
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* right: investigation panel */}
+        {selected ? (
+          environmentId ? (
+            <InvestigationPanel
+              environmentId={environmentId}
+              incident={selected}
+              onChanged={() => list.refresh()}
+            />
+          ) : null
+        ) : null}
+      </main>
+    </SidebarInset>
+  );
+}
