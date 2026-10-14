@@ -5,6 +5,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
 import * as ServerConfig from "../config.ts";
+import { setIncidentThreadIds } from "./incidentContext.ts";
 
 type Snapshot = { readonly incidents: ReadonlyArray<Incident> };
 type EvidenceDraft = Omit<IncidentEvidence, "id" | "incidentId" | "capturedAt">;
@@ -22,9 +23,14 @@ export const make = Effect.gen(function* () {
       try: async (): Promise<Snapshot> => {
         try {
           const parsed = JSON.parse(await readFile(path, "utf8")) as Partial<Snapshot>;
-          return { incidents: Array.isArray(parsed.incidents) ? parsed.incidents : [] };
+          const incidents = Array.isArray(parsed.incidents) ? parsed.incidents : [];
+          setIncidentThreadIds(incidents.map((incident) => incident.threadId));
+          return { incidents };
         } catch (cause) {
-          if ((cause as { code?: string }).code === "ENOENT") return { incidents: [] };
+          if ((cause as { code?: string }).code === "ENOENT") {
+            setIncidentThreadIds([]);
+            return { incidents: [] };
+          }
           throw cause;
         }
       },

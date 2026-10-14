@@ -1306,6 +1306,7 @@ const layerWsRpc = (
       const azureDevOpsWorkspace = yield* AzureDevOpsWorkspace.make;
       const azureDevOpsAzCli = yield* AzureDevOpsAzCli.make;
       const incidentStore = yield* IncidentStore.make;
+      yield* incidentStore.list().pipe(Effect.ignore);
       const startup = yield* ServerRuntimeStartup.ServerRuntimeStartup;
       const workspaceEntries = yield* WorkspaceEntries.WorkspaceEntries;
       const workspaceFileSystem = yield* WorkspaceFileSystem.WorkspaceFileSystem;

@@ -38,6 +38,7 @@ import * as Stream from "effect/Stream";
 import * as McpSessionRegistry from "../mcp/McpSessionRegistry.ts";
 import * as McpAppModelContext from "../mcpApps/McpAppModelContext.ts";
 import * as ServerSettings from "../serverSettings.ts";
+import { isIncidentConversation } from "../incidents/incidentContext.ts";
 import * as CheckpointService from "./CheckpointService.ts";
 import * as EventSink from "./EventSink.ts";
 import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
@@ -1414,6 +1415,16 @@ export const layer: Layer.Layer<
             key: `mcp_app_${entry.itemId.replace(/[^\w.-]/g, "_")}`,
             text: entry.text,
           }));
+          // Incident Center: the researcher prompt reaches the agent as extra
+          // turn context, only for a conversation linked to an incident.
+          const incidentPrompt = yield* Effect.gen(function* () {
+            const prompt = (yield* serverSettings.getSettings).incidentPrompt.trim();
+            return prompt.length > 0 && isIncidentConversation(input.run.threadId) ? prompt : "";
+          }).pipe(Effect.catch(() => Effect.succeed("")));
+          const contextEntries =
+            incidentPrompt.length > 0
+              ? [...appContext, { key: "t3_incident", text: incidentPrompt }]
+              : appContext;
           const turnInput = {
             appThread: input.appThread,
             threadId: input.run.threadId,
@@ -1434,7 +1445,7 @@ export const layer: Layer.Layer<
             message: input.message,
             modelSelection: input.modelSelection,
             runtimePolicy: input.runtimePolicy,
-            ...(appContext.length === 0 ? {} : { appContext }),
+            ...(contextEntries.length === 0 ? {} : { appContext: contextEntries }),
           };
           const compact =
             input.message.attachments.length === 0 &&
