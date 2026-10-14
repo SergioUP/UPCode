@@ -424,7 +424,7 @@ export function IncidentCenterPage() {
                 </Button>
               </header>
               {selected.threadId && environmentId ? (
-                <div className="min-h-0 flex-1">
+                <div className="flex min-h-0 flex-1 flex-col">
                   <ChatView
                     environmentId={environmentId}
                     threadId={selected.threadId as never}
