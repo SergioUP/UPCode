@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { EnvironmentId, Incident, IncidentEvidence, IncidentStatus } from "@t3tools/contracts";
 import { Link } from "@tanstack/react-router";
 import {
@@ -242,6 +242,14 @@ export function IncidentCenterPage() {
   const list = useEnvironmentQuery(
     environmentId ? incidents.list({ environmentId, input: {} }) : null,
   );
+  // The agent writes evidence and summaries through MCP tools, not through this
+  // client, so the panel polls while it is open instead of waiting for a click.
+  const listRef = useRef(list);
+  listRef.current = list;
+  useEffect(() => {
+    const timer = setInterval(() => listRef.current?.refresh(), 5_000);
+    return () => clearInterval(timer);
+  }, []);
   const mutate = useAtomCommand(incidents.mutate);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
