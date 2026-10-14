@@ -235,6 +235,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import * as PullRequestSyncReactor from "./orchestration-v2/PullRequestSyncReactor.ts";
 import * as SourceControlDiscovery from "./sourceControl/SourceControlDiscovery.ts";
 import * as AzureDevOpsWorkspace from "./azureDevOpsWorkspace.ts";
+import * as AzureDevOpsAzCli from "./azureDevOpsAzCli.ts";
 import * as OtlpEndpointCheck from "./observability/OtlpEndpointCheck.ts";
 import * as SourceControlRepositoryService from "./sourceControl/SourceControlRepositoryService.ts";
 import * as SourceControlBuiltInDrivers from "./sourceControl/builtInDrivers.ts";
@@ -1302,6 +1303,7 @@ const layerWsRpc = (
       const storageCleanup = yield* StorageCleanup.StorageCleanup;
       const serverSettings = yield* ServerSettings.ServerSettingsService;
       const azureDevOpsWorkspace = yield* AzureDevOpsWorkspace.make;
+      const azureDevOpsAzCli = yield* AzureDevOpsAzCli.make;
       const startup = yield* ServerRuntimeStartup.ServerRuntimeStartup;
       const workspaceEntries = yield* WorkspaceEntries.WorkspaceEntries;
       const workspaceFileSystem = yield* WorkspaceFileSystem.WorkspaceFileSystem;
@@ -2435,7 +2437,10 @@ const layerWsRpc = (
         [WS_METHODS.azureDevOpsConfig]: () => azureDevOpsWorkspace.config,
         [WS_METHODS.azureDevOpsListProjects]: () => azureDevOpsWorkspace.listProjects,
         [WS_METHODS.azureDevOpsListWorkItems]: (input) =>
-          azureDevOpsWorkspace.listWorkItems(input.project, input.assignedToMe),
+          azureDevOpsWorkspace.listWorkItems(input.project, input.assignedToMe, input.query),
+        [WS_METHODS.azureDevOpsMyWorkItems]: () => azureDevOpsWorkspace.listAssignedWorkItems(),
+        [WS_METHODS.azureDevOpsAzCliStatus]: () => azureDevOpsAzCli.status(),
+        [WS_METHODS.azureDevOpsAzCliOpen]: () => azureDevOpsAzCli.open(),
         [WS_METHODS.azureDevOpsGetWorkItem]: (input) =>
           azureDevOpsWorkspace.getWorkItem(input.project, input.id),
         [WS_METHODS.azureDevOpsListRepositories]: (input) =>

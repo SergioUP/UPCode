@@ -26,6 +26,7 @@ import * as Rpc from "effect/rpc/Rpc";
 import * as RpcGroup from "effect/rpc/RpcGroup";
 import * as RpcMiddleware from "effect/rpc/RpcMiddleware";
 import {
+  AzureDevOpsAzCliStatus,
   AzureDevOpsBranch,
   AzureDevOpsProject,
   AzureDevOpsPullRequest,
@@ -499,6 +500,9 @@ export const WS_METHODS = {
   azureDevOpsConfig: "azureDevOps.config",
   azureDevOpsListProjects: "azureDevOps.listProjects",
   azureDevOpsListWorkItems: "azureDevOps.listWorkItems",
+  azureDevOpsMyWorkItems: "azureDevOps.myWorkItems",
+  azureDevOpsAzCliStatus: "azureDevOps.azCliStatus",
+  azureDevOpsAzCliOpen: "azureDevOps.azCliOpen",
   azureDevOpsGetWorkItem: "azureDevOps.getWorkItem",
   azureDevOpsListRepositories: "azureDevOps.listRepositories",
   azureDevOpsListBranches: "azureDevOps.listBranches",
@@ -820,8 +824,28 @@ const WsAzureDevOpsListProjectsRpc = Rpc.make(WS_METHODS.azureDevOpsListProjects
   error: azureReadError,
 });
 const WsAzureDevOpsListWorkItemsRpc = Rpc.make(WS_METHODS.azureDevOpsListWorkItems, {
-  payload: Schema.Struct({ ...AzureProjectInput.fields, assignedToMe: Schema.Boolean }),
+  payload: Schema.Struct({
+    ...AzureProjectInput.fields,
+    assignedToMe: Schema.Boolean,
+    /** Free-text search: digits jump to an ID, anything else matches the title. */
+    query: Schema.optionalKey(Schema.String),
+  }),
   success: Schema.Array(AzureDevOpsWorkItem),
+  error: azureReadError,
+});
+const WsAzureDevOpsMyWorkItemsRpc = Rpc.make(WS_METHODS.azureDevOpsMyWorkItems, {
+  payload: Schema.Struct({}),
+  success: Schema.Array(AzureDevOpsWorkItem),
+  error: azureReadError,
+});
+const WsAzureDevOpsAzCliStatusRpc = Rpc.make(WS_METHODS.azureDevOpsAzCliStatus, {
+  payload: Schema.Struct({}),
+  success: AzureDevOpsAzCliStatus,
+  error: azureReadError,
+});
+const WsAzureDevOpsAzCliOpenRpc = Rpc.make(WS_METHODS.azureDevOpsAzCliOpen, {
+  payload: Schema.Struct({}),
+  success: Schema.Struct({ opened: Schema.Boolean }),
   error: azureReadError,
 });
 const WsAzureDevOpsGetWorkItemRpc = Rpc.make(WS_METHODS.azureDevOpsGetWorkItem, {
@@ -2008,6 +2032,9 @@ export const WsRpcGroup = RpcGroup.make(
   WsAzureDevOpsConfigRpc,
   WsAzureDevOpsListProjectsRpc,
   WsAzureDevOpsListWorkItemsRpc,
+  WsAzureDevOpsMyWorkItemsRpc,
+  WsAzureDevOpsAzCliStatusRpc,
+  WsAzureDevOpsAzCliOpenRpc,
   WsAzureDevOpsGetWorkItemRpc,
   WsAzureDevOpsListRepositoriesRpc,
   WsAzureDevOpsListBranchesRpc,
