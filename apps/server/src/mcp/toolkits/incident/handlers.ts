@@ -1,12 +1,20 @@
 import { OrchestratorMcpFailure } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 import * as IncidentStore from "../../../incidents/incidentStore.ts";
+import * as McpInvocationContext from "../../McpInvocationContext.ts";
 import * as McpToolAccess from "../../McpToolAccess.ts";
 import { readCaller, unavailable } from "../../threadAccess.ts";
 import { IncidentToolkit } from "./tools.ts";
 
 /** The incident that owns the calling conversation, or a refusal that names why. */
 const resolveIncident = Effect.gen(function* () {
+  const invocation = yield* McpInvocationContext.McpInvocationContext;
+  if (!invocation.capabilities.has("incident")) {
+    return yield* new OrchestratorMcpFailure({
+      code: "capability_denied",
+      message: "Incident tools are only available inside an Incident Center conversation.",
+    });
+  }
   const caller = yield* readCaller();
   const threadId = caller.scope.thread?.threadId;
   if (threadId === undefined) {
