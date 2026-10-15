@@ -66,6 +66,10 @@ export const AzureDevOpsRepository = Schema.Struct({
 export const AzureDevOpsPullRequest = Schema.Struct({
   id: Schema.Int,
   repositoryId: Schema.String,
+  /** Repository folder name, used to match the pull request to a local T3 project. */
+  repositoryName: Schema.optionalKey(Schema.String),
+  /** Repository remote URL, used to match the pull request to a local T3 project. */
+  repositoryRemoteUrl: Schema.optionalKey(Schema.String),
   title: Schema.String,
   status: Schema.String,
   sourceBranch: Schema.String,
@@ -74,6 +78,7 @@ export const AzureDevOpsPullRequest = Schema.Struct({
   createdBy: Schema.String,
   isDraft: Schema.Boolean,
 });
+export type AzureDevOpsPullRequest = typeof AzureDevOpsPullRequest.Type;
 export const AzureDevOpsBranch = Schema.Struct({
   name: Schema.String,
   objectId: Schema.String,
@@ -93,6 +98,13 @@ export const AzureDevOpsPullRequestDetail = Schema.Struct({
   ),
   qualityGate: AzureDevOpsQualityGate,
 });
+
+export const AzureDevOpsAzCliStatus = Schema.Struct({
+  installed: Schema.Boolean,
+  devopsExtension: Schema.Boolean,
+  account: Schema.NullOr(Schema.String),
+});
+export type AzureDevOpsAzCliStatus = typeof AzureDevOpsAzCliStatus.Type;
 
 export class AzureDevOpsWorkspaceError extends Schema.TaggedError<AzureDevOpsWorkspaceError>()(
   "AzureDevOpsWorkspaceError",

@@ -1098,6 +1098,33 @@ export const StorageCleanupSettings = Schema.Struct({
 });
 export type StorageCleanupSettings = typeof StorageCleanupSettings.Type;
 
+/**
+ * System prompt handed to the agent inside an Incident Center conversation. The
+ * user can edit it in Settings; this is the default.
+ */
+export const DEFAULT_INCIDENT_PROMPT = `Eres el investigador técnico de UPCode Incident Center.
+
+Tu misión es investigar y comprender incidencias técnicas dentro del proyecto actual, trabajando de forma autónoma y reduciendo al mínimo el trabajo manual del usuario.
+
+REGLA DE ORO: cada vez que consultes, leas, ejecutes o descubras algo relevante, guárdalo INMEDIATAMENTE como evidencia en el Incident Center con la herramienta t3_incident_save_evidence, sin esperar al final. El usuario ve el panel de investigación rellenarse en vivo; un dato guardado tarde es un dato que no pudo seguir. Agrupa por fuente (Shopify, ERP, PostgreSQL, Logs, Project files, …) e incluye en metadata el método, la url o consulta, el estado y el NOMBRE de la credencial o configuración usada.
+
+Cuando recibas una incidencia:
+1. Comprende el problema descrito.
+2. Inspecciona el proyecto, la rama y el código relevantes.
+3. Identifica las integraciones y sistemas implicados.
+4. Localiza cómo se obtiene su configuración efectiva.
+5. Descubre las herramientas disponibles para consultar.
+6. Investiga con operaciones ESTRICTAMENTE de solo lectura.
+7. Contrasta la información obtenida de distintas fuentes.
+8. Guarda cada resultado relevante como evidencia y mantén el resumen al día con t3_incident_update_summary.
+9. Explica los hallazgos de forma clara y breve.
+
+No modifiques ningún sistema investigado: nada de escrituras, migraciones, reintentos, procedimientos con efectos secundarios, ni usos indirectos (terminal, scripts, MCP) para eludir la restricción. Un GET no garantiza que sea seguro; un SELECT tampoco.
+
+Nunca muestres, copies al chat ni guardes en evidencias contraseñas, tokens, claves privadas ni cadenas de conexión completas: solo el NOMBRE no secreto de la credencial usada.
+
+No pidas al usuario información que puedas obtener con las herramientas. No declares resuelta una incidencia sin evidencia suficiente. No inventes respuestas de APIs, consultas o estados de conexión. Separa siempre hechos comprobados, posibles explicaciones y lo que queda por verificar.`;
+
 export const ServerSettings = Schema.Struct({
   // Null means no client has migrated this preference yet; an empty value is
   // authoritative so another device cannot resurrect cleared preferences.
@@ -1257,6 +1284,9 @@ export const ServerSettings = Schema.Struct({
     Schema.withDecodingDefault(Effect.succeed(null)),
   ),
   addProjectBaseDirectory: TrimmedString.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
+  incidentPrompt: Schema.String.pipe(
+    Schema.withDecodingDefault(Effect.succeed(DEFAULT_INCIDENT_PROMPT)),
+  ),
   textGenerationModelSelection: ModelSelection.pipe(
     Schema.withDecodingDefault(
       Effect.succeed({
@@ -1596,6 +1626,7 @@ export const ServerSettingsPatch = Schema.Struct({
   newWorktreesStartFromOrigin: Schema.optionalKey(Schema.Boolean),
   worktreeSubmodules: Schema.optionalKey(Schema.NullOr(WorktreeSubmodules)),
   addProjectBaseDirectory: Schema.optionalKey(TrimmedString),
+  incidentPrompt: Schema.optionalKey(Schema.String),
   textGenerationModelSelection: Schema.optionalKey(ModelSelectionPatch),
   branchNamingMode: Schema.optionalKey(BranchNamingMode),
   branchNamePrefix: Schema.optionalKey(TrimmedString),

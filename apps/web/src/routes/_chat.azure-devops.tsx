@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import DOMPurify from "dompurify";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { usePrimaryEnvironmentId } from "../state/environments";
 import { useThreadShells } from "../state/entities";
 import { useEnvironmentQuery } from "../state/query";
@@ -9,7 +9,15 @@ import { azureDevOps } from "../state/azureDevOps";
 import { SidebarInset } from "../components/ui/sidebar";
 import { WorkspacePageHeader } from "../components/WorkspacePageHeader";
 import { Button } from "../components/ui/button";
-import { ClipboardListIcon, FolderGit2Icon, GitPullRequestIcon, UserRoundIcon } from "lucide-react";
+import { azureWorkItemFailureNotice } from "../components/chat/azureWorkItemNotice";
+import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import {
+  ClipboardListIcon,
+  FolderGit2Icon,
+  GitPullRequestIcon,
+  SearchIcon,
+  UserRoundIcon,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_chat/azure-devops")({ component: AzureDevOpsPage });
 
@@ -61,6 +69,8 @@ function AzureDevOpsPage() {
   const [project, setProject] = useState("");
   const [tab, setTab] = useState<Tab>("mine");
   const [itemId, setItemId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [repositoryId, setRepositoryId] = useState("");
   const [selectedPullRequest, setSelectedPullRequest] = useState<{
     id: number;
@@ -70,6 +80,10 @@ function AzureDevOpsPage() {
   const [comment, setComment] = useState("");
   const [nextState, setNextState] = useState("");
   const [showWritePreview, setShowWritePreview] = useState(false);
+  const [publishNotice, setPublishNotice] = useState<{
+    tone: "ok" | "error";
+    text: string;
+  } | null>(null);
   const config = useEnvironmentQuery(
     environmentId ? azureDevOps.config({ environmentId, input: {} }) : null,
   );
@@ -82,7 +96,11 @@ function AzureDevOpsPage() {
     environmentId && selectedProject && (tab === "mine" || tab === "work-items")
       ? azureDevOps.workItems({
           environmentId,
-          input: { project: selectedProject, assignedToMe: tab === "mine" },
+          input: {
+            project: selectedProject,
+            assignedToMe: tab === "mine",
+            ...(debouncedSearch ? { query: debouncedSearch } : {}),
+          },
         })
       : null,
   );
@@ -142,6 +160,13 @@ function AzureDevOpsPage() {
     [links.data, config.data?.organization, selectedProject, itemId],
   );
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const workItemStates = workItem.data?.states ?? [];
+
   const assignThread = async () => {
     if (!environmentId || !threadId || !itemId || !config.data) return;
     await linkThread({
@@ -164,7 +189,7 @@ function AzureDevOpsPage() {
   };
   const publish = async () => {
     if (!environmentId || itemId === null || (!comment.trim() && !nextState.trim())) return;
-    await updateWorkItem({
+    const result = await updateWorkItem({
       environmentId,
       input: {
         project: selectedProject,
@@ -173,11 +198,19 @@ function AzureDevOpsPage() {
         ...(nextState.trim() ? { state: nextState.trim() } : {}),
       },
     });
-    setShowWritePreview(false);
-    setComment("");
-    setNextState("");
-    workItem.refresh();
-    workItems.refresh();
+    if (result._tag === "Success") {
+      setShowWritePreview(false);
+      setComment("");
+      setNextState("");
+      setPublishNotice({ tone: "ok", text: "Publicado en Azure DevOps." });
+      workItem.refresh();
+      workItems.refresh();
+    } else {
+      setPublishNotice({
+        tone: "error",
+        text: azureWorkItemFailureNotice(squashAtomCommandFailure(result)),
+      });
+    }
   };
 
   return (
@@ -279,7 +312,33 @@ function AzureDevOpsPage() {
                   <h2 className="font-medium">
                     {tab === "mine" ? "Asignados a mí" : "Últimos work items"}
                   </h2>
+                  <div className="relative">
+                    <SearchIcon
+                      aria-hidden
+                      className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <input
+                      type="search"
+                      aria-label="Buscar work item"
+                      placeholder="#ID o texto del título"
+                      value={search}
+                      onChange={(event) => {
+                        setSearch(event.target.value);
+                        setItemId(null);
+                      }}
+                      className="w-full rounded border bg-background py-2 pl-8 pr-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                  </div>
                   {workItems.error && <p className="text-sm text-destructive">{workItems.error}</p>}
+                  {!workItems.error && (workItems.data ?? []).length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      {debouncedSearch
+                        ? `Nada coincide con «${debouncedSearch}».`
+                        : workItems.isPending
+                          ? "Buscando en Azure…"
+                          : "Sin work items en este proyecto."}
+                    </p>
+                  )}
                   {workItems.isPending && (
                     <p className="text-sm text-muted-foreground">Cargando…</p>
                   )}
@@ -396,18 +455,42 @@ function AzureDevOpsPage() {
                           value={comment}
                           onChange={(event) => setComment(event.target.value)}
                         />
-                        <input
+                        <select
                           className="w-full rounded border bg-background p-2 text-sm"
-                          placeholder="Nuevo estado (opcional)"
+                          aria-label="Nuevo estado"
                           value={nextState}
                           onChange={(event) => setNextState(event.target.value)}
-                        />
+                        >
+                          <option value="">Sin cambio de estado</option>
+                          {workItemStates.map((state) => (
+                            <option
+                              key={state.name}
+                              value={state.name}
+                              disabled={state.name === workItem.data?.state}
+                            >
+                              {state.name}
+                              {state.name === workItem.data?.state ? " · actual" : ""}
+                            </option>
+                          ))}
+                        </select>
                         <Button
                           disabled={!comment.trim() && !nextState.trim()}
-                          onClick={() => setShowWritePreview(true)}
+                          onClick={() => {
+                            setPublishNotice(null);
+                            setShowWritePreview(true);
+                          }}
                         >
                           Revisar cambios
                         </Button>
+                        {publishNotice && (
+                          <p
+                            className={`text-sm ${
+                              publishNotice.tone === "error" ? "text-destructive" : "text-primary"
+                            }`}
+                          >
+                            {publishNotice.text}
+                          </p>
+                        )}
                         {showWritePreview && (
                           <div className="space-y-2 rounded border p-3 text-sm">
                             <strong>Vista previa de publicación</strong>

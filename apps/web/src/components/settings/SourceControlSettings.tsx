@@ -47,6 +47,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 
 import { GitIcon, JujutsuIcon, type Icon } from "../Icons";
 import { SourceControlHostSettings } from "./SourceControlHostSettings";
+import { AzureCliSettings } from "./AzureCliSettings";
 import { GitHubAccountSettings } from "./GitHubAccountSettings";
 import { GitHubTokenSettings } from "./GitHubTokenSettings";
 import { RedactedSensitiveText } from "./RedactedSensitiveText";
@@ -582,6 +583,7 @@ export function SourceControlSettingsPanel() {
             definition={{ ...azureDefinition, settings: azureDefinition.settings }}
             onSaved={() => undefined}
           />
+          <AzureCliSettings environmentId={environmentId} />
         </SettingsSection>
       ) : null}
       {environmentId === null ? (

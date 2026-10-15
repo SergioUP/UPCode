@@ -10,6 +10,7 @@ import * as NetAddress from "effect/net/NetAddress";
 
 import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import * as McpInvocationContext from "./McpInvocationContext.ts";
+import { isIncidentConversation } from "../incidents/incidentContext.ts";
 import * as McpProviderSession from "@t3tools/provider-core/server/mcpSession";
 
 export interface McpCredentialRequest {
@@ -142,6 +143,9 @@ const makeWithOptions = Effect.fn("McpSessionRegistry.make")(function* (
           "worktree",
           "pull-requests",
           ...(request.capabilities ?? (browserToolsAvailable ? (["preview"] as const) : [])),
+          // Incident Center is opt-in per conversation: a normal T3 thread
+          // never gets this capability, so the incident tools refuse every call.
+          ...(isIncidentConversation(request.threadId) ? (["incident"] as const) : []),
         ]),
         issuedAt,
       };

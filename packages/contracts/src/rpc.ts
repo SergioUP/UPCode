@@ -26,6 +26,7 @@ import * as Rpc from "effect/rpc/Rpc";
 import * as RpcGroup from "effect/rpc/RpcGroup";
 import * as RpcMiddleware from "effect/rpc/RpcMiddleware";
 import {
+  AzureDevOpsAzCliStatus,
   AzureDevOpsBranch,
   AzureDevOpsProject,
   AzureDevOpsPullRequest,
@@ -35,6 +36,12 @@ import {
   AzureDevOpsWorkItemLink,
   AzureDevOpsWorkspaceError,
 } from "./azureDevOps.ts";
+import {
+  Incident,
+  IncidentEvidenceContentType,
+  IncidentStatus,
+  IncidentStoreError,
+} from "./incident.ts";
 import { NonNegativeInt, TrimmedNonEmptyString } from "./baseSchemas.ts";
 import {
   CodexAuthCallbackInput,
@@ -499,6 +506,9 @@ export const WS_METHODS = {
   azureDevOpsConfig: "azureDevOps.config",
   azureDevOpsListProjects: "azureDevOps.listProjects",
   azureDevOpsListWorkItems: "azureDevOps.listWorkItems",
+  azureDevOpsMyWorkItems: "azureDevOps.myWorkItems",
+  azureDevOpsAzCliStatus: "azureDevOps.azCliStatus",
+  azureDevOpsAzCliOpen: "azureDevOps.azCliOpen",
   azureDevOpsGetWorkItem: "azureDevOps.getWorkItem",
   azureDevOpsListRepositories: "azureDevOps.listRepositories",
   azureDevOpsListBranches: "azureDevOps.listBranches",
@@ -507,6 +517,8 @@ export const WS_METHODS = {
   azureDevOpsUpdateWorkItem: "azureDevOps.updateWorkItem",
   azureDevOpsThreadLinks: "azureDevOps.threadLinks",
   azureDevOpsLinkThread: "azureDevOps.linkThread",
+  incidentsList: "incidents.list",
+  incidentsMutate: "incidents.mutate",
   serverSearchAcpRegistry: "server.searchAcpRegistry",
   serverPrepareAcpRegistryAgent: "server.prepareAcpRegistryAgent",
   serverUninstallAcpRegistryManagedBinary: "server.uninstallAcpRegistryManagedBinary",
@@ -820,8 +832,28 @@ const WsAzureDevOpsListProjectsRpc = Rpc.make(WS_METHODS.azureDevOpsListProjects
   error: azureReadError,
 });
 const WsAzureDevOpsListWorkItemsRpc = Rpc.make(WS_METHODS.azureDevOpsListWorkItems, {
-  payload: Schema.Struct({ ...AzureProjectInput.fields, assignedToMe: Schema.Boolean }),
+  payload: Schema.Struct({
+    ...AzureProjectInput.fields,
+    assignedToMe: Schema.Boolean,
+    /** Free-text search: digits jump to an ID, anything else matches the title. */
+    query: Schema.optionalKey(Schema.String),
+  }),
   success: Schema.Array(AzureDevOpsWorkItem),
+  error: azureReadError,
+});
+const WsAzureDevOpsMyWorkItemsRpc = Rpc.make(WS_METHODS.azureDevOpsMyWorkItems, {
+  payload: Schema.Struct({}),
+  success: Schema.Array(AzureDevOpsWorkItem),
+  error: azureReadError,
+});
+const WsAzureDevOpsAzCliStatusRpc = Rpc.make(WS_METHODS.azureDevOpsAzCliStatus, {
+  payload: Schema.Struct({}),
+  success: AzureDevOpsAzCliStatus,
+  error: azureReadError,
+});
+const WsAzureDevOpsAzCliOpenRpc = Rpc.make(WS_METHODS.azureDevOpsAzCliOpen, {
+  payload: Schema.Struct({}),
+  success: Schema.Struct({ opened: Schema.Boolean }),
   error: azureReadError,
 });
 const WsAzureDevOpsGetWorkItemRpc = Rpc.make(WS_METHODS.azureDevOpsGetWorkItem, {
@@ -880,6 +912,43 @@ const WsAzureDevOpsLinkThreadRpc = Rpc.make(WS_METHODS.azureDevOpsLinkThread, {
   }),
   success: Schema.Record(Schema.String, AzureDevOpsWorkItemLink),
   error: azureReadError,
+});
+
+const incidentsError = IncidentStoreError;
+const IncidentEvidencePayload = Schema.Struct({
+  title: Schema.String,
+  source: Schema.String,
+  contentType: IncidentEvidenceContentType,
+  content: Schema.String,
+  summary: Schema.optionalKey(Schema.String),
+  metadata: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
+});
+/** One write surface for incidents; every mutation returns the fresh list. */
+const IncidentMutateInput = Schema.Struct({
+  action: Schema.Literals(["create", "update", "delete", "evidenceAdd", "evidenceRemove"]),
+  id: Schema.optionalKey(Schema.String),
+  title: Schema.optionalKey(Schema.String),
+  description: Schema.optionalKey(Schema.String),
+  status: Schema.optionalKey(IncidentStatus),
+  summary: Schema.optionalKey(Schema.String),
+  threadId: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  projectId: Schema.optionalKey(Schema.String),
+  environmentId: Schema.optionalKey(Schema.String),
+  workspaceRoot: Schema.optionalKey(Schema.String),
+  branch: Schema.optionalKey(Schema.String),
+  evidence: Schema.optionalKey(IncidentEvidencePayload),
+  evidenceId: Schema.optionalKey(Schema.String),
+});
+export type IncidentMutateInput = typeof IncidentMutateInput.Type;
+const WsIncidentsListRpc = Rpc.make(WS_METHODS.incidentsList, {
+  payload: Schema.Struct({}),
+  success: Schema.Array(Incident),
+  error: incidentsError,
+});
+const WsIncidentsMutateRpc = Rpc.make(WS_METHODS.incidentsMutate, {
+  payload: IncidentMutateInput,
+  success: Schema.Array(Incident),
+  error: incidentsError,
 });
 
 const WsServerSearchAcpRegistryRpc = Rpc.make(WS_METHODS.serverSearchAcpRegistry, {
@@ -2008,6 +2077,9 @@ export const WsRpcGroup = RpcGroup.make(
   WsAzureDevOpsConfigRpc,
   WsAzureDevOpsListProjectsRpc,
   WsAzureDevOpsListWorkItemsRpc,
+  WsAzureDevOpsMyWorkItemsRpc,
+  WsAzureDevOpsAzCliStatusRpc,
+  WsAzureDevOpsAzCliOpenRpc,
   WsAzureDevOpsGetWorkItemRpc,
   WsAzureDevOpsListRepositoriesRpc,
   WsAzureDevOpsListBranchesRpc,
@@ -2016,6 +2088,8 @@ export const WsRpcGroup = RpcGroup.make(
   WsAzureDevOpsUpdateWorkItemRpc,
   WsAzureDevOpsThreadLinksRpc,
   WsAzureDevOpsLinkThreadRpc,
+  WsIncidentsListRpc,
+  WsIncidentsMutateRpc,
   WsServerSearchAcpRegistryRpc,
   WsServerPrepareAcpRegistryAgentRpc,
   WsServerUninstallAcpRegistryManagedBinaryRpc,

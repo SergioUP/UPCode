@@ -18,6 +18,18 @@ export const azureDevOps = {
     label: "azure-devops:work-items",
     tag: WS_METHODS.azureDevOpsListWorkItems,
   }),
+  myWorkItems: createEnvironmentRpcQueryAtomFamily(connectionAtomRuntime, {
+    label: "azure-devops:my-work-items",
+    tag: WS_METHODS.azureDevOpsMyWorkItems,
+  }),
+  azCliStatus: createEnvironmentRpcQueryAtomFamily(connectionAtomRuntime, {
+    label: "azure-devops:az-cli-status",
+    tag: WS_METHODS.azureDevOpsAzCliStatus,
+  }),
+  azCliOpen: createEnvironmentRpcCommand(connectionAtomRuntime, {
+    label: "azure-devops:az-cli-open",
+    tag: WS_METHODS.azureDevOpsAzCliOpen,
+  }),
   workItem: createEnvironmentRpcQueryAtomFamily(connectionAtomRuntime, {
     label: "azure-devops:work-item",
     tag: WS_METHODS.azureDevOpsGetWorkItem,

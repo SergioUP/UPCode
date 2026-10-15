@@ -88,6 +88,29 @@ const responseReason = (status: number): AzureDevOpsWorkspaceError["reason"] =>
           ? "rate-limited"
           : "failed";
 
+const MAX_WORK_ITEM_QUERY_LENGTH = 200;
+/** WIQL escapes an embedded single quote by doubling it; never interpolate raw input. */
+const wiqlLiteral = (value: string): string => value.replace(/'/g, "''");
+/**
+ * A digits-only query is a jump to that work item; anything else searches the title.
+ * Returns a WIQL fragment including its leading `AND`, or "" so callers can concatenate it.
+ */
+const workItemSearchClause = (query: string | undefined): string => {
+  const trimmed = (query ?? "").trim().slice(0, MAX_WORK_ITEM_QUERY_LENGTH);
+  if (!trimmed) return "";
+  if (/^\d+$/.test(trimmed)) {
+    const id = Number(trimmed);
+    if (Number.isSafeInteger(id) && id > 0) return ` AND [System.Id] = ${id}`;
+  }
+  return ` AND [System.Title] CONTAINS '${wiqlLiteral(trimmed)}'`;
+};
+
+/** T3's `az devops`/`az repos` calls authenticate through this environment variable. */
+const applyAzCliPat = (pat: string) => {
+  if (pat) process.env.AZURE_DEVOPS_EXT_PAT = pat;
+  else delete process.env.AZURE_DEVOPS_EXT_PAT;
+};
+
 export const make = Effect.gen(function* () {
   const serverSettings = yield* ServerSettings.ServerSettingsService;
 
@@ -99,7 +122,8 @@ export const make = Effect.gen(function* () {
       error("configuration", "No se puede leer la configuración de Azure DevOps."),
     ),
     Effect.flatMap((value) => {
-      if (value.organization && value.personalAccessToken) return Effect.succeed(value);
+      if (value.organization && value.personalAccessToken)
+        return Effect.sync(() => applyAzCliPat(value.personalAccessToken)).pipe(Effect.as(value));
       if (!value.organization && value.personalAccessToken)
         return Effect.fail(
           error(
@@ -122,6 +146,9 @@ export const make = Effect.gen(function* () {
       );
     }),
   );
+
+  // Keep T3's az CLI calls (az devops / az repos) authenticated with the saved PAT.
+  yield* Effect.ignore(credentials);
 
   const request = (input: {
     path: string;
@@ -353,10 +380,10 @@ export const make = Effect.gen(function* () {
         fields,
       };
     });
-  const listWorkItems = (project: string, assignedToMe: boolean) =>
+  const listWorkItems = (project: string, assignedToMe: boolean, query?: string) =>
     Effect.gen(function* () {
       const { organization } = yield* credentials;
-      const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project${assignedToMe ? " AND [System.AssignedTo] = @Me" : ""} ORDER BY [System.ChangedDate] DESC`;
+      const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project${assignedToMe ? " AND [System.AssignedTo] = @Me" : ""}${workItemSearchClause(query)} ORDER BY [System.ChangedDate] DESC`;
       const result = (yield* request({
         path: path(project, "wit/wiql?$top=100"),
         method: "POST",
@@ -369,6 +396,28 @@ export const make = Effect.gen(function* () {
       if (ids.length === 0) return [];
       const batch = (yield* request({
         path: path(project, `wit/workitems?ids=${ids.join(",")}&fields=${encode(workItemFields)}`),
+      })) as { value?: AzureItem[] };
+      return (batch.value ?? []).map((item) => toWorkItem(organization, item));
+    });
+  const listAssignedWorkItems = () =>
+    Effect.gen(function* () {
+      const { organization } = yield* credentials;
+      const wiql =
+        "SELECT [System.Id] FROM WorkItems WHERE [System.AssignedTo] = @Me ORDER BY [System.ChangedDate] DESC";
+      const result = (yield* request({
+        path: `/_apis/wit/wiql?$top=200&api-version=${API_VERSION}`,
+        method: "POST",
+        body: { query: wiql },
+      })) as { workItems?: Array<{ id: number }> };
+      const ids = (result.workItems ?? [])
+        .map((entry) => entry.id)
+        .filter((id) => Number.isInteger(id))
+        .slice(0, 200);
+      if (ids.length === 0) return [];
+      const batch = (yield* request({
+        path: `/_apis/wit/workitemsbatch?api-version=${API_VERSION}`,
+        method: "POST",
+        body: { ids, fields: workItemFields.split(",") },
       })) as { value?: AzureItem[] };
       return (batch.value ?? []).map((item) => toWorkItem(organization, item));
     });
@@ -425,6 +474,8 @@ export const make = Effect.gen(function* () {
         return {
           id,
           repositoryId: repoId,
+          repositoryName: text(repository.name),
+          repositoryRemoteUrl: text(repository.remoteUrl),
           title: text(pr.title),
           status: text(pr.status),
           sourceBranch: text(pr.sourceRefName),
@@ -553,6 +604,7 @@ export const make = Effect.gen(function* () {
     config,
     listProjects,
     listWorkItems,
+    listAssignedWorkItems,
     getWorkItem,
     listRepositories,
     listBranches,
