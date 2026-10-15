@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import type { EnvironmentId, Incident, IncidentEvidence, IncidentStatus } from "@t3tools/contracts";
+import {
+  CommandId,
+  type EnvironmentId,
+  type Incident,
+  type IncidentEvidence,
+  type IncidentStatus,
+} from "@t3tools/contracts";
+import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
 import { Link } from "@tanstack/react-router";
 import {
   ActivityIcon,
@@ -17,9 +24,11 @@ import {
 
 import { incidents } from "../../state/incidents";
 import { usePrimaryEnvironmentId } from "../../state/environments";
-import { useThreadShells } from "../../state/entities";
+import { useProjects, useThreadShells } from "../../state/entities";
 import { useEnvironmentQuery } from "../../state/query";
 import { useAtomCommand } from "../../state/use-atom-command";
+import { useEnvironmentSettings } from "../../hooks/useSettings";
+import { randomUUID } from "../../lib/utils";
 import { SidebarInset } from "../ui/sidebar";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
 import { Button } from "../ui/button";
@@ -281,35 +290,102 @@ function InvestigationPanel({
   );
 }
 
-function CreateIncident({ onCreated }: { readonly onCreated: () => void }) {
-  const environmentId = usePrimaryEnvironmentId();
+function CreateIncident({
+  environmentId,
+  existingIds,
+  onCreated,
+}: {
+  readonly environmentId: EnvironmentId;
+  readonly existingIds: ReadonlySet<string>;
+  readonly onCreated: () => void;
+}) {
   const mutate = useAtomCommand(incidents.mutate);
+  const launchThread = useAtomCommand(incidents.launchThread);
+  const projects = useProjects();
+  const settings = useEnvironmentSettings(environmentId ?? undefined);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [projectId, setProjectId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const environmentProjects = projects.filter((project) => project.environmentId === environmentId);
+  const selectedProject =
+    environmentProjects.find((project) => project.id === projectId) ?? environmentProjects[0];
   const submit = async () => {
-    if (!environmentId || !description.trim()) return;
+    if (!environmentId || !description.trim() || !selectedProject) return;
     setBusy(true);
     setError(null);
-    const result = await mutate({
+    const incidentTitle = title.trim() || description.trim().slice(0, 60);
+    const created = await mutate({
       environmentId,
       input: {
         action: "create",
-        title: title.trim() || description.trim().slice(0, 60),
+        title: incidentTitle,
         description: description.trim(),
+        projectId: selectedProject.id,
       },
     });
+    if (created._tag !== "Success") {
+      setBusy(false);
+      setError("No se pudo crear la incidencia.");
+      return;
+    }
+    const incident = created.value.find((entry) => !existingIds.has(entry.id));
+    // The incident launches its own empty conversation, using this project's
+    // defaults, so it never reuses (or clashes with) a normal thread.
+    const resolved = settings
+      ? resolveProjectSettings(settings, selectedProject.id, selectedProject).settings
+      : null;
+    const modelSelection = resolved?.defaultModelSelection ?? null;
+    if (incident && resolved && modelSelection) {
+      const launched = await launchThread({
+        environmentId,
+        input: {
+          commandId: CommandId.make(randomUUID()),
+          projectId: selectedProject.id,
+          title: incidentTitle,
+          modelSelection,
+          runtimeMode: resolved.defaultRuntimeMode,
+          interactionMode: "default",
+          workspaceStrategy: { type: "root" },
+        },
+      });
+      if (launched._tag === "Success") {
+        await mutate({
+          environmentId,
+          input: { action: "update", id: incident.id, threadId: launched.value.threadId },
+        });
+      } else {
+        setError("La incidencia se creó, pero no se pudo abrir su conversación.");
+      }
+    } else if (incident) {
+      setError(
+        "La incidencia se creó. Configura un modelo por defecto en Ajustes para abrir su conversación.",
+      );
+    }
     setBusy(false);
-    if (result._tag === "Success") {
-      setTitle("");
-      setDescription("");
-      onCreated();
-    } else setError("No se pudo crear la incidencia.");
+    setTitle("");
+    setDescription("");
+    onCreated();
   };
   return (
     <div className="space-y-2 rounded-lg border border-red-500/25 bg-red-500/5 p-3">
       <p className="text-[12px] font-medium">Nueva incidencia</p>
+      <label className="block text-[11px] text-muted-foreground">
+        Proyecto
+        <select
+          className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 text-[13px]"
+          value={selectedProject?.id ?? ""}
+          onChange={(event) => setProjectId(event.target.value)}
+        >
+          {environmentProjects.length === 0 ? <option value="">Sin proyectos</option> : null}
+          {environmentProjects.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.title || project.id}
+            </option>
+          ))}
+        </select>
+      </label>
       <input
         className="w-full rounded-md border bg-background px-2 py-1.5 text-[13px]"
         placeholder="Título (opcional)"
@@ -322,7 +398,11 @@ function CreateIncident({ onCreated }: { readonly onCreated: () => void }) {
         value={description}
         onChange={(event) => setDescription(event.target.value)}
       />
-      <Button size="sm" disabled={busy || !description.trim()} onClick={() => void submit()}>
+      <Button
+        size="sm"
+        disabled={busy || !description.trim() || !selectedProject}
+        onClick={() => void submit()}
+      >
         <PlusIcon /> Crear incidencia
       </Button>
       {error ? <p className="text-[11.5px] text-destructive">{error}</p> : null}
@@ -372,8 +452,10 @@ export function IncidentCenterPage() {
           <Button size="sm" variant="outline" onClick={() => setCreating((value) => !value)}>
             <PlusIcon /> Nueva incidencia
           </Button>
-          {creating ? (
+          {creating && environmentId ? (
             <CreateIncident
+              environmentId={environmentId}
+              existingIds={new Set(items.map((incident) => incident.id))}
               onCreated={() => {
                 setCreating(false);
                 list.refresh();

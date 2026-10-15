@@ -1,4 +1,4 @@
-import { WS_METHODS } from "@t3tools/contracts";
+import { ORCHESTRATION_V2_WS_METHODS, WS_METHODS } from "@t3tools/contracts";
 import {
   createEnvironmentRpcCommand,
   createEnvironmentRpcQueryAtomFamily,
@@ -13,5 +13,10 @@ export const incidents = {
   mutate: createEnvironmentRpcCommand(connectionAtomRuntime, {
     label: "incidents:mutate",
     tag: WS_METHODS.incidentsMutate,
+  }),
+  /** Launch the dedicated conversation an incident investigates in. */
+  launchThread: createEnvironmentRpcCommand(connectionAtomRuntime, {
+    label: "incidents:launch-thread",
+    tag: ORCHESTRATION_V2_WS_METHODS.launchThread,
   }),
 };
