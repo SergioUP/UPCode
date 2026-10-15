@@ -23,11 +23,12 @@ import {
 } from "lucide-react";
 
 import { incidents } from "../../state/incidents";
-import { usePrimaryEnvironmentId } from "../../state/environments";
-import { useProjects, useThreadShells } from "../../state/entities";
+import { usePrimaryEnvironmentId, useEnvironments } from "../../state/environments";
+import { useProjects } from "../../state/entities";
 import { useEnvironmentQuery } from "../../state/query";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useEnvironmentSettings } from "../../hooks/useSettings";
+import { resolveDefaultProviderModelSelection } from "../../providerInstances";
 import { randomUUID } from "../../lib/utils";
 import { SidebarInset } from "../ui/sidebar";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
@@ -302,6 +303,7 @@ function CreateIncident({
   const mutate = useAtomCommand(incidents.mutate);
   const launchThread = useAtomCommand(incidents.launchThread);
   const projects = useProjects();
+  const { environments } = useEnvironments();
   const settings = useEnvironmentSettings(environmentId ?? undefined);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -336,7 +338,13 @@ function CreateIncident({
     const resolved = settings
       ? resolveProjectSettings(settings, selectedProject.id, selectedProject).settings
       : null;
-    const modelSelection = resolved?.defaultModelSelection ?? null;
+    const providers =
+      environments.find((environment) => environment.environmentId === environmentId)?.serverConfig
+        ?.providers ?? [];
+    const modelSelection = resolveDefaultProviderModelSelection(
+      providers,
+      resolved?.defaultModelSelection ?? null,
+    );
     if (incident && resolved && modelSelection) {
       const launched = await launchThread({
         environmentId,
@@ -360,7 +368,7 @@ function CreateIncident({
       }
     } else if (incident) {
       setError(
-        "La incidencia se creó. Configura un modelo por defecto en Ajustes para abrir su conversación.",
+        "La incidencia se creó, pero no hay ningún proveedor disponible para su conversación.",
       );
     }
     setBusy(false);
@@ -426,10 +434,6 @@ export function IncidentCenterPage() {
   const mutate = useAtomCommand(incidents.mutate);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const threads = useThreadShells();
-  const linkableThreads = threads.filter(
-    (thread) => thread.environmentId === environmentId && thread.archivedAt === null,
-  );
   const items = list.data ?? [];
   const selected = items.find((incident) => incident.id === selectedId) ?? items[0] ?? null;
 
@@ -512,30 +516,6 @@ export function IncidentCenterPage() {
                     {when(selected.createdAt)}
                   </span>
                 </span>
-                <select
-                  aria-label="Conversación vinculada"
-                  className="max-w-[180px] rounded-md border bg-background px-2 py-1 text-[11px]"
-                  value={selected.threadId ?? ""}
-                  onChange={async (event) => {
-                    if (!environmentId) return;
-                    await mutate({
-                      environmentId,
-                      input: {
-                        action: "update",
-                        id: selected.id,
-                        threadId: event.target.value || null,
-                      },
-                    });
-                    list.refresh();
-                  }}
-                >
-                  <option value="">Sin conversación</option>
-                  {linkableThreads.map((thread) => (
-                    <option key={thread.id} value={thread.id}>
-                      {thread.title || thread.id}
-                    </option>
-                  ))}
-                </select>
                 {selected.status !== "resolved" ? (
                   <>
                     <Button
