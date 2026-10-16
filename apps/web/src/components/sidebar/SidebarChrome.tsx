@@ -4,6 +4,7 @@ import {
   LayoutDashboardIcon,
   SettingsIcon,
   ShieldAlertIcon,
+  SquareKanbanIcon,
   ListTodoIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -221,6 +222,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigate({ to: "/incidents" });
   }, [closeMobileSidebar, navigate]);
 
+  const handleIssuesClick = useCallback(() => {
+    closeMobileSidebar();
+    void navigate({ to: "/issues" });
+  }, [closeMobileSidebar, navigate]);
+
   const handleBackClick = useCallback(() => {
     closeMobileSidebar();
     void navigateToMainApp();
@@ -246,6 +252,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             icon={<ListTodoIcon />}
             label="Azure DevOps"
             onClick={handleAzureDevOpsClick}
+          />
+          <SidebarUtilityItem
+            icon={<SquareKanbanIcon />}
+            label="Issues"
+            onClick={handleIssuesClick}
           />
           {pullRequestsSupported ? (
             <SidebarUtilityItem

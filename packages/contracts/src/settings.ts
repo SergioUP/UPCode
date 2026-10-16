@@ -1,5 +1,5 @@
 import { SshDeviceHostConfigs } from "./device.ts";
-import { AzureDevOpsWorkItemLink } from "./azureDevOps.ts";
+import { AzureDevOpsIssueLabels, AzureDevOpsWorkItemLink } from "./azureDevOps.ts";
 import {
   AuthOrchestrationOperateScope,
   AuthSettingsWriteScope,
@@ -1357,6 +1357,13 @@ export const ServerSettings = Schema.Struct({
   azureDevOpsThreadLinks: Schema.Record(Schema.String, AzureDevOpsWorkItemLink).pipe(
     Schema.withDecodingDefault(Effect.succeed({})),
   ),
+  /**
+   * Local-only issue labels, keyed by `project#workItemId`. ADO has no part in
+   * them: the issue views are the only reader and writer.
+   */
+  azureDevOpsIssueLabels: AzureDevOpsIssueLabels.pipe(
+    Schema.withDecodingDefault(Effect.succeed({})),
+  ),
   // Keyed by a user-chosen id so a source keeps its rows across edits. Entries
   // this build cannot decode round-trip untouched, as provider instances do.
   usageLimitSources: Schema.Record(UsageLimitSourceId, UsageLimitSourceConfig).pipe(
@@ -1658,6 +1665,8 @@ export const ServerSettingsPatch = Schema.Struct({
    */
   sourceControlHosts: Schema.optionalKey(Schema.Record(Schema.String, SourceControlHostSettings)),
   azureDevOpsThreadLinks: Schema.optionalKey(Schema.Record(Schema.String, AzureDevOpsWorkItemLink)),
+  /** Whole-map replacement, like the thread links: the map is small and conflicts are rare. */
+  azureDevOpsIssueLabels: Schema.optionalKey(AzureDevOpsIssueLabels),
   // Whole-map replacement for the new instance config. Patching individual
   // entries is intentionally out of scope: the map is small, and partial
   // patches risk leaving driver-specific config in a half-merged state.

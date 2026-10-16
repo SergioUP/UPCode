@@ -16,6 +16,19 @@ type AzureItem = {
   _links?: { html?: { href?: string } };
   relations?: AzureRelation[];
 };
+type AzureIterationNode = {
+  name?: string;
+  path?: string;
+  attributes?: { startDate?: string; finishDate?: string; timeFrame?: string };
+  children?: AzureIterationNode[];
+};
+/** One sprint of the project's iteration tree, as the work items need it. */
+type AzureIteration = {
+  name: string;
+  path: string;
+  startDate: string | null;
+  finishDate: string | null;
+};
 
 const HIDDEN_FIELDS = new Set([
   "System.Id",
@@ -63,6 +76,9 @@ const identity = (value: unknown): string | null =>
     : value && typeof value === "object"
       ? text((value as { displayName?: unknown }).displayName) || null
       : null;
+/** ADO hands back a full identity object; the avatar and the unique name hang off it. */
+const identityProperty = (value: unknown, key: string): string | null =>
+  value && typeof value === "object" ? text((value as Record<string, unknown>)[key]) || null : null;
 const fieldText = (value: unknown): string | null => {
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   if (typeof value === "string") {
@@ -222,14 +238,20 @@ export const make = Effect.gen(function* () {
   );
   const toWorkItem = (organization: string, item: AzureItem) => {
     const project = text(field(item, "System.TeamProject"));
+    const assignedTo = field(item, "System.AssignedTo");
+    const parent = Number(field(item, "System.Parent"));
     return {
       id: item.id,
       project,
       title: text(field(item, "System.Title")),
       type: text(field(item, "System.WorkItemType")),
       state: text(field(item, "System.State")),
-      assignedTo: identity(field(item, "System.AssignedTo")),
+      assignedTo: identity(assignedTo),
+      assignedToAvatar: identityProperty(assignedTo, "imageUrl"),
+      assignedToEmail: identityProperty(assignedTo, "uniqueName"),
       iteration: text(field(item, "System.IterationPath")) || null,
+      area: text(field(item, "System.AreaPath")) || null,
+      parentId: Number.isSafeInteger(parent) && parent > 0 ? parent : null,
       description: text(field(item, "System.Description")) || null,
       url:
         item._links?.html?.href ??
@@ -238,7 +260,7 @@ export const make = Effect.gen(function* () {
     };
   };
   const workItemFields =
-    "System.Title,System.TeamProject,System.WorkItemType,System.State,System.AssignedTo,System.IterationPath,System.Description,System.ChangedDate";
+    "System.Title,System.TeamProject,System.WorkItemType,System.State,System.AssignedTo,System.IterationPath,System.AreaPath,System.Parent,System.Description,System.ChangedDate";
   const optional = <A>(effect: Effect.Effect<A, AzureDevOpsWorkspaceError>, fallback: A) =>
     effect.pipe(Effect.orElseSucceed(() => fallback));
   const loadComments = (project: string, id: number) =>
@@ -273,30 +295,92 @@ export const make = Effect.gen(function* () {
       ),
       [],
     );
+  /**
+   * The board columns come from here: ADO owns both the list and the colours, so
+   * a process change reaches the UI without a code change.
+   */
+  const listStates = (project: string, type: string) =>
+    request({ path: path(project, `wit/workitemtypes/${encode(type)}/states`) }).pipe(
+      Effect.map((result) =>
+        (
+          (result as { value?: Array<{ name?: string; color?: string; category?: string }> })
+            .value ?? []
+        ).flatMap((state) =>
+          state.name
+            ? [
+                {
+                  name: state.name,
+                  color: (state.color ?? "").replace("#", ""),
+                  category: state.category ?? "",
+                },
+              ]
+            : [],
+        ),
+      ),
+    );
+  /**
+   * `System.IterationPath` drops the `Iteration` folder the classification tree
+   * carries, so the tree node has to be rewritten to match work items by string.
+   */
+  const iterationPath = (nodePath: string): string => {
+    const segments = nodePath.split("\\").filter((segment) => segment.length > 0);
+    const [project, ...rest] = segments;
+    if (rest[0] === "Iteration") rest.shift();
+    return [project ?? "", ...rest].join("\\");
+  };
+  const flattenIterations = (nodes: readonly AzureIterationNode[]): AzureIteration[] =>
+    nodes.flatMap((node) => {
+      const name = text(node.name);
+      const nodePath = text(node.path);
+      if (!name || !nodePath) return [];
+      const segments = nodePath.split("\\").filter((segment) => segment.length > 0);
+      // The tree's root is the `Iteration` folder itself, not a sprint.
+      const isRoot = segments.at(-1) === "Iteration";
+      return [
+        ...(isRoot
+          ? []
+          : [
+              {
+                name,
+                path: iterationPath(nodePath),
+                startDate: node.attributes?.startDate ?? null,
+                finishDate: node.attributes?.finishDate ?? null,
+              },
+            ]),
+        ...flattenIterations(node.children ?? []),
+      ];
+    });
+  /**
+   * The project tree, not the team's iterations: UPANGO assigns only a handful of
+   * sprints to a team, and the items live in sprints that team does not list.
+   */
+  const listIterations = (project: string) =>
+    request({ path: path(project, "wit/classificationnodes/iterations?$depth=5") }).pipe(
+      Effect.map((result) => flattenIterations([result as AzureIterationNode])),
+    );
   const loadStates = (project: string, type: string) =>
-    type
-      ? optional(
-          request({ path: path(project, `wit/workitemtypes/${encode(type)}/states`) }).pipe(
-            Effect.map((result) =>
-              (
-                (result as { value?: Array<{ name?: string; color?: string; category?: string }> })
-                  .value ?? []
-              ).flatMap((state) =>
-                state.name
-                  ? [
-                      {
-                        name: state.name,
-                        color: (state.color ?? "").replace("#", ""),
-                        category: state.category ?? "",
-                      },
-                    ]
-                  : [],
-              ),
-            ),
-          ),
-          [],
-        )
-      : Effect.succeed([]);
+    type ? optional(listStates(project, type), []) : Effect.succeed([]);
+  /**
+   * Sprints travel with the items: the calendar and the sprint selector read the
+   * dates from the work items themselves, so the board costs one extra ADO call
+   * for the project's iteration tree and nothing else.
+   */
+  const withIterationDates = <A extends { iteration: string | null }>(
+    project: string,
+    items: readonly A[],
+  ) =>
+    Effect.gen(function* () {
+      const tree = yield* optional(listIterations(project), []);
+      const byPath = new Map(tree.map((iteration) => [iteration.path, iteration]));
+      return items.map((item) => {
+        const sprint = item.iteration ? byPath.get(item.iteration) : undefined;
+        return {
+          ...item,
+          iterationStart: sprint?.startDate ?? null,
+          iterationFinish: sprint?.finishDate ?? null,
+        };
+      });
+    });
   const loadFieldLabels = (project: string, type: string) =>
     type
       ? optional(
@@ -361,7 +445,6 @@ export const make = Effect.gen(function* () {
         .slice(0, 24);
       return {
         ...base,
-        area: text(field(item, "System.AreaPath")) || null,
         reason: text(field(item, "System.Reason")) || null,
         priority: text(field(item, "Microsoft.VSTS.Common.Priority")) || null,
         createdBy: identity(field(item, "System.CreatedBy")),
@@ -380,10 +463,22 @@ export const make = Effect.gen(function* () {
         fields,
       };
     });
-  const listWorkItems = (project: string, assignedToMe: boolean, query?: string) =>
+  const listWorkItems = (
+    project: string,
+    assignedToMe: boolean,
+    query?: string,
+    type?: string,
+    iteration?: string,
+  ) =>
     Effect.gen(function* () {
       const { organization } = yield* credentials;
-      const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project${assignedToMe ? " AND [System.AssignedTo] = @Me" : ""}${workItemSearchClause(query)} ORDER BY [System.ChangedDate] DESC`;
+      const typeClause = type?.trim()
+        ? ` AND [System.WorkItemType] = '${wiqlLiteral(type.trim())}'`
+        : "";
+      const iterationClause = iteration?.trim()
+        ? ` AND [System.IterationPath] = '${wiqlLiteral(iteration.trim())}'`
+        : "";
+      const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project${assignedToMe ? " AND [System.AssignedTo] = @Me" : ""}${typeClause}${iterationClause}${workItemSearchClause(query)} ORDER BY [System.ChangedDate] DESC`;
       const result = (yield* request({
         path: path(project, "wit/wiql?$top=100"),
         method: "POST",
@@ -397,7 +492,10 @@ export const make = Effect.gen(function* () {
       const batch = (yield* request({
         path: path(project, `wit/workitems?ids=${ids.join(",")}&fields=${encode(workItemFields)}`),
       })) as { value?: AzureItem[] };
-      return (batch.value ?? []).map((item) => toWorkItem(organization, item));
+      return yield* withIterationDates(
+        project,
+        (batch.value ?? []).map((item) => toWorkItem(organization, item)),
+      );
     });
   const listAssignedWorkItems = () =>
     Effect.gen(function* () {
@@ -567,6 +665,9 @@ export const make = Effect.gen(function* () {
     state?: string;
     title?: string;
     description?: string;
+    assignedTo?: string | null;
+    areaPath?: string;
+    iterationPath?: string;
   }) =>
     Effect.gen(function* () {
       if (input.title !== undefined && !input.title.trim())
@@ -584,6 +685,18 @@ export const make = Effect.gen(function* () {
           : []),
         ...(input.state?.trim()
           ? [{ op: "add", path: "/fields/System.State", value: input.state.trim() }]
+          : []),
+        // An empty identity removes the field; ADO rejects an empty string here.
+        ...(input.assignedTo === undefined
+          ? []
+          : input.assignedTo?.trim()
+            ? [{ op: "add", path: "/fields/System.AssignedTo", value: input.assignedTo.trim() }]
+            : [{ op: "remove", path: "/fields/System.AssignedTo" }]),
+        ...(input.areaPath?.trim()
+          ? [{ op: "add", path: "/fields/System.AreaPath", value: input.areaPath.trim() }]
+          : []),
+        ...(input.iterationPath?.trim()
+          ? [{ op: "add", path: "/fields/System.IterationPath", value: input.iterationPath.trim() }]
           : []),
         ...(input.comment?.trim()
           ? [{ op: "add", path: "/fields/System.History", value: input.comment.trim() }]
