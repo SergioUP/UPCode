@@ -28,6 +28,7 @@ import * as RpcMiddleware from "effect/rpc/RpcMiddleware";
 import {
   AzureDevOpsAzCliStatus,
   AzureDevOpsBranch,
+  AzureDevOpsIssueLabels,
   AzureDevOpsProject,
   AzureDevOpsPullRequest,
   AzureDevOpsPullRequestDetail,
@@ -837,6 +838,10 @@ const WsAzureDevOpsListWorkItemsRpc = Rpc.make(WS_METHODS.azureDevOpsListWorkIte
     assignedToMe: Schema.Boolean,
     /** Free-text search: digits jump to an ID, anything else matches the title. */
     query: Schema.optionalKey(Schema.String),
+    /** Work-item type display name, such as `Sub Tarea`. Omitted means every type. */
+    type: Schema.optionalKey(Schema.String),
+    /** ADO iteration path, such as `UPANGO PROYECTOS INTERNOS\12.10-23.10-26`. */
+    iteration: Schema.optionalKey(Schema.String),
   }),
   success: Schema.Array(AzureDevOpsWorkItem),
   error: azureReadError,
@@ -896,6 +901,10 @@ const WsAzureDevOpsUpdateWorkItemRpc = Rpc.make(WS_METHODS.azureDevOpsUpdateWork
     state: Schema.optionalKey(Schema.String),
     title: Schema.optionalKey(Schema.String),
     description: Schema.optionalKey(Schema.String),
+    /** Identity by unique name, such as `sergio.moreno@upango.es`, or `null` to unassign. */
+    assignedTo: Schema.optionalKey(Schema.NullOr(Schema.String)),
+    areaPath: Schema.optionalKey(Schema.String),
+    iterationPath: Schema.optionalKey(Schema.String),
   }),
   success: AzureDevOpsWorkItem,
   error: azureReadError,

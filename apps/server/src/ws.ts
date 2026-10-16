@@ -2440,7 +2440,13 @@ const layerWsRpc = (
         [WS_METHODS.azureDevOpsConfig]: () => azureDevOpsWorkspace.config,
         [WS_METHODS.azureDevOpsListProjects]: () => azureDevOpsWorkspace.listProjects,
         [WS_METHODS.azureDevOpsListWorkItems]: (input) =>
-          azureDevOpsWorkspace.listWorkItems(input.project, input.assignedToMe, input.query),
+          azureDevOpsWorkspace.listWorkItems(
+            input.project,
+            input.assignedToMe,
+            input.query,
+            input.type,
+            input.iteration,
+          ),
         [WS_METHODS.azureDevOpsMyWorkItems]: () => azureDevOpsWorkspace.listAssignedWorkItems(),
         [WS_METHODS.azureDevOpsAzCliStatus]: () => azureDevOpsAzCli.status(),
         [WS_METHODS.azureDevOpsAzCliOpen]: () => azureDevOpsAzCli.open(),
