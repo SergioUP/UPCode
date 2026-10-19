@@ -35,9 +35,6 @@ import { Route as ProjectsProjectKeyRouteImport } from './routes/projects.$proje
 import { Route as ChatPullRequestsRouteImport } from './routes/_chat.pull-requests'
 import { Route as ChatNewRouteImport } from './routes/_chat.new'
 import { Route as ChatIssuesRouteImport } from './routes/_chat.issues'
-import { Route as ChatIncidentsRouteImport } from './routes/_chat.incidents'
-import { Route as ChatAzureDevopsRouteImport } from './routes/_chat.azure-devops'
-import { Route as ChatAzureDashboardRouteImport } from './routes/_chat.azure-dashboard'
 import { Route as ChatDraftDraftIdRouteImport } from './routes/_chat.draft.$draftId'
 import { Route as ChatEnvironmentIdThreadIdRouteImport } from './routes/_chat.$environmentId.$threadId'
 
@@ -171,21 +168,6 @@ const ChatIssuesRoute = ChatIssuesRouteImport.update({
   path: '/issues',
   getParentRoute: () => ChatRoute,
 } as any)
-const ChatIncidentsRoute = ChatIncidentsRouteImport.update({
-  id: '/incidents',
-  path: '/incidents',
-  getParentRoute: () => ChatRoute,
-} as any)
-const ChatAzureDevopsRoute = ChatAzureDevopsRouteImport.update({
-  id: '/azure-devops',
-  path: '/azure-devops',
-  getParentRoute: () => ChatRoute,
-} as any)
-const ChatAzureDashboardRoute = ChatAzureDashboardRouteImport.update({
-  id: '/azure-dashboard',
-  path: '/azure-dashboard',
-  getParentRoute: () => ChatRoute,
-} as any)
 const ChatDraftDraftIdRoute = ChatDraftDraftIdRouteImport.update({
   id: '/draft/$draftId',
   path: '/draft/$draftId',
@@ -206,9 +188,6 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
-  '/azure-dashboard': typeof ChatAzureDashboardRoute
-  '/azure-devops': typeof ChatAzureDevopsRoute
-  '/incidents': typeof ChatIncidentsRoute
   '/issues': typeof ChatIssuesRoute
   '/new': typeof ChatNewRoute
   '/pull-requests': typeof ChatPullRequestsRoute
@@ -237,9 +216,6 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
-  '/azure-dashboard': typeof ChatAzureDashboardRoute
-  '/azure-devops': typeof ChatAzureDevopsRoute
-  '/incidents': typeof ChatIncidentsRoute
   '/issues': typeof ChatIssuesRoute
   '/new': typeof ChatNewRoute
   '/pull-requests': typeof ChatPullRequestsRoute
@@ -271,9 +247,6 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
-  '/_chat/azure-dashboard': typeof ChatAzureDashboardRoute
-  '/_chat/azure-devops': typeof ChatAzureDevopsRoute
-  '/_chat/incidents': typeof ChatIncidentsRoute
   '/_chat/issues': typeof ChatIssuesRoute
   '/_chat/new': typeof ChatNewRoute
   '/_chat/pull-requests': typeof ChatPullRequestsRoute
@@ -306,9 +279,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/usage'
     | '/welcome'
-    | '/azure-dashboard'
-    | '/azure-devops'
-    | '/incidents'
     | '/issues'
     | '/new'
     | '/pull-requests'
@@ -337,9 +307,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/usage'
     | '/welcome'
-    | '/azure-dashboard'
-    | '/azure-devops'
-    | '/incidents'
     | '/issues'
     | '/new'
     | '/pull-requests'
@@ -370,9 +337,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/usage'
     | '/welcome'
-    | '/_chat/azure-dashboard'
-    | '/_chat/azure-devops'
-    | '/_chat/incidents'
     | '/_chat/issues'
     | '/_chat/new'
     | '/_chat/pull-requests'
@@ -591,27 +555,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatIssuesRouteImport
       parentRoute: typeof ChatRoute
     }
-    '/_chat/incidents': {
-      id: '/_chat/incidents'
-      path: '/incidents'
-      fullPath: '/incidents'
-      preLoaderRoute: typeof ChatIncidentsRouteImport
-      parentRoute: typeof ChatRoute
-    }
-    '/_chat/azure-devops': {
-      id: '/_chat/azure-devops'
-      path: '/azure-devops'
-      fullPath: '/azure-devops'
-      preLoaderRoute: typeof ChatAzureDevopsRouteImport
-      parentRoute: typeof ChatRoute
-    }
-    '/_chat/azure-dashboard': {
-      id: '/_chat/azure-dashboard'
-      path: '/azure-dashboard'
-      fullPath: '/azure-dashboard'
-      preLoaderRoute: typeof ChatAzureDashboardRouteImport
-      parentRoute: typeof ChatRoute
-    }
     '/_chat/draft/$draftId': {
       id: '/_chat/draft/$draftId'
       path: '/draft/$draftId'
@@ -630,9 +573,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface ChatRouteChildren {
-  ChatAzureDashboardRoute: typeof ChatAzureDashboardRoute
-  ChatAzureDevopsRoute: typeof ChatAzureDevopsRoute
-  ChatIncidentsRoute: typeof ChatIncidentsRoute
   ChatIssuesRoute: typeof ChatIssuesRoute
   ChatNewRoute: typeof ChatNewRoute
   ChatPullRequestsRoute: typeof ChatPullRequestsRoute
@@ -642,9 +582,6 @@ interface ChatRouteChildren {
 }
 
 const ChatRouteChildren: ChatRouteChildren = {
-  ChatAzureDashboardRoute: ChatAzureDashboardRoute,
-  ChatAzureDevopsRoute: ChatAzureDevopsRoute,
-  ChatIncidentsRoute: ChatIncidentsRoute,
   ChatIssuesRoute: ChatIssuesRoute,
   ChatNewRoute: ChatNewRoute,
   ChatPullRequestsRoute: ChatPullRequestsRoute,

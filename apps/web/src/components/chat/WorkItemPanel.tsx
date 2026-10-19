@@ -8,6 +8,8 @@ import { useEnvironmentQuery } from "../../state/query";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { Button } from "../ui/button";
 import { WorkItemDetail } from "./WorkItemDetail";
+import { stateVeil } from "../issues/issueVisuals";
+import { WORK_ITEM_BLUE } from "./workItemVisuals";
 
 export function WorkItemPanel({
   environmentId,
@@ -72,7 +74,7 @@ export function WorkItemPanel({
     return (
       <div className="flex h-full flex-col gap-3 bg-background p-4 text-sm">
         <h2 className="flex items-center gap-2 font-medium">
-          <ClipboardListIcon className="size-4 text-primary" /> Work item
+          <ClipboardListIcon className="size-4" style={{ color: WORK_ITEM_BLUE }} /> Work item
         </h2>
         <p className="text-muted-foreground">
           {config.isPending
@@ -167,7 +169,13 @@ export function WorkItemPanel({
                       active ? "bg-primary/10" : "hover:bg-muted"
                     }`}
                   >
-                    <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-2xs font-medium text-primary">
+                    <span
+                      className="shrink-0 rounded-full px-2 py-0.5 text-2xs font-medium"
+                      style={{
+                        backgroundColor: stateVeil(WORK_ITEM_BLUE, 18),
+                        color: WORK_ITEM_BLUE,
+                      }}
+                    >
                       #{entry.id}
                     </span>
                     <span className="min-w-0">

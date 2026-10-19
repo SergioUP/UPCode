@@ -64,7 +64,7 @@ function IssuesHeader({ subtitle }: { readonly subtitle?: string }) {
         <ArrowLeftIcon className="size-3.5" />
         Volver
       </Button>
-      <h1 className="text-base font-semibold">Issues</h1>
+      <h1 className="text-base font-semibold">DevOps</h1>
       {subtitle ? <span className="text-xs text-muted-foreground">{subtitle}</span> : null}
     </WorkspacePageHeader>
   );

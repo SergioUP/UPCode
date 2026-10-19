@@ -1,12 +1,4 @@
-import {
-  ArrowLeftIcon,
-  ChartNoAxesColumnIcon,
-  LayoutDashboardIcon,
-  SettingsIcon,
-  ShieldAlertIcon,
-  SquareKanbanIcon,
-  ListTodoIcon,
-} from "lucide-react";
+import { ArrowLeftIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
@@ -14,7 +6,7 @@ import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEnvironmentIdentificationMode } from "../../hooks/useSettings";
 import { cn } from "../../lib/utils";
 import { usePullRequestsSupported } from "../../state/environments";
-import { T3Wordmark } from "../T3Wordmark";
+import { UpMark } from "../UpMark";
 import {
   resolveEnvironmentIdentificationPillLabel,
   resolveSidebarStageBackdropVariant,
@@ -36,6 +28,7 @@ import { isSidebarUtilityPage, useNavigateToMainApp } from "./mainAppLocation";
 import { SidebarThreadUndoNotice } from "./SidebarThreadUndoNotice";
 import { SidebarProviderUpdatePill } from "./SidebarProviderUpdatePill";
 import { SidebarUpdateArchitectureWarning, SidebarUpdatePill } from "./SidebarUpdatePill";
+import { AzureDevOpsIcon } from "~/components/Icons";
 import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
 import { observeResize } from "~/lib/observeResize";
 
@@ -138,7 +131,7 @@ function SidebarBrandMark({ onBackdrop }: { onBackdrop: boolean }) {
     // Center the visible capitals, without the font's ascender/descender space.
     // Padding keeps ascenders and round-letter overshoot inside the truncation clip.
     <span className="inline-flex min-w-0 items-baseline gap-1 text-sm font-medium tracking-tight">
-      <T3Wordmark aria-label="T3" className="h-[1cap] w-auto shrink-0" />
+      <UpMark aria-label="UP" className="h-[1cap] w-auto shrink-0" />
       <span
         className={cn(
           "truncate [text-box:trim-both_cap_alphabetic] supports-[text-box:trim-both_cap_alphabetic]:py-1",
@@ -200,9 +193,9 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     closeMobileSidebar();
     void navigate({ to: "/settings" });
   }, [closeMobileSidebar, navigate]);
-  const handleAzureDevOpsClick = useCallback(() => {
+  const handleDevOpsClick = useCallback(() => {
     closeMobileSidebar();
-    void navigate({ to: "/azure-devops" });
+    void navigate({ to: "/issues" });
   }, [closeMobileSidebar, navigate]);
 
   const handleUsageClick = useCallback(() => {
@@ -211,21 +204,6 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     }
     void navigate({ to: "/usage" });
   }, [isMobile, navigate, setOpenMobile]);
-
-  const handleAzureDashboardClick = useCallback(() => {
-    closeMobileSidebar();
-    void navigate({ to: "/azure-dashboard" });
-  }, [closeMobileSidebar, navigate]);
-
-  const handleIncidentsClick = useCallback(() => {
-    closeMobileSidebar();
-    void navigate({ to: "/incidents" });
-  }, [closeMobileSidebar, navigate]);
-
-  const handleIssuesClick = useCallback(() => {
-    closeMobileSidebar();
-    void navigate({ to: "/issues" });
-  }, [closeMobileSidebar, navigate]);
 
   const handleBackClick = useCallback(() => {
     closeMobileSidebar();
@@ -249,14 +227,9 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             onClick={handleSettingsClick}
           />
           <SidebarUtilityItem
-            icon={<ListTodoIcon />}
-            label="Azure DevOps"
-            onClick={handleAzureDevOpsClick}
-          />
-          <SidebarUtilityItem
-            icon={<SquareKanbanIcon />}
-            label="Issues"
-            onClick={handleIssuesClick}
+            icon={<AzureDevOpsIcon className="size-4" />}
+            label="DevOps"
+            onClick={handleDevOpsClick}
           />
           {pullRequestsSupported ? (
             <SidebarUtilityItem
@@ -269,16 +242,6 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             icon={<ChartNoAxesColumnIcon />}
             label="Usage"
             onClick={handleUsageClick}
-          />
-          <SidebarUtilityItem
-            icon={<LayoutDashboardIcon />}
-            label="Azure Dashboard"
-            onClick={handleAzureDashboardClick}
-          />
-          <SidebarUtilityItem
-            icon={<ShieldAlertIcon className="text-error" />}
-            label="Incidents"
-            onClick={handleIncidentsClick}
           />
         </>
       )}
