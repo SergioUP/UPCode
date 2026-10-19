@@ -16,6 +16,8 @@ import { Button } from "../ui/button";
 import { WORK_ITEM_HTML_CLASS, workItemHtml } from "./workItemHtml";
 import { azureWorkItemFailureNotice } from "./azureWorkItemNotice";
 import { workItemAzureUrl } from "./ThreadWorkItemControl";
+import { WORK_ITEM_BLUE } from "./workItemVisuals";
+import { stateVeil } from "../issues/issueVisuals";
 
 const stateColor = (color: string) =>
   /^[0-9a-fA-F]{6}$/.test(color) ? `#${color}` : "var(--primary)";
@@ -148,8 +150,10 @@ export function WorkItemDetail({
   return (
     <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
       <header className="flex shrink-0 items-center gap-2 border-b px-4 py-3">
-        <ClipboardListIcon className="size-4 text-primary" />
-        <span className="text-sm font-medium">Work item</span>
+        <ClipboardListIcon className="size-4" style={{ color: WORK_ITEM_BLUE }} />
+        <span className="text-sm font-medium" style={{ color: WORK_ITEM_BLUE }}>
+          Work item
+        </span>
         <a
           href={workItemAzureUrl({ organization, project, workItemId })}
           target="_blank"
@@ -174,7 +178,10 @@ export function WorkItemDetail({
             <div>
               <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <span>#{item.id}</span>
-                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-primary">
+                <span
+                  className="rounded-full px-2 py-0.5"
+                  style={{ backgroundColor: stateVeil(WORK_ITEM_BLUE, 18), color: WORK_ITEM_BLUE }}
+                >
                   {item.type}
                 </span>
                 <span>{item.project}</span>
