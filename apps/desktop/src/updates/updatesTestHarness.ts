@@ -213,7 +213,10 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
   const updateRestartMarkers = new Set<string>();
   const layerFileSystem = FileSystem.layerNoop({
     readFileString: (path) =>
-      path === "/missing/resources/package-type" && options.packageType !== undefined
+      // `environment.path` joins with the host separator, so on Windows the marker
+      // arrives with a backslash and the fixture would never match.
+      path.replaceAll("\\", "/") === "/missing/resources/package-type" &&
+      options.packageType !== undefined
         ? Effect.succeed(options.packageType)
         : Effect.fail(
             PlatformError.systemError({
