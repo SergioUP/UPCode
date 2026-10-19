@@ -49,6 +49,21 @@ Verify every result is 1024×1024 and has the classic macOS safe area: an 824×8
 
 Do not edit the generated PNG or ICO files directly.
 
+## UPCode fork
+
+The tracked exports carry the **UPCode** mark (a black rounded tile with the white
+`UP` monogram), not the T3 artwork. Two caveats before touching anything here:
+
+- The three Icon Composer projects still hold the T3 layers, so **do not run
+  `vp run icons:export` or `icons:check`** until `Assets/text.svg` is redrawn with
+  the UP monogram. A run would silently put T3 back in every surface.
+- The exports and the copies in `apps/web/public` were generated on Windows from
+  the UP logo artwork: tile corner radius 22.37%, mark 70% of the canvas width,
+  the macOS rendition inset 100px for the classic safe area, and the iOS rendition
+  a full square because iOS masks the corners itself and rejects alpha.
+- The file names still say `blueprint-*`, `nightly-*` and `t3-black-*`. They are
+  the same art in all three brands until the projects are redrawn and renamed.
+
 ## Android launcher and splash artwork
 
 Android masks the central 72dp of a 108dp adaptive canvas, and the Android 12+ splash screen masks
