@@ -11,13 +11,8 @@ import { WorkspacePageHeader } from "../components/WorkspacePageHeader";
 import { Button } from "../components/ui/button";
 import { azureWorkItemFailureNotice } from "../components/chat/azureWorkItemNotice";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
-import {
-  ClipboardListIcon,
-  FolderGit2Icon,
-  GitPullRequestIcon,
-  SearchIcon,
-  UserRoundIcon,
-} from "lucide-react";
+import { ClipboardListIcon, FolderGit2Icon, SearchIcon, UserRoundIcon } from "lucide-react";
+import { PullRequestGlyph } from "../components/pullRequest/pullRequestIcons";
 
 export const Route = createFileRoute("/_chat/azure-devops")({ component: AzureDevOpsPage });
 
@@ -221,7 +216,7 @@ function AzureDevOpsPage() {
           {config.data?.organization ?? "Sin conectar"}
         </span>
       </WorkspacePageHeader>
-      <main className="h-[calc(100vh-var(--workspace-topbar-height))] overflow-y-auto px-5 py-5">
+      <main className="h-[calc(100vh-var(--workspace-topbar-height))] overflow-y-auto px-5 py-5 scrollbar-gutter-both">
         {!environmentId ? (
           <p>Conecta un entorno para consultar Azure DevOps.</p>
         ) : !tokenReady ? (
@@ -289,7 +284,7 @@ function AzureDevOpsPage() {
                   ["mine", "Mi trabajo", UserRoundIcon],
                   ["work-items", "Work Items", ClipboardListIcon],
                   ["repositories", "Repositorios", FolderGit2Icon],
-                  ["pull-requests", "Pull Requests", GitPullRequestIcon],
+                  ["pull-requests", "Pull Requests", PullRequestGlyph.pullRequest],
                 ] as const
               ).map(([key, label, Icon]) => (
                 <Button
@@ -326,7 +321,7 @@ function AzureDevOpsPage() {
                         setSearch(event.target.value);
                         setItemId(null);
                       }}
-                      className="w-full rounded border bg-background py-2 pl-8 pr-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="w-full rounded border bg-background py-2 pl-8 pr-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
                     />
                   </div>
                   {workItems.error && <p className="text-sm text-destructive">{workItems.error}</p>}
@@ -351,7 +346,7 @@ function AzureDevOpsPage() {
                         setShowWritePreview(false);
                       }}
                     >
-                      <span className="flex flex-wrap gap-1 text-[11px]">
+                      <span className="flex flex-wrap gap-1 text-2xs">
                         <span className="rounded-full bg-primary/15 px-2 py-0.5 text-primary">
                           #{item.id}
                         </span>

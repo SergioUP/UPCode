@@ -276,7 +276,7 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             onClick={handleAzureDashboardClick}
           />
           <SidebarUtilityItem
-            icon={<ShieldAlertIcon className="text-red-500" />}
+            icon={<ShieldAlertIcon className="text-error" />}
             label="Incidents"
             onClick={handleIncidentsClick}
           />

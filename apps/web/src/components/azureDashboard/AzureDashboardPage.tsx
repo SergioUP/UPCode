@@ -5,7 +5,6 @@ import {
   CircleAlertIcon,
   ClipboardListIcon,
   ExternalLinkIcon,
-  GitPullRequestIcon,
   LayoutDashboardIcon,
   RefreshCwIcon,
   ServerIcon,
@@ -22,6 +21,7 @@ import { WorkspacePageHeader } from "../WorkspacePageHeader";
 import { Button } from "../ui/button";
 import { WorkItemDetail } from "../chat/WorkItemDetail";
 import { PullRequestDetailPanel } from "../pullRequest/PullRequestDetailPanel";
+import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
 import { isElectron } from "../../env";
 
 type StateCategory = "new" | "active" | "blocked" | "review" | "done" | "removed";
@@ -77,7 +77,7 @@ function Kpi({
         {label}
       </div>
       <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
-      <div className="text-[11px] text-muted-foreground">{hint}</div>
+      <div className="text-2xs text-muted-foreground">{hint}</div>
     </div>
   );
 }
@@ -223,7 +223,7 @@ export function AzureDashboardPage() {
           <Button variant="ghost" size="sm" onClick={() => setSelectedPr(null)}>
             <ArrowLeftIcon /> Volver
           </Button>
-          <GitPullRequestIcon className="size-4 text-amber-500" />
+          <PullRequestGlyph.pullRequest className="size-4 text-warning" />
           <span className="text-sm text-muted-foreground">Pull request #{selectedPr.number}</span>
         </WorkspacePageHeader>
         <div className="h-[calc(100vh-var(--workspace-topbar-height))]">
@@ -317,7 +317,7 @@ export function AzureDashboardPage() {
                 color="#818cf8"
               />
               <Kpi
-                icon={<GitPullRequestIcon className="size-3.5" />}
+                icon={<PullRequestGlyph.pullRequest className="size-3.5" />}
                 label="PR activos"
                 value={prs.length}
                 hint={project ? project : "elige un proyecto"}
@@ -351,10 +351,10 @@ export function AzureDashboardPage() {
                 <header className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
                   <ClipboardListIcon className="size-4 text-primary" />
                   <h2 className="text-sm font-semibold">Tus work items</h2>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-2xs text-muted-foreground">
                     {items.length}
                   </span>
-                  <span className="ml-auto text-[11px] text-muted-foreground">
+                  <span className="ml-auto text-2xs text-muted-foreground">
                     ordenado por última actualización
                   </span>
                 </header>
@@ -373,7 +373,7 @@ export function AzureDashboardPage() {
                       key={key}
                       type="button"
                       onClick={() => setFilter(key)}
-                      className={`rounded-full px-2.5 py-1 text-[11.5px] ${
+                      className={`rounded-full px-2.5 py-1 text-2xs ${
                         filter === key
                           ? "bg-primary/15 font-medium text-primary"
                           : "text-muted-foreground hover:bg-muted"
@@ -400,7 +400,7 @@ export function AzureDashboardPage() {
                           style={{ borderLeftColor: STATE_CATEGORY[category].color }}
                         >
                           <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                            <div className="flex flex-wrap items-center gap-1.5 text-2xs">
                               <span className="font-semibold text-primary">#{item.id}</span>
                               <span className="rounded-full bg-muted px-2 py-0.5">{item.type}</span>
                               {!project ? (
@@ -409,10 +409,8 @@ export function AzureDashboardPage() {
                                 </span>
                               ) : null}
                             </div>
-                            <div className="mt-0.5 truncate text-[13px] font-medium">
-                              {item.title}
-                            </div>
-                            <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+                            <div className="mt-0.5 truncate text-sm font-medium">{item.title}</div>
+                            <div className="mt-0.5 flex items-center gap-2 text-2xs text-muted-foreground">
                               <span
                                 className="inline-flex items-center gap-1"
                                 style={{ color: STATE_CATEGORY[category].color }}
@@ -437,29 +435,29 @@ export function AzureDashboardPage() {
               <div className="flex min-h-0 flex-col gap-3">
                 <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-card">
                   <header className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
-                    <GitPullRequestIcon className="size-4 text-amber-500" />
+                    <PullRequestGlyph.pullRequest className="size-4 text-warning" />
                     <h2 className="text-sm font-semibold">Pull requests</h2>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-2xs text-muted-foreground">
                       {prs.length}
                     </span>
                     <Link
                       to="/settings/source-control"
                       title="Configurar Azure DevOps, PRs y credenciales"
-                      className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                      className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-2xs text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
                       <SettingsIcon className="size-3.5" /> Configurar
                     </Link>
                   </header>
                   <div className="min-h-0 flex-1 overflow-y-auto">
                     {prNotice ? (
-                      <p className="border-b bg-muted/40 px-4 py-2 text-[12px] text-muted-foreground">
+                      <p className="border-b bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
                         {prNotice}
                       </p>
                     ) : null}
                     {pullRequests.error ? (
                       <p className="p-4 text-sm text-destructive">{pullRequests.error}</p>
                     ) : !project ? (
-                      <p className="p-4 text-[12.5px] text-muted-foreground">
+                      <p className="p-4 text-xs text-muted-foreground">
                         Elige un proyecto arriba para ver sus pull requests activos. En "Todos" los
                         PR llegan con la canalización de T3.
                       </p>
@@ -476,15 +474,15 @@ export function AzureDashboardPage() {
                           className="block w-full border-b px-4 py-2.5 text-left hover:bg-muted/60"
                         >
                           <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-semibold text-primary">#{pr.id}</span>
-                            <span className="truncate text-[13px] font-medium">{pr.title}</span>
+                            <span className="text-2xs font-semibold text-primary">#{pr.id}</span>
+                            <span className="truncate text-sm font-medium">{pr.title}</span>
                             {pr.isDraft ? (
-                              <span className="ml-auto shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                              <span className="ml-auto shrink-0 rounded-full bg-muted px-2 py-0.5 text-3xs text-muted-foreground">
                                 borrador
                               </span>
                             ) : null}
                           </div>
-                          <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
+                          <div className="mt-0.5 truncate font-mono text-2xs text-muted-foreground">
                             {pr.targetBranch} ← {pr.sourceBranch} · {pr.createdBy} · {pr.status}
                           </div>
                         </button>
@@ -497,11 +495,11 @@ export function AzureDashboardPage() {
                   <div className="flex items-center gap-2">
                     <ClipboardListIcon className="size-4 text-muted-foreground" />
                     <h2 className="text-sm font-semibold">Jira</h2>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-2xs text-muted-foreground">
                       Próximamente
                     </span>
                   </div>
-                  <p className="mt-1.5 text-[12px] text-muted-foreground">
+                  <p className="mt-1.5 text-xs text-muted-foreground">
                     Conecta tu token de Jira en Ajustes → Integraciones para ver tus issues junto a
                     los de Azure.
                   </p>
@@ -512,18 +510,18 @@ export function AzureDashboardPage() {
             <div className="grid shrink-0 gap-3" style={{ gridTemplateColumns: "1.6fr 1fr" }}>
               <section className="overflow-hidden rounded-xl border bg-card">
                 <header className="flex items-center gap-2 border-b px-4 py-2">
-                  <LayoutDashboardIcon className="size-3.5 text-emerald-500" />
+                  <LayoutDashboardIcon className="size-3.5 text-success" />
                   <h2 className="text-sm font-semibold">Tus hilos activos</h2>
                 </header>
                 {activeThreads.length === 0 ? (
-                  <p className="px-4 py-3 text-[12.5px] text-muted-foreground">
+                  <p className="px-4 py-3 text-xs text-muted-foreground">
                     Sin hilos activos en este equipo.
                   </p>
                 ) : (
                   <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2.5">
                     {activeThreads.slice(0, 6).map((thread) => (
-                      <span key={thread.id} className="flex items-center gap-2 text-[12.5px]">
-                        <span className="size-1.5 rounded-full bg-emerald-500" />
+                      <span key={thread.id} className="flex items-center gap-2 text-xs">
+                        <span className="size-1.5 rounded-full bg-success" />
                         {thread.title || thread.id}
                       </span>
                     ))}
@@ -551,7 +549,7 @@ export function AzureDashboardPage() {
                       ) : null,
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-2xs text-muted-foreground">
                     {(["active", "review", "blocked", "done"] as StateCategory[]).map(
                       (category) => (
                         <span key={category} className="inline-flex items-center gap-1">

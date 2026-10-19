@@ -37,8 +37,8 @@ import ChatView from "../ChatView";
 
 const STATUS: Record<IncidentStatus, { label: string; className: string }> = {
   open: { label: "Abierta", className: "bg-muted text-muted-foreground" },
-  investigating: { label: "Investigando", className: "bg-amber-500/15 text-amber-500" },
-  resolved: { label: "Resuelta", className: "bg-emerald-500/15 text-emerald-500" },
+  investigating: { label: "Investigando", className: "bg-warning/15 text-warning" },
+  resolved: { label: "Resuelta", className: "bg-success/15 text-success" },
 };
 
 const when = (value: string | null | undefined) => {
@@ -75,10 +75,10 @@ function EvidenceFileIcon({
 }: {
   readonly contentType: IncidentEvidence["contentType"];
 }) {
-  if (contentType === "json") return <FileJsonIcon className="size-3.5 shrink-0 text-amber-400" />;
+  if (contentType === "json") return <FileJsonIcon className="size-3.5 shrink-0 text-warning" />;
   if (contentType === "log" || contentType === "error")
-    return <FileWarningIcon className="size-3.5 shrink-0 text-red-400" />;
-  if (contentType === "http") return <FileCodeIcon className="size-3.5 shrink-0 text-sky-400" />;
+    return <FileWarningIcon className="size-3.5 shrink-0 text-error" />;
+  if (contentType === "http") return <FileCodeIcon className="size-3.5 shrink-0 text-info" />;
   return <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />;
 }
 
@@ -109,24 +109,22 @@ function EvidenceViewer({
         <header className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5">
           <EvidenceFileIcon contentType={evidence.contentType} />
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-medium">
-              {evidenceFileName(evidence)}
-            </span>
-            <span className="block text-[11px] text-muted-foreground">
+            <span className="block truncate text-sm font-medium">{evidenceFileName(evidence)}</span>
+            <span className="block text-2xs text-muted-foreground">
               {evidence.source} · {evidence.contentType} · {when(evidence.capturedAt)}
             </span>
           </span>
           <button
             type="button"
             onClick={() => void copy()}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-2xs text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <ClipboardCopyIcon className="size-3.5" /> {copied ? "Copiado" : "Copiar"}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="rounded-md px-2 py-1 text-2xs text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             Cerrar
           </button>
@@ -134,18 +132,18 @@ function EvidenceViewer({
         {meta.length > 0 ? (
           <div className="flex shrink-0 flex-wrap gap-1 border-b bg-muted/20 px-4 py-2">
             {meta.map(([key, value]) => (
-              <span key={key} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10.5px]">
+              <span key={key} className="rounded bg-muted px-1.5 py-0.5 font-mono text-3xs">
                 <span className="text-muted-foreground">{key}</span> {value}
               </span>
             ))}
           </div>
         ) : null}
         {evidence.summary ? (
-          <p className="shrink-0 border-b px-4 py-2 text-[12px] text-muted-foreground">
+          <p className="shrink-0 border-b px-4 py-2 text-xs text-muted-foreground">
             {evidence.summary}
           </p>
         ) : null}
-        <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words px-4 py-3 font-mono text-[12px] leading-relaxed">
+        <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words px-4 py-3 font-mono text-xs leading-relaxed">
           {prettyContent(evidence)}
         </pre>
       </div>
@@ -177,8 +175,8 @@ function InvestigationPanel({
     <>
       <aside className="flex min-h-0 w-full flex-col overflow-hidden rounded-xl border bg-background lg:w-[400px]">
         <div className="flex shrink-0 items-center gap-1 border-b px-2 py-1.5">
-          <ActivityIcon className="ml-1 size-3.5 text-red-500" />
-          <span className="text-[12px] font-semibold">Investigación</span>
+          <ActivityIcon className="ml-1 size-3.5 text-error" />
+          <span className="text-xs font-semibold">Investigación</span>
           <div className="ml-auto flex gap-1">
             {(
               [
@@ -190,7 +188,7 @@ function InvestigationPanel({
                 key={key}
                 type="button"
                 onClick={() => setTab(key)}
-                className={`rounded-md px-2 py-1 text-[11px] ${
+                className={`rounded-md px-2 py-1 text-2xs ${
                   tab === key
                     ? "bg-muted font-medium text-foreground"
                     : "text-muted-foreground hover:bg-muted"
@@ -204,19 +202,19 @@ function InvestigationPanel({
         {tab === "summary" ? (
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {incident.summary ? (
-              <div className="whitespace-pre-wrap rounded-lg border bg-card p-3 text-[12.5px] leading-relaxed">
+              <div className="whitespace-pre-wrap rounded-lg border bg-card p-3 text-xs leading-relaxed">
                 {incident.summary}
               </div>
             ) : (
-              <p className="text-[12.5px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 El agente no ha escrito todavía un resumen de la investigación.
               </p>
             )}
           </div>
         ) : incident.evidence.length === 0 ? (
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 p-4 text-center">
-            <ShieldAlertIcon className="size-8 text-red-500/40" />
-            <p className="max-w-[17rem] text-[12.5px] text-muted-foreground">
+            <ShieldAlertIcon className="size-8 text-error/40" />
+            <p className="max-w-[17rem] text-xs text-muted-foreground">
               Aquí se irán ordenando los ficheros que el agente recopile, en carpetas por fuente.
               Doble clic en uno para abrirlo.
             </p>
@@ -237,12 +235,10 @@ function InvestigationPanel({
                     ) : (
                       <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
                     )}
-                    <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-red-500">
+                    <span className="truncate text-2xs font-semibold uppercase tracking-wide text-error">
                       {source}
                     </span>
-                    <span className="ml-auto text-[10.5px] text-muted-foreground">
-                      {entries.length}
-                    </span>
+                    <span className="ml-auto text-3xs text-muted-foreground">{entries.length}</span>
                   </button>
                   {isCollapsed
                     ? null
@@ -254,15 +250,15 @@ function InvestigationPanel({
                           <EvidenceFileIcon contentType={entry.contentType} />
                           <button
                             type="button"
-                            title={`${evidenceFileName(entry)} — doble clic para abrir`}
+                            aria-label={`${evidenceFileName(entry)}, doble clic para abrir`}
                             onDoubleClick={() => setViewing(entry)}
-                            className="min-w-0 flex-1 truncate text-left text-[12px]"
+                            className="min-w-0 flex-1 truncate text-left text-xs"
                           >
                             {evidenceFileName(entry)}
                           </button>
                           <button
                             type="button"
-                            title="Eliminar evidencia"
+                            aria-label="Eliminar evidencia"
                             onClick={async () => {
                               await mutate({
                                 environmentId,
@@ -377,12 +373,12 @@ function CreateIncident({
     onCreated();
   };
   return (
-    <div className="space-y-2 rounded-lg border border-red-500/25 bg-red-500/5 p-3">
-      <p className="text-[12px] font-medium">Nueva incidencia</p>
-      <label className="block text-[11px] text-muted-foreground">
+    <div className="space-y-2 rounded-lg border border-error/25 bg-error/5 p-3">
+      <p className="text-xs font-medium">Nueva incidencia</p>
+      <label className="block text-2xs text-muted-foreground">
         Proyecto
         <select
-          className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 text-[13px]"
+          className="mt-1 w-full rounded-md border bg-background px-2 py-1.5 text-sm"
           value={selectedProject?.id ?? ""}
           onChange={(event) => setProjectId(event.target.value)}
         >
@@ -395,13 +391,13 @@ function CreateIncident({
         </select>
       </label>
       <input
-        className="w-full rounded-md border bg-background px-2 py-1.5 text-[13px]"
+        className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
         placeholder="Título (opcional)"
         value={title}
         onChange={(event) => setTitle(event.target.value)}
       />
       <textarea
-        className="min-h-24 w-full rounded-md border bg-background px-2 py-1.5 text-[13px]"
+        className="min-h-24 w-full rounded-md border bg-background px-2 py-1.5 text-sm"
         placeholder="Describe el problema…"
         value={description}
         onChange={(event) => setDescription(event.target.value)}
@@ -413,7 +409,7 @@ function CreateIncident({
       >
         <PlusIcon /> Crear incidencia
       </Button>
-      {error ? <p className="text-[11.5px] text-destructive">{error}</p> : null}
+      {error ? <p className="text-2xs text-destructive">{error}</p> : null}
     </div>
   );
 }
@@ -446,7 +442,7 @@ export function IncidentCenterPage() {
   return (
     <SidebarInset className="min-w-0">
       <WorkspacePageHeader>
-        <ShieldAlertIcon className="size-4 text-red-500" />
+        <ShieldAlertIcon className="size-4 text-error" />
         <h1 className="text-base font-semibold">Incidents</h1>
         <span className="text-xs text-muted-foreground">Investigación de solo lectura</span>
       </WorkspacePageHeader>
@@ -466,11 +462,11 @@ export function IncidentCenterPage() {
               }}
             />
           ) : null}
-          {list.error ? <p className="text-[12px] text-destructive">{list.error}</p> : null}
+          {list.error ? <p className="text-xs text-destructive">{list.error}</p> : null}
           {!environmentId ? (
-            <p className="text-[12px] text-muted-foreground">Conecta un entorno.</p>
+            <p className="text-xs text-muted-foreground">Conecta un entorno.</p>
           ) : items.length === 0 && !creating ? (
-            <p className="px-1 text-[12px] text-muted-foreground">Sin incidencias todavía.</p>
+            <p className="px-1 text-xs text-muted-foreground">Sin incidencias todavía.</p>
           ) : (
             items.map((incident) => {
               const status = STATUS[incident.status];
@@ -481,21 +477,19 @@ export function IncidentCenterPage() {
                   type="button"
                   onClick={() => setSelectedId(incident.id)}
                   className={`rounded-lg border-l-2 px-2.5 py-2 text-left ${
-                    active ? "border-red-500 bg-red-500/10" : "border-transparent hover:bg-muted/60"
+                    active ? "border-error bg-error/10" : "border-transparent hover:bg-muted/60"
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    <span className={`rounded-full px-2 py-0.5 text-[10.5px] ${status.className}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-3xs ${status.className}`}>
                       {status.label}
                     </span>
-                    <span className="ml-auto text-[10.5px] text-muted-foreground">
+                    <span className="ml-auto text-3xs text-muted-foreground">
                       {incident.evidence.length} ev.
                     </span>
                   </span>
-                  <span className="mt-1 block truncate text-[12.5px] font-medium">
-                    {incident.title}
-                  </span>
-                  <span className="block truncate text-[11px] text-muted-foreground">
+                  <span className="mt-1 block truncate text-xs font-medium">{incident.title}</span>
+                  <span className="block truncate text-2xs text-muted-foreground">
                     {when(incident.updatedAt)}
                   </span>
                 </button>
@@ -510,8 +504,8 @@ export function IncidentCenterPage() {
             <>
               <header className="flex shrink-0 items-center gap-2 border-b px-3 py-2">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-medium">{selected.title}</span>
-                  <span className="block text-[11px] text-muted-foreground">
+                  <span className="block truncate text-sm font-medium">{selected.title}</span>
+                  <span className="block text-2xs text-muted-foreground">
                     {selected.branch ? `${selected.branch} · ` : ""}creada{" "}
                     {when(selected.createdAt)}
                   </span>
@@ -562,11 +556,11 @@ export function IncidentCenterPage() {
                 </div>
               ) : (
                 <div className="min-h-0 flex-1 overflow-y-auto p-4">
-                  <p className="max-w-2xl whitespace-pre-wrap text-[13px] leading-relaxed">
+                  <p className="max-w-2xl whitespace-pre-wrap text-sm leading-relaxed">
                     {selected.description}
                   </p>
-                  <div className="mt-4 flex items-start gap-2 rounded-lg border bg-card p-3 text-[12px] text-muted-foreground">
-                    <FileWarningIcon className="mt-0.5 size-4 shrink-0 text-amber-500" />
+                  <div className="mt-4 flex items-start gap-2 rounded-lg border bg-card p-3 text-xs text-muted-foreground">
+                    <FileWarningIcon className="mt-0.5 size-4 shrink-0 text-warning" />
                     <span>
                       La conversación de investigación aún no está vinculada a esta incidencia. Abre
                       un hilo en el proyecto y quedará aquí, junto al panel de evidencias. Ver{" "}
@@ -581,8 +575,8 @@ export function IncidentCenterPage() {
             </>
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-              <ShieldAlertIcon className="size-10 text-red-500/40" />
-              <p className="text-[13px] text-muted-foreground">
+              <ShieldAlertIcon className="size-10 text-error/40" />
+              <p className="text-sm text-muted-foreground">
                 Crea una incidencia para empezar a investigar.
               </p>
             </div>

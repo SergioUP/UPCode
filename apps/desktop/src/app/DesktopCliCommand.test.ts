@@ -8,6 +8,7 @@ import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 
+import * as HostProcess from "@t3tools/shared/HostProcess";
 import * as DesktopCliCommand from "./DesktopCliCommand.ts";
 import * as DesktopCliShim from "./DesktopCliShim.ts";
 import * as DesktopEnvironment from "./DesktopEnvironment.ts";
@@ -190,7 +191,7 @@ it.layer(NodeServices.layer)("DesktopCliCommand", (it) => {
     }).pipe(Effect.scoped),
   );
 
-  it.effect.skipIf(process.platform === "win32")(
+  it.effect.skipIf(HostProcess.Platform.defaultValue() === "win32")(
     "refuses to install behind another upcode that runs first",
     () =>
       Effect.gen(function* () {

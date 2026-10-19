@@ -32,9 +32,8 @@ export function ThreadWorkItemLink({
       href={workItemAzureUrl(link)}
       target="_blank"
       rel="noreferrer noopener"
-      aria-label={`Abrir work item #${link.workItemId} en Azure DevOps`}
-      title={`#${link.workItemId} · ${link.project}`}
-      className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary outline-none hover:bg-primary/25 focus-visible:ring-1 focus-visible:ring-ring"
+      aria-label={`Abrir work item #${link.workItemId} de ${link.project} en Azure DevOps`}
+      className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-2xs font-medium text-primary outline-none hover:bg-primary/25 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
       onDoubleClick={(event) => event.stopPropagation()}
@@ -64,7 +63,7 @@ export function ThreadWorkItemControl({
     <ThreadDetailsControl panel part="row" onClick={openPanel}>
       <ClipboardListIcon aria-hidden="true" className="size-4 shrink-0 text-primary" />
       <span className={THREAD_DETAILS_PANEL_LABEL_CLASS}>Work item</span>
-      <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary">
+      <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-2xs font-medium text-primary">
         {link ? `#${link.workItemId}` : "Asignar"}
       </span>
     </ThreadDetailsControl>
