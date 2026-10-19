@@ -1,141 +1,200 @@
-# T3 Code
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readme/up-mark-white.png">
+    <img src="docs/readme/up-mark-black.png" alt="UPCode" width="240">
+  </picture>
+</p>
 
-T3 Code is an "agent harness control surface". It enables control of the agents on your machine with a best-in-class mobile app ([iOS](https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824), [Android](https://play.google.com/store/apps/details?id=com.t3tools.t3code)), [web app](https://app.t3.codes) and [Electron-based desktop app](https://t3.codes).
+<h3 align="center">Mesa de control para agentes de IA en trabajo de integración</h3>
 
-Works with your subscriptions on Claude Code, Codex, Cursor, Grok Build, OpenCode, and Google Antigravity. If they're set up on your computer, T3 Code can control them.
+<p align="center">
+  <a href="https://github.com/SergioUP/UPCode/releases/latest"><img alt="Última versión" src="https://img.shields.io/github/v/release/SergioUP/UPCode?label=release&color=4c9aff"></a>
+  <img alt="Windows" src="https://img.shields.io/badge/instalador-Windows%20x64-0078D6">
+  <a href="LICENSE"><img alt="Licencia" src="https://img.shields.io/badge/licencia-MIT-green"></a>
+  <img alt="Fork de T3 Code" src="https://img.shields.io/badge/fork%20de-T3%20Code-6e7681">
+  <img alt="Azure DevOps" src="https://img.shields.io/badge/Azure%20DevOps-work%20items%20%7C%20PRs-0078D7">
+</p>
 
-## "Wait, what are you selling me?"
+---
 
-Nothing. We built T3 Code because we wanted the best possible development experience with agents. We were inspired by existing solutions like the Codex desktop app, Conductor, Claude Desktop and Cursor Glass, but none met our bar.
+**UPCode** es un fork de [T3 Code](https://github.com/pingdotgg/t3code) con una capa de trabajo encima pensada para un equipo que hace integraciones: **ERP/PIM → Shopify**, migraciones y apaños de catálogo. La idea es sencilla: que cada conversación con un agente esté pegada a la tarea real de Azure DevOps y no a la memoria de nadie.
 
-We wanted something performant, remote-ready, and truly open. If we ever go the wrong direction, we want you to have everything you need to fork and build the editor that you want.
+No es un orquestador de flotas de agentes ni un tablero para cincuenta sesiones. Es una mesa de control: pocos agentes a la vez, el trabajo a la vista y el contexto donde tiene que estar.
 
-## Installation
+## Índice
 
-> [!WARNING]
-> T3 Code currently supports Codex, Claude, Cursor, Grok Build, OpenCode, and Antigravity. Install and authenticate at least one provider before use:
->
-> - Codex: install [Codex CLI](https://developers.openai.com/codex/cli) and run `codex login`
-> - Claude: install [Claude Code](https://claude.com/product/claude-code) and run `claude auth login`
-> - Cursor: install [Cursor CLI](https://cursor.com/cli) and run `agent login`
-> - Grok Build: install [Grok Build CLI](https://x.ai/cli) and run `grok login`
-> - OpenCode: install [OpenCode](https://opencode.ai) and run `opencode auth login`
-> - Antigravity: enable it in Settings, then use **Install Antigravity** and **Sign in with Google**. No CLI is required.
+- [Para qué sirve](#para-qué-sirve)
+- [🔷 Compatibilidad con Azure DevOps](#compatibilidad-con-azure-devops)
+- [🔀 Pull requests](#pull-requests)
+- [🤖 Agentes de IA](#agentes-de-ia)
+- [📸 Capturas](#capturas)
+- [📦 Instalación](#instalación)
+- [🚀 Primeros pasos](#primeros-pasos)
+- [⚙️ Configuración](#configuración)
+- [🧯 Solución de problemas](#solución-de-problemas)
+- [🛠 Desarrollo](#desarrollo)
+- [🔒 Datos y privacidad](#datos-y-privacidad)
+- [🧭 Límites conocidos y lo que viene](#límites-conocidos-y-lo-que-viene)
+- [🙏 Créditos y licencia](#créditos-y-licencia)
 
-### Command line
+## Para qué sirve
+
+Un integrador pasa el día saltando entre el ticket, el ERP, una consola de SQL y el navegador. El agente de IA ayuda, pero se le olvida de qué iba la tarea en cuanto cambias de pestaña. UPCode resuelve eso:
+
+- 🧵 **Un hilo = un agente trabajando.** Cada conversación tiene su proyecto, su rama y su worktree.
+- 🎫 **Un hilo, un work item principal.** La tarea de Azure DevOps se vincula a mano y se puede soltar; quitarla del hilo **no** toca Azure.
+- 👀 **El estado siempre a la vista.** El número de tarea en la tarjeta lleva el color que Azure da al estado del work item.
+- 🗂️ **El trabajo del equipo, sin inventos.** Tablero, lista y calendario sobre los work items reales, con los estados y colores del proceso de Azure.
+- 🚀 **Pull requests desde la app**, incluidas las políticas del repositorio y el merge cuando de verdad están en verde.
+
+## Compatibilidad con Azure DevOps
+
+Esta es la razón de ser del fork. Todo lo de Azure se lee de **tu organización y tu proceso**; no hay una lista de estados inventada ni un espejo local que se desincronice.
+
+### Qué se puede hacer hoy
+
+| Función              | Cómo                                                                                     |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| 🔎 Ver work items    | Sección **DevOps**: tablero, lista y calendario, un proyecto a la vez                    |
+| 👤 Mi trabajo        | Filtro «asignado a mí» dentro del proyecto elegido                                       |
+| 🎨 Estados y colores | Se leen del proceso de Azure en tiempo real; el color de la columna es el del estado     |
+| ↔️ Mover una tarea   | Arrastrar y soltar escribe el estado en Azure (sin confirmación, sin deshacer)           |
+| 🗓️ Sprints           | El calendario va por iteraciones; las fechas viajan con el work item                     |
+| 🏷️ Etiquetas         | Locales de la app, guardadas en ajustes; **nunca** se escriben en Azure                  |
+| 🧵 Vincular un hilo  | Fila **Work item** del panel del hilo → buscar por `#id` o por título                    |
+| 📝 Editar la tarea   | Título, estado, descripción, comentario, campos y relaciones; «Guardar» publica en Azure |
+| 🔗 Quitar el vínculo | Botón **Quitar** de la ficha: solo desvincula el hilo, la tarea sigue en Azure           |
+| 🔀 Pull requests     | Checks y políticas del repositorio, comentarios y merge desde la app                     |
+
+### Cómo se conecta
+
+1. **Ajustes → Source control**: la organización es el _slug_ de `dev.azure.com/{organización}`.
+2. Pega un **PAT** con permisos de:
+   - **Work Items**: lectura y escritura (ver y editar tareas).
+   - **Code**: lectura (repos, ramas y pull requests); escritura si vas a mergear desde la app.
+3. Se guarda solo. Si falta la organización o el token, la app lo dice y **no llama** a Azure.
+
+> [!NOTE]
+> Lo que ya usaba `az` (clonar repos, checkout de PRs) sigue usando Azure CLI y las credenciales de Git. El PAT es solo para las pantallas nuevas: no se mete en la URL del remoto, ni en argumentos, ni en variables de entorno del proceso.
+
+### Lo que garantiza (y lo que no hace)
+
+- ✅ **Nada se escribe sin que lo pidas.** Ver una tarea no manda nada; editar sí, y avisa del resultado real de Azure.
+- ✅ **Los estados salen de Azure.** Si tu proceso cambia, la app lo enseña cambiado.
+- ❌ **No crea ramas ni PR** al vincular una tarea. Vincular es un acto local y reversible.
+- ❌ **No toca Jira.** Fuera de alcance por decisión, no por pereza.
+
+## Pull requests
+
+Lista y detalle de PRs de los hosts que ya soporta la base: **Azure DevOps, GitHub, GitLab, Bitbucket, Forgejo y Gitcafe**.
+
+- Checks y **políticas del repositorio** con su estado real.
+- Comentarios y diff con el mismo visor que el resto de la app.
+- Merge, rebase o actualización de la rama desde la app, y auto-merge cuando el host lo permite.
+- Un hilo puede llevar su PR y verlo en el panel lateral, al lado del work item.
+
+## Agentes de IA
+
+UPCode no trae modelos: **usa las suscripciones que ya tienes**. Hereda de T3 Code el soporte de Codex, Claude Code, Cursor, Grok Build, OpenCode y Antigravity, y los agentes que hablen **ACP**.
+
+- Cada proyecto tiene su carpeta y sus worktrees: un hilo por rama, sin pisarse.
+- Modos de permisos (lectura, edición, acceso total) por hilo.
+- Uso y consumo por proveedor en la sección **Usage**.
+- Acceso remoto al servidor desde otro dispositivo (heredado de T3 Code; ver [`docs/`](./docs)).
+
+## Capturas
+
+> Hueco reservado para las capturas reales: sección **DevOps**, panel de **Work item** de un hilo y detalle de **Pull request**.
+> Si las añades, cuidado con los datos: **este repositorio es público**. Nada de nombres de clientes, títulos de tareas reales ni organización visible sin difuminar.
+
+## Instalación
+
+**Windows x64** (la vía normal): descarga el instalador de la [última release](https://github.com/SergioUP/UPCode/releases/latest) y ejecútalo. Es un NSIS normal: instala en el perfil del usuario y **no** pide administrador.
+
+- 🪄 **Se actualiza sola** a partir de la **0.1.2**: comprueba las releases de este repositorio al arrancar y cada pocos minutos. El aviso sale en el pie de la barra lateral y en **Ajustes → About**.
+- ⚠️ Las versiones **anteriores a la 0.1.2** no se actualizan solas (el actualizador estaba desactivado). Hay que instalar la 0.1.2 a mano una vez.
+- 🍎🐧 **macOS y Linux**: no hay instalador publicado. Se compila desde el código (ver [Desarrollo](#desarrollo)).
+
+## Primeros pasos
+
+1. **Un agente de IA.** Instala y autentica al menos uno (por ejemplo `codex login` o `opencode auth login`) en la misma máquina. La app lo detecta; si no aparece, **Ajustes → Providers**.
+2. **Un proyecto.** Añade la carpeta del repositorio. Cada proyecto tiene su rama de trabajo y sus worktrees.
+3. **Azure DevOps.** Organización + PAT en **Ajustes → Source control**.
+4. **Un hilo.** Nueva conversación → escribe la tarea. Si tienes el número, pásalo: `#8516`.
+5. **Vincúlalo.** Panel del hilo → **Work item** → busca y asigna. A partir de ahí, la tarjeta del hilo lleva el número con el color del estado.
+6. **Trabaja y cierra.** El diff del hilo, el PR y los checks están en el mismo sitio; no hay que abrir el navegador para saber si algo está en verde.
+
+## Configuración
+
+| Ajuste                    | Para qué                                                                 |
+| ------------------------- | ------------------------------------------------------------------------ |
+| **Source control**        | Organización de Azure DevOps + PAT. También credenciales de otros hosts  |
+| **Providers**             | Agentes de IA, cuentas y modelos por defecto                             |
+| **Projects**              | Carpetas de trabajo, ramas, scripts del proyecto                         |
+| **Integrations**          | Navegador embebido y dispositivos                                        |
+| **About**                 | Versión, canal de actualizaciones (Latest/Nightly) y comprobación manual |
+| **Storage / Diagnostics** | Dónde vive el estado y qué está pasando por debajo                       |
+
+## Solución de problemas
+
+| Síntoma                                      | Qué mirar                                                                                                     |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Azure responde 401/403                       | PAT caducado o sin permisos de Work Items/Code. Regenera y vuelve a pegarlo en **Source control**             |
+| Los avatares de Azure salen como iniciales   | Es a propósito: la imagen necesita el PAT y no se expone al navegador                                         |
+| No aparece el aviso de actualización         | Estás en una versión anterior a la 0.1.2. Instala esa a mano una vez                                          |
+| La app no arranca tras actualizar            | Borra la caché del actualizador (`%LOCALAPPDATA%\t3code-updater`) y vuelve a abrir                            |
+| La sesión del navegador caduca en desarrollo | El token de emparejamiento es de un solo uso: vuelve a abrir la URL de emparejamiento que imprime el servidor |
+| Se instala en una carpeta llamada `t3code`   | Sí, es herencia del fork. Los datos van aparte, en `.upcode`                                                  |
+
+## Desarrollo
+
+Requisitos: **Node 24**, **pnpm 11** y Rust estable (para el monitor de recursos del escritorio).
 
 ```bash
-curl -fsSL https://t3.codes/install.sh | sh
+pnpm install
+pnpm dev            # web + servidor de desarrollo
+pnpm typecheck      # tipos de todos los paquetes
+pnpm test           # tests
+pnpm lint           # reglas del repo
 ```
 
-On Windows, in PowerShell:
+En desarrollo, el servidor escucha en `http://localhost:13773` y la web en `http://localhost:5733`; los puertos reales salen en la línea `[dev-runner]` del arranque, porque si están ocupados se desplazan. El estado de desarrollo vive en el `.upcode` del worktree; el runner acepta `--home-dir` para aislarlo en otro sitio.
 
-```powershell
-irm https://t3.codes/install.ps1 | iex
-```
+Estructura, en corto:
 
-Then run `t3` to start the server and open the local web app. `t3 service install` keeps it running in the background, `t3 update` moves to a newer release, and `t3 --help` has the full reference.
+| Ruta                        | Qué hay                                                                         |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `apps/server`               | Servidor WebSocket, orquestación de turnos, agentes y checkpoints               |
+| `apps/web`                  | Interfaz (React + Vite). Es la que usa el escritorio                            |
+| `apps/desktop`              | Electron: ventana, actualizador, integración con el sistema                     |
+| `packages/contracts`        | Esquemas que cruzan el cable (RPC, ajustes, Azure DevOps)                       |
+| `packages/source-control-*` | Adaptadores por host: Azure DevOps, GitHub, GitLab, Bitbucket, Forgejo, Gitcafe |
+| `packages/provider-*`       | Adaptadores de agentes                                                          |
 
-To try it once without installing, run `npx t3@latest` instead.
+### Cortar una release
 
-### Desktop app
+El workflow **UPCode Windows release** (`.github/workflows/upcode-windows-release.yml`) se lanza a mano con una versión `X.Y.Z`:
 
-Install the latest version of the desktop app from [GitHub Releases](https://github.com/pingdotgg/t3code/releases), or from your favorite package registry:
+1. Actions → _UPCode Windows release_ → **Run workflow**, o un `workflow_dispatch` por API con `{"ref":"main","inputs":{"version":"0.1.3"}}`.
+2. Compila el NSIS x64 en `windows-2025` (unos 5-10 minutos).
+3. Publica el tag `upcode-vX.Y.Z` como **latest** con `UPCode-X.Y.Z-x64.exe`, `latest.yml` y el `.blockmap`. Los tres son necesarios para que el actualizador funcione.
 
-#### Windows (`winget`)
+## Datos y privacidad
 
-```bash
-winget install T3Tools.T3Code
-```
+- Todo vive en tu máquina: `%USERPROFILE%\.upcode\userdata` (Windows). Ahí están `statev2.sqlite`, los ajustes, los secretos y los logs.
+- El PAT y las credenciales se guardan en `secrets/`, en ficheros del usuario fuera del repositorio. No van cifrados con la clave del sistema: trata esa carpeta como tratarías un `.env`.
+- Los agentes corren como subprocesos con tus credenciales de proveedor, igual que si los lanzaras a mano.
+- La app solo sale a la red para hablar con tu proveedor de IA, con Azure DevOps (cuando se lo pides) y con las releases de este repositorio para actualizarse.
 
-#### Windows (`scoop`)
+## Límites conocidos y lo que viene
 
-```bash
-scoop install extras/t3code
-```
+- 🛍️ **Herramientas de Shopify** (perfil del proyecto, diff de esquemas, tabla de mapping, simulación sin llamar a Shopify): diseñadas, **no implementadas**. Hoy el trabajo de integración se hace con el agente y el repositorio.
+- 📱 **La app móvil** sigue con la marca de T3 y no tiene las vistas de Azure DevOps.
+- 🧹 **Caché del actualizador compartida** con T3 Code (`t3code-updater`): inofensivo, pero conviene separarla.
+- 🗣️ Parte del texto de la interfaz sigue en inglés: es un fork y se traduce a medida que se toca.
 
-#### macOS (Homebrew)
+## Créditos y licencia
 
-```bash
-brew install --cask t3-code
-```
+UPCode es un **fork de [T3 Code](https://github.com/pingdotgg/t3code)**, de T3 Tools Inc., publicado bajo licencia **MIT** (ver [LICENSE](LICENSE)). Este fork no está afiliado a T3 Tools ni cuenta con su respaldo: los aciertos de la base son suyos, y los inventos de encima, nuestros.
 
-#### Debian, Ubuntu (`.deb`)
-
-Download the `.deb` from [GitHub Releases](https://github.com/pingdotgg/t3code/releases), then:
-
-```bash
-sudo apt install ./T3-Code-*.deb
-```
-
-#### Arch Linux (AUR)
-
-Stable:
-
-```bash
-yay -S t3code-bin
-```
-
-Nightly:
-
-```bash
-yay -S t3code-nightly-bin
-```
-
-The AUR packaging is maintained in this repository under [`packaging/aur`](./packaging/aur).
-
-## Some notes
-
-We are very very early in this project. Expect bugs.
-
-We are (mostly) not accepting contributions yet. Small fixes may be considered. Big features will not be.
-
-## Documentation
-
-Full docs live in [docs/](./docs). There's no docs site yet.
-
-- [Install and first run](./docs/user/install.md)
-- [Permission modes](./docs/user/permission-modes.md)
-- [Keyboard shortcuts](./docs/user/keybindings.md)
-- [Project settings](./docs/user/project-settings.md)
-- [Appearance preferences](./docs/user/appearance.md)
-- [Remote access from a phone or another machine](./docs/user/remote-access.md)
-- [Connect Claude Code, Codex, ChatGPT and other agents over MCP](./docs/user/outside-agents.md)
-- [Keeping app and server in sync](./docs/user/updating.md)
-- [Source control integrations](./docs/user/source-control.md)
-- Multiple accounts: [Codex](./docs/user/providers-codex.md) · [Claude](./docs/user/providers-claude.md)
-- [Run T3 Code as a background service](./docs/user/background-service.md)
-
-Building from source? Start at [docs/internals/overview.md](./docs/internals/overview.md).
-
-## If you REALLY want to contribute still.... read this first
-
-### Install `vp`
-
-T3 Code uses Vite+ so you'll need to install the global `vp` command-line tool.
-
-#### macOS / Linux
-
-```bash
-curl -fsSL https://vite.plus | bash
-```
-
-#### Windows
-
-```bash
-irm https://vite.plus/ps1 | iex
-```
-
-Checkout their getting started guide for more information: https://viteplus.dev/guide/
-
-### Install dependencies
-
-```bash
-vp i
-```
-
-Read [CONTRIBUTING.md](./CONTRIBUTING.md) before reporting a bug or opening a PR.
-
-Have a feature request? Start an [Ideas discussion](https://github.com/pingdotgg/t3code/discussions/categories/ideas).
-
-Need support? Join the [Discord](https://discord.gg/jn4EGJjrvv).
+Se mantiene la licencia MIT y la atribución original. Si vienes de T3 Code y echas algo en falta, está casi todo: la diferencia es la capa de Azure DevOps y la marca.
