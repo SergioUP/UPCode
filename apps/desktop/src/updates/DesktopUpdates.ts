@@ -303,6 +303,14 @@ function shouldBroadcastDownloadProgress(
   return nextStep !== previousStep || nextPercent === 100;
 }
 
+/**
+ * The fork ships its own installer, so the one feed it must never poll is T3's:
+ * installing a T3 build over UPCode would replace the app. Any other feed is the
+ * one its own build published, so it is allowed — refusing anything that is not
+ * hardcoded here would silently stop updates again the day the repository moves.
+ */
+const T3_UPDATE_FEED = { owner: "pingdotgg", repo: "t3code" } as const;
+
 function getAutoUpdateDisabledReason(args: {
   isDevelopment: boolean;
   isPackaged: boolean;
@@ -310,11 +318,31 @@ function getAutoUpdateDisabledReason(args: {
   appImage?: string | undefined;
   isDebPackage: boolean;
   disabledByEnv: boolean;
-  hasUpdateFeedConfig: boolean;
+  updateFeed: Option.Option<AppUpdateYmlConfig>;
 }): string | null {
-  void args;
-  // UPCode ships its own installer. It must not poll T3's update feed.
-  return "UPCode no comprueba actualizaciones automáticas.";
+  if (Option.isNone(args.updateFeed)) {
+    return "Automatic updates are not available because no update feed is configured.";
+  }
+  if (args.isDevelopment || !args.isPackaged) {
+    return "Automatic updates are only available in packaged production builds.";
+  }
+  if (args.disabledByEnv) {
+    return "Automatic updates are disabled by the T3CODE_DISABLE_AUTO_UPDATE setting.";
+  }
+  if (isT3UpdateFeed(args.updateFeed.value)) {
+    return "This build carries T3's update feed, so it does not update itself.";
+  }
+  if (args.platform === "linux" && !args.appImage && !args.isDebPackage) {
+    return "Automatic updates on Linux require the AppImage or the .deb package.";
+  }
+  return null;
+}
+
+function isT3UpdateFeed(feed: AppUpdateYmlConfig): boolean {
+  return (
+    feed.owner?.trim().toLowerCase() === T3_UPDATE_FEED.owner &&
+    feed.repo?.trim().toLowerCase() === T3_UPDATE_FEED.repo
+  );
 }
 
 function isArm64HostRunningIntelBuild(runtimeInfo: DesktopRuntimeInfo): boolean {
@@ -393,12 +421,12 @@ export const make = Effect.gen(function* () {
           )
       : false;
 
-  const hasUpdateFeedConfig = Ref.get(appUpdateYmlConfigRef).pipe(
-    Effect.map((appUpdateYmlConfig) => Option.isSome(appUpdateYmlConfig) || config.mockUpdates),
-  );
-
   const resolveDisabledReason = Effect.gen(function* () {
-    const hasFeedConfig = yield* hasUpdateFeedConfig;
+    const appUpdateYmlConfig = yield* Ref.get(appUpdateYmlConfigRef);
+    // The mock server replaces the feed, so tests and the smoke run have one.
+    const updateFeed = config.mockUpdates
+      ? Option.some<AppUpdateYmlConfig>({ provider: "generic", owner: "mock", repo: "mock" })
+      : appUpdateYmlConfig;
     return Option.fromNullishOr(
       getAutoUpdateDisabledReason({
         isDevelopment: environment.isDevelopment,
@@ -407,7 +435,7 @@ export const make = Effect.gen(function* () {
         appImage: Option.getOrUndefined(config.appImagePath),
         isDebPackage,
         disabledByEnv: config.disableAutoUpdate,
-        hasUpdateFeedConfig: hasFeedConfig,
+        updateFeed,
       }),
     );
   });
@@ -974,6 +1002,22 @@ export const make = Effect.gen(function* () {
 
       const appUpdateYmlConfig = yield* readAppUpdateYml;
       yield* Ref.set(appUpdateYmlConfigRef, appUpdateYmlConfig);
+      // Which repository this build will actually update from. Without this line a
+      // feed that points somewhere unexpected stays invisible in the logs.
+      yield* logUpdaterInfo("using update feed", {
+        owner: Option.match(appUpdateYmlConfig, {
+          onNone: () => "none",
+          onSome: (feed) => feed.owner ?? "unknown",
+        }),
+        repo: Option.match(appUpdateYmlConfig, {
+          onNone: () => "none",
+          onSome: (feed) => feed.repo ?? "unknown",
+        }),
+        provider: Option.match(appUpdateYmlConfig, {
+          onNone: () => "none",
+          onSome: (feed) => feed.provider ?? "unknown",
+        }),
+      });
 
       if (config.mockUpdates) {
         yield* electronUpdater.setFeedURL({
