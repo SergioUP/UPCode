@@ -318,7 +318,7 @@ function IssuesWorkspace({
                 type="button"
                 aria-current={view === key}
                 onClick={() => setView(key)}
-                className={`flex items-center gap-2 rounded px-2 py-1.5 text-[13px] transition-colors ${
+                className={`flex items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors ${
                   view === key
                     ? "bg-accent text-foreground"
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
@@ -331,9 +331,7 @@ function IssuesWorkspace({
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Proyecto
-            </span>
+            <span className="text-3xs uppercase tracking-wide text-muted-foreground">Proyecto</span>
             <select
               value={selectedProject}
               onChange={(event) => {
@@ -341,7 +339,7 @@ function IssuesWorkspace({
                 setIteration("");
                 setSelectedId(null);
               }}
-              className="rounded border bg-background px-1.5 py-1 text-[12px] outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="rounded border bg-background px-1.5 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
             >
               {(projects.data ?? []).map((entry) => (
                 <option key={entry.id} value={entry.name}>
@@ -352,13 +350,11 @@ function IssuesWorkspace({
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Sprint
-            </span>
+            <span className="text-3xs uppercase tracking-wide text-muted-foreground">Sprint</span>
             <select
               value={iteration}
               onChange={(event) => setIteration(event.target.value)}
-              className="rounded border bg-background px-1.5 py-1 text-[12px] outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="rounded border bg-background px-1.5 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
             >
               <option value="">Todos los sprints</option>
               {sprints.map((sprint) => (
@@ -369,7 +365,7 @@ function IssuesWorkspace({
             </select>
           </div>
 
-          <label className="flex items-center gap-2 text-[12px]">
+          <label className="flex items-center gap-2 text-xs">
             <input
               type="checkbox"
               checked={assignedToMe}
@@ -379,7 +375,7 @@ function IssuesWorkspace({
           </label>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <span className="text-3xs uppercase tracking-wide text-muted-foreground">
               Ancho del tablero
             </span>
             <div className="flex gap-1" role="group" aria-label="Ancho del tablero">
@@ -389,7 +385,7 @@ function IssuesWorkspace({
                   type="button"
                   aria-pressed={density === option}
                   onClick={() => setDensity(option)}
-                  className={`flex-1 rounded border px-1.5 py-1 text-[11px] transition-colors ${
+                  className={`flex-1 rounded border px-1.5 py-1 text-2xs transition-colors ${
                     density === option
                       ? "border-ring bg-accent text-foreground"
                       : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
@@ -402,9 +398,7 @@ function IssuesWorkspace({
           </div>
 
           <label className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Buscar
-            </span>
+            <span className="text-3xs uppercase tracking-wide text-muted-foreground">Buscar</span>
             <span className="relative">
               <SearchIcon
                 aria-hidden
@@ -415,12 +409,12 @@ function IssuesWorkspace({
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="#ID o título"
-                className="w-full rounded border bg-background py-1 pl-7 pr-2 text-[12px] outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="w-full rounded border bg-background py-1 pl-7 pr-2 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
               />
             </span>
           </label>
 
-          <div className="mt-auto flex flex-col gap-1 text-[10px] text-muted-foreground">
+          <div className="mt-auto flex flex-col gap-1 text-3xs text-muted-foreground">
             <Button
               variant="ghost"
               size="sm"
@@ -441,7 +435,7 @@ function IssuesWorkspace({
 
         <main className="flex min-w-0 flex-1 flex-col gap-2 p-3">
           {stale || workItems.error ? (
-            <p className="flex items-center gap-2 rounded border border-destructive/40 bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
+            <p className="flex items-center gap-2 rounded border border-destructive/40 bg-destructive/10 px-2 py-1 text-2xs text-destructive">
               <CircleAlertIcon className="size-3.5 shrink-0" />
               {stale
                 ? `Azure no responde ahora mismo; esto es lo último que se pudo leer (${freshness ?? "sin fecha"}).`
@@ -450,7 +444,7 @@ function IssuesWorkspace({
           ) : null}
           {boardNotice ? (
             <p
-              className={`rounded border px-2 py-1 text-[11px] ${
+              className={`rounded border px-2 py-1 text-2xs ${
                 boardNotice.tone === "error"
                   ? "border-destructive/40 bg-destructive/10 text-destructive"
                   : "text-muted-foreground"
@@ -508,6 +502,7 @@ function IssuesWorkspace({
         ) : null}
         {detailItem ? (
           <IssueDetail
+            key={detailItem.id}
             item={detailItem}
             states={detailItem.states ?? states}
             iterations={sprints}

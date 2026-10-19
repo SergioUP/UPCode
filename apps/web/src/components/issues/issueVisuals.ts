@@ -64,10 +64,7 @@ export const areaColor = (area: string | null | undefined): string =>
  * the tooltip.
  */
 export const areaLeaf = (area: string | null | undefined): string | null => {
-  const leaf = area
-    ?.split("\\")
-    .filter((segment) => segment.length > 0)
-    .at(-1);
+  const leaf = area?.split("\\").findLast((segment) => segment.length > 0);
   return leaf ?? null;
 };
 
@@ -87,10 +84,7 @@ export const labelTint = (label: string): string => `hsl(${labelHue(label)} 70% 
 
 /** Democratic short form for the card: `12.10-23.10-26` instead of the full path. */
 export const iterationName = (path: string | null | undefined): string | null =>
-  path
-    ?.split("\\")
-    .filter((segment) => segment.length > 0)
-    .at(-1) ?? null;
+  path?.split("\\").findLast((segment) => segment.length > 0) ?? null;
 
 export const relativeTime = (value: string | null | undefined, now: number): string | null => {
   if (!value) return null;

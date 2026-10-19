@@ -121,7 +121,7 @@ export function IssueCalendar({
     <div className="min-h-0 flex-1 overflow-auto pr-1">
       {windowRange ? (
         <div className="mb-4">
-          <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-muted-foreground">
+          <div className="flex items-center justify-between text-3xs uppercase tracking-wide text-muted-foreground">
             <span>{dayLabel(new Date(windowRange.start).toISOString())}</span>
             <span>{dayLabel(new Date(windowRange.finish).toISOString())}</span>
           </div>
@@ -136,14 +136,12 @@ export function IssueCalendar({
                   width: `${segment.width}%`,
                   backgroundColor: segment.current ? "var(--primary)" : "var(--border)",
                 }}
-                title={`${segment.name} · ${dayLabel(segment.startDate)}`}
               />
             ))}
             {todayPercent !== null ? (
               <span
                 className="absolute -top-1 h-3.5 w-px bg-primary"
                 style={{ left: `${todayPercent}%` }}
-                title="hoy"
               />
             ) : null}
           </div>
@@ -169,16 +167,16 @@ export function IssueCalendar({
               <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-muted/30 px-3 py-2">
                 <h2 className="text-xs font-medium">{bucket.name}</h2>
                 {current ? (
-                  <span className="rounded-full bg-primary/15 px-2 py-px text-[10px] text-primary">
+                  <span className="rounded-full bg-primary/15 px-2 py-px text-3xs text-primary">
                     en curso
                   </span>
                 ) : null}
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-3xs text-muted-foreground">
                   {iteration?.startDate && iteration.finishDate
                     ? `${dayLabel(iteration.startDate)} → ${dayLabel(iteration.finishDate)}${span ? ` · ${span} días` : ""}`
                     : "sin fechas en Azure"}
                 </span>
-                <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                <span className="ml-auto font-mono text-3xs text-muted-foreground">
                   {bucket.items.length}
                 </span>
               </header>
@@ -196,7 +194,7 @@ export function IssueCalendar({
                   />
                 ))}
                 {bucket.items.length === 0 ? (
-                  <p className="px-1 py-1 text-[11px] text-muted-foreground">
+                  <p className="px-1 py-1 text-2xs text-muted-foreground">
                     Sprint abierto, todavía sin tareas.
                   </p>
                 ) : null}

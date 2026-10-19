@@ -87,7 +87,7 @@ export function IssueBoard({
             >
               <h2 className="min-w-0 flex-1 truncate text-xs font-semibold">{column.state}</h2>
               <span
-                className="shrink-0 rounded-full px-1.5 py-px font-mono text-[10px] font-semibold"
+                className="shrink-0 rounded-full px-1.5 py-px font-mono text-3xs font-semibold"
                 style={{ backgroundColor: color, color: inkOn(color) }}
               >
                 {column.items.length}
@@ -116,7 +116,7 @@ export function IssueBoard({
                 </div>
               ))}
               {column.items.length === 0 ? (
-                <p className="px-1 py-2 text-[11px] text-muted-foreground">
+                <p className="px-1 py-2 text-2xs text-muted-foreground">
                   {dragging === null ? "Vacío" : "Suelta aquí"}
                 </p>
               ) : null}

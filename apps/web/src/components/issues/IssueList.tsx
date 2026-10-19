@@ -27,14 +27,14 @@ export function IssueList({
 
   return (
     <div className="min-h-0 flex-1 overflow-auto rounded-lg border">
-      <table className="w-full border-collapse text-[12px]">
+      <table className="w-full border-collapse text-xs">
         <thead className="sticky top-0 z-10 bg-muted/70 backdrop-blur">
           <tr>
             {COLUMNS.map((column) => (
               <th
                 key={column}
                 scope="col"
-                className="border-b px-3 py-1.5 text-left text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+                className="border-b px-3 py-1.5 text-left text-3xs font-medium uppercase tracking-wide text-muted-foreground"
               >
                 {column}
               </th>
@@ -53,7 +53,7 @@ export function IssueList({
                 onClick={() => onOpen(item)}
               >
                 <td
-                  className="px-3 py-1.5 align-top font-mono text-[11px] font-semibold"
+                  className="px-3 py-1.5 align-top font-mono text-2xs font-semibold"
                   style={{
                     borderLeft: `3px solid ${stateHex(color)}`,
                     color: stateHex(color),

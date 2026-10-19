@@ -1,6 +1,7 @@
 import type { AzureDevOpsWorkItem } from "@t3tools/contracts";
 import { useMemo, type CSSProperties } from "react";
 
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   areaColor,
   areaLeaf,
@@ -41,7 +42,7 @@ export function AssigneeAvatar({
     for (const character of name) hash = (hash * 31 + character.codePointAt(0)!) % 360;
     return hash;
   }, [name]);
-  const className = size === "md" ? "size-6 text-[10px]" : "size-4.5 text-[9px]";
+  const className = size === "md" ? "size-6 text-3xs" : "size-4.5 text-3xs";
   return (
     <span
       className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold ${className}`}
@@ -54,8 +55,7 @@ export function AssigneeAvatar({
             }
           : { backgroundColor: "var(--muted)", color: "var(--muted-foreground)" }
       }
-      title={name ?? "Sin asignar"}
-      aria-hidden
+      aria-label={name ?? "Sin asignar"}
     >
       {initials(name)}
     </span>
@@ -66,7 +66,7 @@ export function LabelChip({ label }: { readonly label: string }) {
   const tint = labelTint(label);
   return (
     <span
-      className="inline-flex max-w-full items-center gap-1 truncate rounded-full border px-1.5 py-px text-[10px] leading-4"
+      className="inline-flex max-w-full items-center gap-1 truncate rounded-full border px-1.5 py-px text-3xs leading-4"
       style={{ borderColor: `color-mix(in srgb, ${tint} 45%, transparent)` }}
     >
       <span
@@ -93,7 +93,7 @@ export function StatePill({
   const hex = stateHex(color);
   return (
     <span
-      className="inline-flex max-w-full items-center truncate rounded px-1.5 py-px text-[10px] font-semibold leading-4"
+      className="inline-flex max-w-full items-center truncate rounded px-1.5 py-px text-3xs font-semibold leading-4"
       style={{ backgroundColor: hex, color: inkOn(hex) }}
     >
       {state}
@@ -104,19 +104,26 @@ export function StatePill({
 /**
  * The area is the client/project the work belongs to, so it gets its own colour,
  * derived from the name: the board stays readable without inventing a palette.
+ * The chip carries the leaf; the full path lives in its tooltip.
  */
 export function AreaChip({ area }: { readonly area: string | null | undefined }) {
   const leaf = areaLeaf(area);
   if (!leaf) return null;
   const hex = areaColor(area);
   return (
-    <span
-      className="inline-flex max-w-full items-center truncate rounded px-1.5 py-px text-[10px] font-medium uppercase leading-4 tracking-wide"
-      style={{ backgroundColor: hex, color: inkOn(hex) }}
-      title={area ?? undefined}
-    >
-      {leaf}
-    </span>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span
+            className="inline-flex max-w-full items-center truncate rounded px-1.5 py-px text-3xs font-medium uppercase leading-4 tracking-wide"
+            style={{ backgroundColor: hex, color: inkOn(hex) }}
+          />
+        }
+      >
+        {leaf}
+      </TooltipTrigger>
+      <TooltipPopup side="top">{area}</TooltipPopup>
+    </Tooltip>
   );
 }
 
@@ -159,7 +166,7 @@ export function IssueCard({
         onDragStart?.();
       }}
       onDragEnd={onDragEnd}
-      className={`group relative rounded-lg border transition-[box-shadow,border-color] hover:ring-2 hover:ring-[var(--issue-accent)] focus-within:ring-2 focus-within:ring-[var(--issue-accent)] ${
+      className={`group relative rounded-lg border transition hover:brightness-110 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring ${
         compact ? "p-2" : "p-2.5"
       }`}
       style={
@@ -177,7 +184,7 @@ export function IssueCard({
       >
         <span className="flex items-center gap-1.5">
           <span
-            className="inline-flex shrink-0 items-center rounded px-1 py-px font-mono text-[10px] font-semibold leading-4"
+            className="inline-flex shrink-0 items-center rounded px-1 py-px font-mono text-3xs font-semibold leading-4"
             style={{ backgroundColor: accent, color: inkOn(accent) }}
           >
             #{item.id}
@@ -186,12 +193,12 @@ export function IssueCard({
           <span className="ml-auto flex shrink-0 items-center gap-1.5">
             {compact ? <AssigneeAvatar name={item.assignedTo} /> : null}
             {!compact && changed ? (
-              <span className="text-[10px] text-muted-foreground">{changed}</span>
+              <span className="text-3xs text-muted-foreground">{changed}</span>
             ) : null}
           </span>
         </span>
         <span
-          className={`mt-1.5 block text-[13px] leading-snug font-medium ${
+          className={`mt-1.5 block text-sm leading-snug font-medium ${
             compact ? "line-clamp-2" : "line-clamp-3"
           }`}
         >
@@ -200,7 +207,7 @@ export function IssueCard({
         <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <AreaChip area={item.area} />
           {showIteration ? (
-            <span className="truncate text-[10px] text-muted-foreground">
+            <span className="truncate text-3xs text-muted-foreground">
               {iterationName(item.iteration) ?? "sin sprint"}
             </span>
           ) : null}
@@ -216,7 +223,7 @@ export function IssueCard({
       {compact ? null : (
         <span className="mt-1.5 flex items-center gap-1.5">
           <AssigneeAvatar name={item.assignedTo} />
-          <span className="truncate text-[10px] text-muted-foreground">
+          <span className="truncate text-3xs text-muted-foreground">
             {item.assignedTo ?? "Sin asignar"}
           </span>
         </span>
