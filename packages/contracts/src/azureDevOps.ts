@@ -24,6 +24,7 @@ export const AzureDevOpsWorkItemStateOption = Schema.Struct({
   color: Schema.String,
   category: Schema.String,
 });
+export type AzureDevOpsWorkItemStateOption = typeof AzureDevOpsWorkItemStateOption.Type;
 export const AzureDevOpsWorkItemRelation = Schema.Struct({
   name: Schema.String,
   id: Schema.NullOr(Schema.Int),
@@ -34,6 +35,16 @@ export const AzureDevOpsWorkItemField = Schema.Struct({
   label: Schema.String,
   value: Schema.String,
 });
+/**
+ * Labels are local to UPCode: they are never read from or written to ADO, so this
+ * map is the whole source of truth. Keyed by `project#workItemId`, the way the
+ * work-item views identify an item inside one organization.
+ */
+export const AzureDevOpsIssueLabels = Schema.Record(Schema.String, Schema.Array(Schema.String));
+export type AzureDevOpsIssueLabels = typeof AzureDevOpsIssueLabels.Type;
+
+/** `project#workItemId`, the key `AzureDevOpsIssueLabels` uses. */
+export const azureDevOpsIssueKey = (project: string, id: number): string => `${project}#${id}`;
 export const AzureDevOpsWorkItem = Schema.Struct({
   id: Schema.Int,
   project: Schema.String,
@@ -46,6 +57,13 @@ export const AzureDevOpsWorkItem = Schema.Struct({
   url: Schema.String,
   changedAt: Schema.NullOr(Schema.String),
   area: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  /** ADO avatar for the assignee; the board and the list use it as the card's identity. */
+  assignedToAvatar: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  assignedToEmail: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  parentId: Schema.optionalKey(Schema.NullOr(Schema.Int)),
+  /** Dates of the sprint this item belongs to, so the calendar needs no extra call. */
+  iterationStart: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  iterationFinish: Schema.optionalKey(Schema.NullOr(Schema.String)),
   reason: Schema.optionalKey(Schema.NullOr(Schema.String)),
   priority: Schema.optionalKey(Schema.NullOr(Schema.String)),
   createdBy: Schema.optionalKey(Schema.NullOr(Schema.String)),
@@ -55,6 +73,7 @@ export const AzureDevOpsWorkItem = Schema.Struct({
   relations: Schema.optionalKey(Schema.Array(AzureDevOpsWorkItemRelation)),
   fields: Schema.optionalKey(Schema.Array(AzureDevOpsWorkItemField)),
 });
+export type AzureDevOpsWorkItem = typeof AzureDevOpsWorkItem.Type;
 export const AzureDevOpsRepository = Schema.Struct({
   id: Schema.String,
   project: Schema.String,

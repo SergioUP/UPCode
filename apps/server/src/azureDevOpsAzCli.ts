@@ -1,6 +1,7 @@
 // @effect-diagnostics nodeBuiltinImport:off globalTimers:off -- A local CLI probe owns its own child process and hard timeout.
 import * as Effect from "effect/Effect";
-import { spawn } from "node:child_process";
+import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as NodeChildProcess from "node:child_process";
 
 type RunResult = { readonly code: number | null; readonly stdout: string; readonly stderr: string };
 
@@ -15,9 +16,9 @@ const runAz = (args: string[], timeoutMs = 8_000): Effect.Effect<RunResult> =>
           settled = true;
           resolve(result);
         };
-        let child: ReturnType<typeof spawn>;
+        let child: ReturnType<typeof NodeChildProcess.spawn>;
         try {
-          child = spawn("az", args, { shell: true, windowsHide: true });
+          child = NodeChildProcess.spawn("az", args, { shell: true, windowsHide: true });
         } catch {
           done({ code: -1, stdout: "", stderr: "spawn failed" });
           return;
@@ -52,6 +53,7 @@ const runAz = (args: string[], timeoutMs = 8_000): Effect.Effect<RunResult> =>
 const LOGIN_SCRIPT = "az extension add --name azure-devops && az login --allow-no-subscriptions";
 
 export const make = Effect.gen(function* () {
+  const hostPlatform = yield* HostProcess.Platform;
   const status = () =>
     Effect.gen(function* () {
       const version = yield* runAz(["--version"]);
@@ -74,21 +76,24 @@ export const make = Effect.gen(function* () {
   const open = () =>
     Effect.sync(() => {
       try {
-        if (process.platform === "win32") {
-          const child = spawn(`start "UPCode - Azure CLI" cmd /k "${LOGIN_SCRIPT}"`, {
-            shell: true,
-            detached: true,
-            stdio: "ignore",
-            windowsHide: false,
-          });
+        if (hostPlatform === "win32") {
+          const child = NodeChildProcess.spawn(
+            `start "UPCode - Azure CLI" cmd /k "${LOGIN_SCRIPT}"`,
+            {
+              shell: true,
+              detached: true,
+              stdio: "ignore",
+              windowsHide: false,
+            },
+          );
           child.unref();
           return { opened: true };
         }
         const terminal =
-          process.platform === "darwin"
+          hostPlatform === "darwin"
             ? ["open", ["-a", "Terminal", "az", "login"]]
             : ["x-terminal-emulator", ["-e", "bash", "-lc", `${LOGIN_SCRIPT}; exec bash`]];
-        const child = spawn(terminal[0] as string, terminal[1] as string[], {
+        const child = NodeChildProcess.spawn(terminal[0] as string, terminal[1] as string[], {
           detached: true,
           stdio: "ignore",
         });

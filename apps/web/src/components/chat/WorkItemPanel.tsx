@@ -139,7 +139,7 @@ export function WorkItemPanel({
             setSearch(event.target.value);
             setPickedId("");
           }}
-          className="w-full rounded-md border bg-background py-2 pl-8 pr-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="w-full rounded-md border bg-background py-2 pl-8 pr-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
         />
       </div>
       {items.error ? (
@@ -167,12 +167,12 @@ export function WorkItemPanel({
                       active ? "bg-primary/10" : "hover:bg-muted"
                     }`}
                   >
-                    <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-medium text-primary">
+                    <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-2xs font-medium text-primary">
                       #{entry.id}
                     </span>
                     <span className="min-w-0">
                       <span className="block font-medium">{entry.title}</span>
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-2xs text-muted-foreground">
                         {entry.type} · {entry.state}
                         {entry.assignedTo ? ` · ${entry.assignedTo}` : ""}
                       </span>

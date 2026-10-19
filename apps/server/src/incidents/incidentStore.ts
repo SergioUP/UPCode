@@ -1,8 +1,8 @@
 // @effect-diagnostics nodeBuiltinImport:off globalDate:off cryptoRandomUUID:off preferSchemaOverJson:off -- Incident Center keeps one small JSON snapshot on the server's state dir.
 import { IncidentStoreError, type Incident, type IncidentEvidence } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import * as NodeFSP from "node:fs/promises";
+import * as NodePath from "node:path";
 
 import * as ServerConfig from "../config.ts";
 import { setIncidentThreadIds } from "./incidentContext.ts";
@@ -22,7 +22,7 @@ export const make = Effect.gen(function* () {
     Effect.tryPromise({
       try: async (): Promise<Snapshot> => {
         try {
-          const parsed = JSON.parse(await readFile(path, "utf8")) as Partial<Snapshot>;
+          const parsed = JSON.parse(await NodeFSP.readFile(path, "utf8")) as Partial<Snapshot>;
           const incidents = Array.isArray(parsed.incidents) ? parsed.incidents : [];
           setIncidentThreadIds(incidents.map((incident) => incident.threadId));
           return { incidents };
@@ -44,8 +44,8 @@ export const make = Effect.gen(function* () {
   const write = (snapshot: Snapshot): Effect.Effect<void, IncidentStoreError> =>
     Effect.tryPromise({
       try: async () => {
-        await mkdir(dirname(path), { recursive: true });
-        await writeFile(path, JSON.stringify(snapshot, null, 2), "utf8");
+        await NodeFSP.mkdir(NodePath.dirname(path), { recursive: true });
+        await NodeFSP.writeFile(path, JSON.stringify(snapshot, null, 2), "utf8");
       },
       catch: () =>
         new IncidentStoreError({

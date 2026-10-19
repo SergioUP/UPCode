@@ -6,6 +6,7 @@ import * as NodePath from "node:path";
 
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
+import * as HostProcess from "@t3tools/shared/HostProcess";
 import { type CliShimTarget, renderCliShim } from "./DesktopCliShim.ts";
 
 const directories: Array<string> = [];
@@ -72,7 +73,7 @@ const fakeAppImage = (canMount = true) => {
 };
 
 describe("renderCliShim", () => {
-  it.skipIf(process.platform === "win32")(
+  it.skipIf(HostProcess.Platform.defaultValue() === "win32")(
     "runs the AppImage's bundled CLI with every argument and unmounts after",
     () => {
       const { root, image, shim } = fakeAppImage();
@@ -95,7 +96,7 @@ describe("renderCliShim", () => {
     },
   );
 
-  it.skipIf(process.platform === "win32")(
+  it.skipIf(HostProcess.Platform.defaultValue() === "win32")(
     "extracts the AppImage where it cannot be mounted",
     () => {
       const { shim } = fakeAppImage(false);
@@ -108,7 +109,7 @@ describe("renderCliShim", () => {
     },
   );
 
-  it.skipIf(process.platform === "win32")(
+  it.skipIf(HostProcess.Platform.defaultValue() === "win32")(
     "keeps the install's own home even if T3CODE_HOME is inherited",
     () => {
       const root = tempRoot();
@@ -130,34 +131,40 @@ describe("renderCliShim", () => {
     },
   );
 
-  it.skipIf(process.platform === "win32")("runs an installed app's server directly", () => {
-    const root = tempRoot();
-    const executable = NodePath.join(root, "opt", "T3 Code", "t3code");
-    writeExecutable(executable, REPORTER);
-    const shim = writeShim(root, {
-      kind: "direct",
-      executable,
-      entry: "/opt/T3's/app.asar/bin.mjs",
-    });
-    expect(run(shim, ["browser", "setup"]).stdout.split("\n").slice(1)).toEqual([
-      "/opt/T3's/app.asar/bin.mjs",
-      "browser",
-      "setup",
-      "",
-    ]);
-  });
+  it.skipIf(HostProcess.Platform.defaultValue() === "win32")(
+    "runs an installed app's server directly",
+    () => {
+      const root = tempRoot();
+      const executable = NodePath.join(root, "opt", "T3 Code", "t3code");
+      writeExecutable(executable, REPORTER);
+      const shim = writeShim(root, {
+        kind: "direct",
+        executable,
+        entry: "/opt/T3's/app.asar/bin.mjs",
+      });
+      expect(run(shim, ["browser", "setup"]).stdout.split("\n").slice(1)).toEqual([
+        "/opt/T3's/app.asar/bin.mjs",
+        "browser",
+        "setup",
+        "",
+      ]);
+    },
+  );
 
-  it.skipIf(process.platform === "win32")("tells a person whose app moved to reopen it", () => {
-    const root = tempRoot();
-    const shim = writeShim(root, {
-      kind: "direct",
-      executable: NodePath.join(root, "Gone.app/Contents/MacOS/T3 Code"),
-      entry: "/bin.mjs",
-    });
-    const result = run(shim, ["--version"]);
-    expect(result.status).toBe(127);
-    expect(result.stderr).toContain("Open the app once to update this command.");
-  });
+  it.skipIf(HostProcess.Platform.defaultValue() === "win32")(
+    "tells a person whose app moved to reopen it",
+    () => {
+      const root = tempRoot();
+      const shim = writeShim(root, {
+        kind: "direct",
+        executable: NodePath.join(root, "Gone.app/Contents/MacOS/T3 Code"),
+        entry: "/bin.mjs",
+      });
+      const result = run(shim, ["--version"]);
+      expect(result.status).toBe(127);
+      expect(result.stderr).toContain("Open the app once to update this command.");
+    },
+  );
 
   it("writes a Windows launcher that keeps cmd from reinterpreting paths", () => {
     const executable = "C:\\Apps\\R&whoami&X 100%\\!CHANNEL!\\T3 Code.exe";
