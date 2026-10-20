@@ -1,25 +1,45 @@
 import type { AzureDevOpsWorkItem, AzureDevOpsWorkItemStateOption } from "@t3tools/contracts";
-import { Fragment, useMemo } from "react";
+import { useMemo } from "react";
 
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { areaLeaf, groupBySprint, hoursLabel, inkOn, stateHex, taskDate } from "./issueVisuals";
+import {
+  areaLeaf,
+  groupBySprint,
+  hoursLabel,
+  inkOn,
+  relativeTime,
+  stateHex,
+  stateVeil,
+  taskDate,
+} from "./issueVisuals";
 
 const totalHours = (values: ReadonlyArray<number | null | undefined>): number =>
   values.reduce<number>((total, value) => total + (value ?? 0), 0);
 
+const initials = (name: string): string =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+
 /**
- * Every project at once, in sprint order: the first group is the oldest sprint, because that is
- * the work that should have happened first. Each row says what the sub-task belongs to, where it
- * lives, when its sprint runs and what it costs, so the list reads like the team's own sheet.
+ * Every project at once, in sprint order, one card per task: the first group is the oldest
+ * sprint because that is the work that should have happened first. Each card carries the two
+ * things a status sheet needs at a glance — where the task lives and what it costs — plus the
+ * person, the priority and when it last moved.
  */
 export function IssueTasks({
   items,
   states,
   onOpen,
+  now,
 }: {
   readonly items: readonly AzureDevOpsWorkItem[];
   readonly states: readonly AzureDevOpsWorkItemStateOption[];
   readonly onOpen: (item: AzureDevOpsWorkItem) => void;
+  readonly now: number;
 }) {
   const colorByState = useMemo(
     () => new Map(states.map((state) => [state.name, state.color])),
@@ -36,113 +56,144 @@ export function IssueTasks({
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto rounded-md border">
-      <table className="w-full border-collapse text-sm" aria-label="Tareas por sprint">
-        <thead className="sticky top-0 z-10 bg-background">
-          <tr className="border-b text-3xs uppercase tracking-wide text-muted-foreground">
-            <th className="w-6 p-2" aria-label="Estado" />
-            <th className="p-2 text-left font-medium">Subtarea</th>
-            <th className="w-40 p-2 text-left font-medium">Tarea</th>
-            <th className="w-44 p-2 text-left font-medium">Proyecto</th>
-            <th className="w-24 p-2 text-right font-medium">Inicio</th>
-            <th className="w-24 p-2 text-right font-medium">Fin</th>
-            <th className="w-20 p-2 text-right font-medium">H. Plan.</th>
-            <th className="w-20 p-2 text-right font-medium">Dedicadas</th>
-            <th className="w-20 p-2 text-right font-medium">H. Pen.</th>
-          </tr>
-        </thead>
-        <tbody>
-          {groups.map((group) => (
-            <Fragment key={group.sprint?.path ?? "sin-sprint"}>
-              <tr className="border-b bg-muted/60">
-                <td colSpan={9} className="px-2 py-1.5">
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-3xs">
-                    <span className="font-semibold uppercase tracking-wide">
-                      {group.sprint?.name ?? "Sin sprint"}
-                    </span>
-                    {group.sprint ? (
-                      <span className="text-muted-foreground">
-                        {taskDate(group.sprint.startDate)} → {taskDate(group.sprint.finishDate)}
-                      </span>
-                    ) : null}
-                    <span className="text-muted-foreground">{group.items.length} tareas</span>
-                    <span className="ml-auto flex gap-3 font-mono tabular-nums text-muted-foreground">
-                      <span>
-                        Plan.{" "}
-                        {hoursLabel(totalHours(group.items.map((item) => item.originalEstimate)))}
-                      </span>
-                      <span>
-                        Dedicadas{" "}
-                        {hoursLabel(totalHours(group.items.map((item) => item.completedWork)))}
-                      </span>
-                      <span>
-                        Pend.{" "}
-                        {hoursLabel(totalHours(group.items.map((item) => item.remainingWork)))}
-                      </span>
-                    </span>
-                  </div>
-                </td>
-              </tr>
+    <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="flex flex-col gap-4">
+        {groups.map((group) => (
+          <section key={group.sprint?.path ?? "sin-sprint"} className="flex flex-col gap-1.5">
+            <header className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-1 text-3xs">
+              <h2 className="font-semibold uppercase tracking-wide">
+                {group.sprint?.name ?? "Sin sprint"}
+              </h2>
+              {group.sprint ? (
+                <span className="text-muted-foreground">
+                  {taskDate(group.sprint.startDate)} → {taskDate(group.sprint.finishDate)}
+                </span>
+              ) : null}
+              <span className="text-muted-foreground">{group.items.length} tareas</span>
+              <span className="ml-auto flex gap-3 font-mono tabular-nums text-muted-foreground">
+                <span>
+                  Plan. {hoursLabel(totalHours(group.items.map((item) => item.originalEstimate)))}
+                </span>
+                <span>
+                  Dedicadas {hoursLabel(totalHours(group.items.map((item) => item.completedWork)))}
+                </span>
+                <span>
+                  Pend. {hoursLabel(totalHours(group.items.map((item) => item.remainingWork)))}
+                </span>
+              </span>
+            </header>
+
+            <ul className="flex flex-col gap-1.5">
               {group.items.map((item) => {
                 const hex = stateHex(colorByState.get(item.state));
+                const area = areaLeaf(item.area);
+                const changed = relativeTime(item.changedAt, now);
                 return (
-                  <tr
-                    key={`${item.project}#${item.id}`}
-                    onClick={() => onOpen(item)}
-                    className="cursor-pointer border-b border-border/60 align-top last:border-b-0 hover:bg-accent/40"
-                  >
-                    <td className="py-1.5 pl-2 pr-1">
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <span
-                              className="block size-2.5 rounded-full"
-                              style={{ backgroundColor: hex }}
-                            />
-                          }
-                        />
-                        <TooltipPopup side="top">{item.state}</TooltipPopup>
-                      </Tooltip>
-                    </td>
-                    <td className="px-2 py-1.5">
-                      <span className="flex items-start gap-1.5">
-                        <span
-                          className="mt-px shrink-0 rounded px-1 py-px font-mono text-3xs font-semibold"
-                          style={{ backgroundColor: hex, color: inkOn(hex) }}
-                        >
-                          #{item.id}
-                        </span>
-                        <span className="min-w-0 text-xs leading-snug">{item.title}</span>
-                      </span>
-                    </td>
-                    <td className="px-2 py-1.5 text-2xs text-muted-foreground">
-                      {item.parentTitle ?? "—"}
-                    </td>
-                    <td className="px-2 py-1.5 text-2xs">
-                      {areaLeaf(item.area) ?? item.project ?? "—"}
-                    </td>
-                    <td className="px-2 py-1.5 text-right text-2xs tabular-nums">
-                      {taskDate(item.iterationStart)}
-                    </td>
-                    <td className="px-2 py-1.5 text-right text-2xs tabular-nums">
-                      {taskDate(item.iterationFinish)}
-                    </td>
-                    <td className="px-2 py-1.5 text-right font-mono text-2xs tabular-nums">
-                      {hoursLabel(item.originalEstimate)}
-                    </td>
-                    <td className="px-2 py-1.5 text-right font-mono text-2xs tabular-nums">
-                      {hoursLabel(item.completedWork)}
-                    </td>
-                    <td className="px-2 py-1.5 text-right font-mono text-2xs tabular-nums">
-                      {hoursLabel(item.remainingWork)}
-                    </td>
-                  </tr>
+                  <li key={`${item.project}#${item.id}`}>
+                    <button
+                      type="button"
+                      onClick={() => onOpen(item)}
+                      className="group flex w-full items-start gap-3 rounded-lg border border-border/70 px-3 py-2.5 text-left transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                      style={{ borderLeft: `3px solid ${hex}` }}
+                    >
+                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                          <span
+                            className="shrink-0 rounded px-1.5 py-px text-3xs font-semibold"
+                            style={{ backgroundColor: stateVeil(hex, 22), color: hex }}
+                          >
+                            {item.state}
+                          </span>
+                          <span
+                            className="shrink-0 rounded px-1 py-px font-mono text-3xs font-semibold"
+                            style={{ backgroundColor: hex, color: inkOn(hex) }}
+                          >
+                            #{item.id}
+                          </span>
+                          <span className="min-w-0 text-sm font-medium leading-snug">
+                            {item.title}
+                          </span>
+                        </div>
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-muted-foreground">
+                          <span className="max-w-[18rem] truncate">
+                            {item.parentTitle ?? "sin tarea padre"}
+                          </span>
+                          {area ? (
+                            <>
+                              <span aria-hidden>·</span>
+                              <span className="max-w-[16rem] truncate">{area}</span>
+                            </>
+                          ) : null}
+                          <span aria-hidden>·</span>
+                          <span className="tabular-nums">
+                            {taskDate(item.iterationStart)} → {taskDate(item.iterationFinish)}
+                          </span>
+                          {item.assignedTo ? (
+                            <>
+                              <span aria-hidden>·</span>
+                              <span className="inline-flex items-center gap-1">
+                                <span className="inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/15 text-4xs font-semibold text-primary">
+                                  {initials(item.assignedTo)}
+                                </span>
+                                <span className="max-w-[12rem] truncate">{item.assignedTo}</span>
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span aria-hidden>·</span>
+                              <span>sin asignar</span>
+                            </>
+                          )}
+                          {item.priority ? (
+                            <>
+                              <span aria-hidden>·</span>
+                              <Tooltip>
+                                <TooltipTrigger
+                                  render={
+                                    <span className="rounded bg-muted px-1 py-px text-3xs font-medium" />
+                                  }
+                                >
+                                  P{item.priority}
+                                </TooltipTrigger>
+                                <TooltipPopup side="top">Prioridad {item.priority}</TooltipPopup>
+                              </Tooltip>
+                            </>
+                          ) : null}
+                          {changed ? (
+                            <>
+                              <span aria-hidden>·</span>
+                              <span>actualizada {changed}</span>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="grid shrink-0 grid-cols-3 gap-3 text-right">
+                        {(
+                          [
+                            ["Plan.", item.originalEstimate],
+                            ["Dedicadas", item.completedWork],
+                            ["Pend.", item.remainingWork],
+                          ] as const
+                        ).map(([label, value]) => (
+                          <span key={label} className="flex flex-col">
+                            <span className="text-3xs uppercase tracking-wide text-muted-foreground">
+                              {label}
+                            </span>
+                            <span className="font-mono text-xs tabular-nums">
+                              {hoursLabel(value)}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    </button>
+                  </li>
                 );
               })}
-            </Fragment>
-          ))}
-        </tbody>
-      </table>
+            </ul>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

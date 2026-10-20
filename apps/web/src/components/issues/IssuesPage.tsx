@@ -500,6 +500,7 @@ function IssuesWorkspace({
             <IssueTasks
               items={visibleItems}
               states={states}
+              now={now}
               onOpen={(item) => openIssue(item.id, item.project)}
             />
           ) : view === "board" ? (
