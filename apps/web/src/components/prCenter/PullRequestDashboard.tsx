@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeftIcon, SearchIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { useLiveRefresh } from "../../hooks/useLiveRefresh";
 import { useNavigateToMainApp } from "../sidebar/mainAppLocation";
 import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
 import { SidebarInset } from "../ui/sidebar";
@@ -154,6 +155,9 @@ export function PullRequestDashboard() {
   const environmentId = usePrimaryEnvironmentId();
   const [state, setState] = useState<"open" | "all">("open");
   const [involvement, setInvolvement] = useState<"all" | "authored" | "reviewing">("all");
+  const [host, setHost] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [repository, setRepository] = useState("");
   const [search, setSearch] = useState("");
   const list = useEnvironmentQuery(
     environmentId
@@ -162,17 +166,56 @@ export function PullRequestDashboard() {
   );
   const entries = list.data?.entries ?? [];
   const providers = list.data?.providers ?? [];
+  // The listing already refreshed on focus and every couple of minutes while the tab is visible,
+  // which is the same liveness the rest of the PR surfaces have.
+  useLiveRefresh(() => list.refresh(), { key: "pr-center", intervalMs: 120_000 });
+
+  const hosts = useMemo(
+    () =>
+      [...new Set(entries.map((entry) => entry.host))].sort((left, right) =>
+        left.localeCompare(right),
+      ),
+    [entries],
+  );
+  const projectOptions = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const entry of entries) {
+      if (host && entry.host !== host) continue;
+      byId.set(entry.projectId, entry.projectTitle);
+    }
+    return [...byId.entries()].sort(([, left], [, right]) => left.localeCompare(right, "es"));
+  }, [entries, host]);
+  const repositoryOptions = useMemo(() => {
+    const repositories = new Set<string>();
+    for (const entry of entries) {
+      if (host && entry.host !== host) continue;
+      if (projectId && entry.projectId !== projectId) continue;
+      repositories.add(entry.repository);
+    }
+    return [...repositories].sort((left, right) => left.localeCompare(right, "es"));
+  }, [entries, host, projectId]);
+
+  // A cascading choice must not survive the parent that offered it, so the select that changes
+  // clears its children instead of an effect resetting state after the fact.
   const term = search.trim().toLowerCase();
   const visible = useMemo(
     () =>
-      term
-        ? entries.filter((entry) =>
-            [entry.title, entry.repository, entry.headBranch, entry.baseBranch, entry.author?.name]
-              .filter(Boolean)
-              .some((value) => value!.toLowerCase().includes(term)),
-          )
-        : entries,
-    [entries, term],
+      entries.filter((entry) => {
+        if (host && entry.host !== host) return false;
+        if (projectId && entry.projectId !== projectId) return false;
+        if (repository && entry.repository !== repository) return false;
+        if (!term) return true;
+        return [
+          entry.title,
+          entry.repository,
+          entry.headBranch,
+          entry.baseBranch,
+          entry.author?.name,
+        ]
+          .filter((value): value is string => typeof value === "string")
+          .some((value) => value.toLowerCase().includes(term));
+      }),
+    [entries, host, projectId, repository, term],
   );
 
   return (
@@ -257,6 +300,77 @@ export function PullRequestDashboard() {
           >
             Actualizar
           </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-2xs text-muted-foreground">
+          <label className="flex items-center gap-1">
+            Organización
+            <select
+              aria-label="Organización"
+              value={host}
+              onChange={(event) => {
+                setHost(event.target.value);
+                setProjectId("");
+                setRepository("");
+              }}
+              className="max-w-[13rem] rounded border bg-background px-1.5 py-1 text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+            >
+              <option value="">Todas</option>
+              {hosts.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-1">
+            Proyecto
+            <select
+              aria-label="Proyecto"
+              value={projectId}
+              onChange={(event) => {
+                setProjectId(event.target.value);
+                setRepository("");
+              }}
+              className="max-w-[15rem] rounded border bg-background px-1.5 py-1 text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+            >
+              <option value="">Todos</option>
+              {projectOptions.map(([id, title]) => (
+                <option key={id} value={id}>
+                  {title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-1">
+            Repositorio
+            <select
+              aria-label="Repositorio"
+              value={repository}
+              onChange={(event) => setRepository(event.target.value)}
+              className="max-w-[16rem] rounded border bg-background px-1.5 py-1 text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+            >
+              <option value="">Todos</option>
+              {repositoryOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+          {host || projectId || repository ? (
+            <button
+              type="button"
+              onClick={() => {
+                setHost("");
+                setProjectId("");
+                setRepository("");
+              }}
+              className="rounded-md border border-dashed px-2 py-1 text-2xs hover:bg-accent/50 hover:text-foreground"
+            >
+              Quitar filtros
+            </button>
+          ) : null}
         </div>
 
         {list.error ? (
