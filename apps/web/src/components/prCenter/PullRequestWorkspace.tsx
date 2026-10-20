@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import { useEnvironmentQuery } from "../../state/query";
 import { pullRequestEnvironment } from "../../state/pullRequests";
+import ChatMarkdown from "../ChatMarkdown";
 import { Button } from "../ui/button";
 import { SidebarInset } from "../ui/sidebar";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
@@ -281,9 +282,12 @@ export function PullRequestWorkspace({
                   {detail.error ? (
                     <p className="text-xs text-destructive">{detail.error}</p>
                   ) : detail.data?.body?.trim() ? (
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {detail.data.body}
-                    </p>
+                    <ChatMarkdown
+                      text={detail.data.body}
+                      cwd={undefined}
+                      environmentId={environmentId}
+                      className="text-sm"
+                    />
                   ) : (
                     emptyNote("Sin descripción.")
                   )}
@@ -394,9 +398,12 @@ export function PullRequestWorkspace({
                             </>
                           ) : null}
                         </div>
-                        <p className="whitespace-pre-wrap text-xs leading-relaxed">
-                          {comment.body}
-                        </p>
+                        <ChatMarkdown
+                          text={comment.body}
+                          cwd={undefined}
+                          environmentId={environmentId}
+                          className="text-xs"
+                        />
                       </li>
                     ))}
                   </ul>
