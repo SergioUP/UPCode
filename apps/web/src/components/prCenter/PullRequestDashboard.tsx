@@ -1,10 +1,20 @@
 import type { PullRequestListEntry } from "@t3tools/contracts";
-import { SearchIcon } from "lucide-react";
+import { ChevronDownIcon, SearchIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useLiveRefresh } from "../../hooks/useLiveRefresh";
+import { azureDevOps } from "../../state/azureDevOps";
 import { useNavigateToMainApp } from "../sidebar/mainAppLocation";
 import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
+import {
+  Combobox,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxPopup,
+  ComboboxSearchInput,
+  ComboboxTrigger,
+} from "../ui/combobox";
 import { ArrowLeftIcon } from "lucide-react";
 import { SidebarInset } from "../ui/sidebar";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
@@ -20,6 +30,80 @@ import {
   relativeAge,
   shortRepository,
 } from "./pullRequestVisuals";
+
+type SelectOption = { readonly id: string; readonly label: string };
+
+/** A filter that carries its own search box: Azure has dozens of projects and repositories. */
+function SearchSelect({
+  label,
+  placeholder,
+  value,
+  options,
+  onChange,
+}: {
+  readonly label: string;
+  readonly placeholder: string;
+  readonly value: string;
+  readonly options: ReadonlyArray<SelectOption>;
+  readonly onChange: (value: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const selected = options.find((option) => option.id === value) ?? null;
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return needle
+      ? options.filter((option) => option.label.toLowerCase().includes(needle))
+      : options;
+  }, [options, query]);
+  return (
+    <Combobox
+      items={options}
+      filteredItems={filtered}
+      autoHighlight
+      itemToStringLabel={(option: SelectOption) => option.label}
+      isItemEqualToValue={(left: SelectOption, right: SelectOption) => left.id === right.id}
+      value={selected}
+      onOpenChange={(open) => {
+        if (!open) setQuery("");
+      }}
+      onValueChange={(option: SelectOption | null) => onChange(option?.id ?? "")}
+    >
+      <ComboboxTrigger
+        render={
+          <button
+            type="button"
+            aria-label={label}
+            className="inline-flex max-w-[17rem] items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+          />
+        }
+      >
+        <span className="text-muted-foreground">{label}</span>
+        <span className="max-w-[11rem] truncate">{selected?.label ?? placeholder}</span>
+        <ChevronDownIcon className="size-3 shrink-0 opacity-60" />
+      </ComboboxTrigger>
+      <ComboboxPopup align="start" className="w-64">
+        <ComboboxSearchInput
+          aria-label={`Buscar ${label.toLowerCase()}`}
+          placeholder="Buscar…"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        <ComboboxEmpty>Sin resultados.</ComboboxEmpty>
+        <ComboboxList>
+          {(option: SelectOption) => (
+            <ComboboxItem key={option.id} value={option}>
+              {option.label}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxPopup>
+    </Combobox>
+  );
+}
+
+/** `owner/name` or a bare name both identify a repository inside a project. */
+const belongsToRepository = (entry: PullRequestListEntry, name: string): boolean =>
+  entry.repository === name || entry.repository.endsWith(`/${name}`);
 
 function PullRequestCard({
   entry,
@@ -122,7 +206,7 @@ export function PullRequestDashboard() {
   const [state, setState] = useState<"open" | "all">("open");
   const [involvement, setInvolvement] = useState<"all" | "authored" | "reviewing">("all");
   const [host, setHost] = useState("");
-  const [projectId, setProjectId] = useState("");
+  const [projectName, setProjectName] = useState("");
   const [repository, setRepository] = useState("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<PullRequestListEntry | null>(null);
@@ -144,31 +228,58 @@ export function PullRequestDashboard() {
       ),
     [entries],
   );
-  const projectOptions = useMemo(() => {
-    const byId = new Map<string, string>();
-    for (const entry of entries) {
-      if (host && entry.host !== host) continue;
-      byId.set(entry.projectId, entry.projectTitle);
+  /**
+   * The projects in this filter are Azure DevOps' own projects, not the local checkouts: the
+   * question a reviewer asks is "what is waiting in Shopify", and a project with no checkout yet
+   * simply answers with an empty list instead of hiding.
+   */
+  const adoProjects = useEnvironmentQuery(
+    environmentId ? azureDevOps.projects({ environmentId, input: {} }) : null,
+  );
+  const adoRepositories = useEnvironmentQuery(
+    environmentId && projectName
+      ? azureDevOps.repositories({ environmentId, input: { project: projectName } })
+      : null,
+  );
+  const projectOptions = useMemo<ReadonlyArray<{ id: string; label: string }>>(() => {
+    const names = (adoProjects.data ?? []).map((project) => project.name).filter(Boolean);
+    if (names.length > 0) {
+      return [...new Set(names)]
+        .sort((left, right) => left.localeCompare(right, "es"))
+        .map((name) => ({ id: name, label: name }));
     }
-    return [...byId.entries()].sort(([, left], [, right]) => left.localeCompare(right, "es"));
-  }, [entries, host]);
-  const repositoryOptions = useMemo(() => {
-    const repositories = new Set<string>();
-    for (const entry of entries) {
-      if (host && entry.host !== host) continue;
-      if (projectId && entry.projectId !== projectId) continue;
-      repositories.add(entry.repository);
-    }
-    return [...repositories].sort((left, right) => left.localeCompare(right, "es"));
-  }, [entries, host, projectId]);
+    // Azure not reachable: fall back to the projects the listing itself knows about.
+    return [...new Map(entries.map((entry) => [entry.projectTitle, entry.projectTitle])).keys()]
+      .sort((left, right) => left.localeCompare(right, "es"))
+      .map((name) => ({ id: name, label: name }));
+  }, [adoProjects.data, entries]);
+  const repositoryOptions = useMemo<ReadonlyArray<{ id: string; label: string }>>(() => {
+    const fromHost = (adoRepositories.data ?? []).map((repository) => repository.name);
+    const names =
+      fromHost.length > 0
+        ? fromHost
+        : entries
+            .filter((entry) => !host || entry.host === host)
+            .map((entry) => shortRepository(entry.repository));
+    const unique = [...new Set(names)].sort((left, right) => left.localeCompare(right, "es"));
+    return unique.map((name) => ({ id: name, label: name }));
+  }, [adoRepositories.data, entries, host]);
+  /** A cached project's repositories: the row belongs to the project when it is one of its repos. */
+  const projectRepositories = useMemo(
+    () => new Set((adoRepositories.data ?? []).map((repository) => repository.name)),
+    [adoRepositories.data],
+  );
 
   const term = search.trim().toLowerCase();
   const visible = useMemo(
     () =>
       entries.filter((entry) => {
         if (host && entry.host !== host) return false;
-        if (projectId && entry.projectId !== projectId) return false;
-        if (repository && entry.repository !== repository) return false;
+        if (projectName && projectRepositories.size > 0) {
+          const names = [...projectRepositories];
+          if (!names.some((name) => belongsToRepository(entry, name))) return false;
+        }
+        if (repository && !belongsToRepository(entry, repository)) return false;
         if (!term) return true;
         return [
           entry.title,
@@ -180,7 +291,7 @@ export function PullRequestDashboard() {
           .filter((value): value is string => typeof value === "string")
           .some((value) => value.toLowerCase().includes(term));
       }),
-    [entries, host, projectId, repository, term],
+    [entries, host, projectName, projectRepositories, repository, term],
   );
 
   if (selected && environmentId) {
@@ -278,67 +389,40 @@ export function PullRequestDashboard() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-2xs text-muted-foreground">
-          <label className="flex items-center gap-1">
-            Organización
-            <select
-              aria-label="Organización"
-              value={host}
-              onChange={(event) => {
-                setHost(event.target.value);
-                setProjectId("");
-                setRepository("");
-              }}
-              className="max-w-[13rem] rounded border bg-background px-1.5 py-1 text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
-            >
-              <option value="">Todas</option>
-              {hosts.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center gap-1">
-            Proyecto
-            <select
-              aria-label="Proyecto"
-              value={projectId}
-              onChange={(event) => {
-                setProjectId(event.target.value);
-                setRepository("");
-              }}
-              className="max-w-[15rem] rounded border bg-background px-1.5 py-1 text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
-            >
-              <option value="">Todos</option>
-              {projectOptions.map(([id, title]) => (
-                <option key={id} value={id}>
-                  {title}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center gap-1">
-            Repositorio
-            <select
-              aria-label="Repositorio"
-              value={repository}
-              onChange={(event) => setRepository(event.target.value)}
-              className="max-w-[16rem] rounded border bg-background px-1.5 py-1 text-xs text-foreground outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
-            >
-              <option value="">Todos</option>
-              {repositoryOptions.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
-          {host || projectId || repository ? (
+          <SearchSelect
+            label="Organización"
+            placeholder="Todas"
+            value={host}
+            options={hosts.map((value) => ({ id: value, label: value }))}
+            onChange={(value) => {
+              setHost(value);
+              setProjectName("");
+              setRepository("");
+            }}
+          />
+          <SearchSelect
+            label="Proyecto"
+            placeholder="Todos"
+            value={projectName}
+            options={projectOptions}
+            onChange={(value) => {
+              setProjectName(value);
+              setRepository("");
+            }}
+          />
+          <SearchSelect
+            label="Repositorio"
+            placeholder="Todos"
+            value={repository}
+            options={repositoryOptions}
+            onChange={setRepository}
+          />
+          {host || projectName || repository ? (
             <button
               type="button"
               onClick={() => {
                 setHost("");
-                setProjectId("");
+                setProjectName("");
                 setRepository("");
               }}
               className="rounded-md border border-dashed px-2 py-1 text-2xs hover:bg-accent/50 hover:text-foreground"
