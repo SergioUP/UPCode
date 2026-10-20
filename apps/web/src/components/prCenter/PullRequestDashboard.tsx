@@ -1,75 +1,41 @@
 import type { PullRequestListEntry } from "@t3tools/contracts";
-import { Link } from "@tanstack/react-router";
-import { ArrowLeftIcon, SearchIcon } from "lucide-react";
+import { SearchIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useLiveRefresh } from "../../hooks/useLiveRefresh";
 import { useNavigateToMainApp } from "../sidebar/mainAppLocation";
 import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
+import { ArrowLeftIcon } from "lucide-react";
 import { SidebarInset } from "../ui/sidebar";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
 import { pullRequestEnvironment } from "../../state/pullRequests";
 import { usePrimaryEnvironmentId } from "../../state/environments";
 import { useEnvironmentQuery } from "../../state/query";
+import { PullRequestWorkspace } from "./PullRequestWorkspace";
+import {
+  initials,
+  PR_CHECK_COLOR,
+  PR_STATE_COLOR,
+  PR_STATE_LABEL,
+  relativeAge,
+  shortRepository,
+} from "./pullRequestVisuals";
 
-/** One colour per state, so a column of cards can be read without reading the pills. */
-const STATE_COLOR: Record<PullRequestListEntry["state"], string> = {
-  open: "#4c9aff",
-  merged: "#22c55e",
-  closed: "#ef4444",
-};
-
-const STATE_LABEL: Record<PullRequestListEntry["state"], string> = {
-  open: "Abierta",
-  merged: "Completada",
-  closed: "Abandonada",
-};
-
-const CHECK_COLOR: Record<NonNullable<PullRequestListEntry["checksState"]>, string> = {
-  passing: "#22c55e",
-  failing: "#ef4444",
-  pending: "#f59e0b",
-};
-
-const initials = (name: string): string =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-
-const when = (value: string): string => {
-  const time = Date.parse(value);
-  if (!Number.isFinite(time)) return "—";
-  const hours = (Date.now() - time) / 3_600_000;
-  if (hours < 1) return "hace minutos";
-  if (hours < 24) return `hace ${Math.round(hours)} h`;
-  const days = Math.round(hours / 24);
-  return days === 1 ? "ayer" : `hace ${days} d`;
-};
-
-/** `repo` in a listing is `owner/name`; the name is what identifies it day to day. */
-const shortRepository = (repository: string): string => repository.split("/").at(-1) ?? repository;
-
-function PullRequestCard({ entry }: { readonly entry: PullRequestListEntry }) {
-  const color = STATE_COLOR[entry.state];
-  const checks = entry.checksState ? CHECK_COLOR[entry.checksState] : null;
+function PullRequestCard({
+  entry,
+  onSelect,
+}: {
+  readonly entry: PullRequestListEntry;
+  readonly onSelect: (entry: PullRequestListEntry) => void;
+}) {
+  const color = PR_STATE_COLOR[entry.state];
+  const checks = entry.checksState ? PR_CHECK_COLOR[entry.checksState] : null;
   return (
     <li>
-      <Link
-        to="/pull-requests"
-        search={{
-          projectId: entry.projectId,
-          host: entry.host,
-          repository: entry.repository,
-          number: entry.number,
-          selectedProjectId: entry.projectId,
-          selectedHost: entry.host,
-          involvement: "all",
-          state: "all",
-        }}
-        className="flex h-full flex-col gap-2 rounded-lg border border-border/70 px-3 py-2.5 transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      <button
+        type="button"
+        onClick={() => onSelect(entry)}
+        className="flex h-full w-full flex-col gap-2 rounded-lg border border-border/70 px-3 py-2.5 text-left transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         style={{ borderLeft: `3px solid ${color}` }}
       >
         <div className="flex min-w-0 items-center gap-2">
@@ -77,7 +43,7 @@ function PullRequestCard({ entry }: { readonly entry: PullRequestListEntry }) {
             className="shrink-0 rounded px-1.5 py-px text-3xs font-semibold uppercase tracking-wide"
             style={{ backgroundColor: `${color}26`, color }}
           >
-            {entry.isDraft ? "Borrador" : STATE_LABEL[entry.state]}
+            {entry.isDraft ? "Borrador" : PR_STATE_LABEL[entry.state]}
           </span>
           <span className="min-w-0 truncate font-mono text-2xs text-muted-foreground">
             {shortRepository(entry.repository)}
@@ -94,7 +60,7 @@ function PullRequestCard({ entry }: { readonly entry: PullRequestListEntry }) {
             </span>
           ) : null}
           <span className="ml-auto shrink-0 text-3xs text-muted-foreground">
-            {when(entry.updatedAt)}
+            {relativeAge(entry.updatedAt)}
           </span>
         </div>
 
@@ -140,15 +106,15 @@ function PullRequestCard({ entry }: { readonly entry: PullRequestListEntry }) {
             </span>
           ) : null}
         </div>
-      </Link>
+      </button>
     </li>
   );
 }
 
 /**
- * The first cut of the PR Center: one card per pull request, across every project of the
- * workspace, with the things you need to decide whether to open it — repository, branches,
- * author, checks and how stale it is. The full workspace still lives behind a click.
+ * The PR Center: one card per pull request, across every project of the workspace, with the
+ * things needed to decide whether to open it — repository, branches, author, checks and how
+ * stale it is. Opening a card leads to this module's own workspace, not to T3's panel.
  */
 export function PullRequestDashboard() {
   const navigateToMainApp = useNavigateToMainApp();
@@ -159,6 +125,7 @@ export function PullRequestDashboard() {
   const [projectId, setProjectId] = useState("");
   const [repository, setRepository] = useState("");
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<PullRequestListEntry | null>(null);
   const list = useEnvironmentQuery(
     environmentId
       ? pullRequestEnvironment.list({ environmentId, input: { state, involvement } })
@@ -166,8 +133,8 @@ export function PullRequestDashboard() {
   );
   const entries = list.data?.entries ?? [];
   const providers = list.data?.providers ?? [];
-  // The listing already refreshed on focus and every couple of minutes while the tab is visible,
-  // which is the same liveness the rest of the PR surfaces have.
+  // The listing refreshes on focus and every couple of minutes while the tab is visible, the
+  // same liveness the rest of the pull-request surfaces have.
   useLiveRefresh(() => list.refresh(), { key: "pr-center", intervalMs: 120_000 });
 
   const hosts = useMemo(
@@ -195,8 +162,6 @@ export function PullRequestDashboard() {
     return [...repositories].sort((left, right) => left.localeCompare(right, "es"));
   }, [entries, host, projectId]);
 
-  // A cascading choice must not survive the parent that offered it, so the select that changes
-  // clears its children instead of an effect resetting state after the fact.
   const term = search.trim().toLowerCase();
   const visible = useMemo(
     () =>
@@ -217,6 +182,16 @@ export function PullRequestDashboard() {
       }),
     [entries, host, projectId, repository, term],
   );
+
+  if (selected && environmentId) {
+    return (
+      <PullRequestWorkspace
+        entry={selected}
+        environmentId={environmentId}
+        onBack={() => setSelected(null)}
+      />
+    );
+  }
 
   return (
     <SidebarInset className="min-w-0">
@@ -408,6 +383,7 @@ export function PullRequestDashboard() {
               <PullRequestCard
                 key={`${entry.host}|${entry.repository}|${entry.number}`}
                 entry={entry}
+                onSelect={setSelected}
               />
             ))}
           </ul>
