@@ -30,7 +30,13 @@ import { IssueCalendar } from "./IssueCalendar";
 import { IssueDetail, type IssueDetailChanges } from "./IssueDetail";
 import { IssueList } from "./IssueList";
 import { IssueTasks } from "./IssueTasks";
-import { ISSUE_WORK_ITEM_TYPE, relativeTime, sprintsFromItems } from "./issueVisuals";
+import {
+  ISSUE_WORK_ITEM_TYPE,
+  monthLabel,
+  relativeTime,
+  sprintMonths,
+  sprintsFromItems,
+} from "./issueVisuals";
 
 type View = "tasks" | "list" | "board" | "calendar";
 type Notice = { tone: "ok" | "error"; text: string } | null;
@@ -45,6 +51,7 @@ const VIEWS: ReadonlyArray<{ key: View; label: string; icon: typeof ListIcon }> 
 const PROJECT_STORAGE_KEY = "upcode:issues:project";
 const VIEW_STORAGE_KEY = "upcode:issues:view";
 const DENSITY_STORAGE_KEY = "upcode:issues:density";
+const MONTH_STORAGE_KEY = "upcode:issues:month";
 
 /** Comfortable is Jira-like; compact fits every column on a laptop screen. */
 type Density = "comoda" | "compacta";
@@ -136,6 +143,7 @@ function IssuesWorkspace({
   );
   const [assignedToMe, setAssignedToMe] = useState(true);
   const [iteration, setIteration] = useState("");
+  const [month, setMonth] = useState(() => localStorage.getItem(MONTH_STORAGE_KEY) ?? "");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -160,6 +168,10 @@ function IssuesWorkspace({
   useEffect(() => {
     localStorage.setItem(DENSITY_STORAGE_KEY, density);
   }, [density]);
+  useEffect(() => {
+    if (month) localStorage.setItem(MONTH_STORAGE_KEY, month);
+    else localStorage.removeItem(MONTH_STORAGE_KEY);
+  }, [month]);
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => clearTimeout(timer);
@@ -213,6 +225,24 @@ function IssuesWorkspace({
   );
   const visibleItems = view === "tasks" ? (everyProjectWorkItems.data ?? []) : items;
   const visibleError = view === "tasks" ? everyProjectWorkItems.error : workItems.error;
+  /** Months the loaded sprints touch, so the filter can only offer months with work. */
+  const monthOptions = useMemo(() => {
+    if (view !== "tasks") return [];
+    const keys = new Set<string>();
+    for (const item of visibleItems) {
+      for (const key of sprintMonths(item.iterationStart, item.iterationFinish)) keys.add(key);
+    }
+    return [...keys].sort();
+  }, [view, visibleItems]);
+  const tasksItems = useMemo(
+    () =>
+      month
+        ? visibleItems.filter((item) =>
+            sprintMonths(item.iterationStart, item.iterationFinish).includes(month),
+          )
+        : visibleItems,
+    [month, visibleItems],
+  );
   const sprints = useMemo(() => sprintsFromItems(catalogue.data ?? items), [catalogue.data, items]);
   /**
    * The board's columns are the states ADO defines for the type, and the existing
@@ -358,9 +388,27 @@ function IssuesWorkspace({
           </div>
 
           {view === "tasks" ? (
-            <p className="rounded border border-dashed px-2 py-1.5 text-3xs leading-relaxed text-muted-foreground">
-              Todos los proyectos, agrupadas por sprint.
-            </p>
+            <>
+              <p className="rounded border border-dashed px-2 py-1.5 text-3xs leading-relaxed text-muted-foreground">
+                Todos los proyectos, agrupadas por sprint.
+              </p>
+              <div className="flex flex-col gap-1">
+                <span className="text-3xs uppercase tracking-wide text-muted-foreground">Mes</span>
+                <select
+                  aria-label="Mes"
+                  value={month}
+                  onChange={(event) => setMonth(event.target.value)}
+                  className="rounded border bg-background px-1.5 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+                >
+                  <option value="">Todos los meses</option>
+                  {monthOptions.map((key) => (
+                    <option key={key} value={key}>
+                      {monthLabel(key)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
           ) : (
             <>
               <div className="flex flex-col gap-1">
@@ -471,7 +519,9 @@ function IssuesWorkspace({
               Actualizar
             </Button>
             <span>{freshness ? `Azure: datos de ${freshness}` : "Sin datos todavía"}</span>
-            <span className="font-mono">{visibleItems.length} tareas</span>
+            <span className="font-mono">
+              {view === "tasks" ? tasksItems.length : items.length} tareas
+            </span>
           </div>
         </nav>
 
@@ -498,7 +548,7 @@ function IssuesWorkspace({
 
           {view === "tasks" ? (
             <IssueTasks
-              items={visibleItems}
+              items={tasksItems}
               states={states}
               now={now}
               onOpen={(item) => openIssue(item.id, item.project)}

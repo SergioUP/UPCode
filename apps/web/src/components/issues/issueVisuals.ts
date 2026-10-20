@@ -185,7 +185,47 @@ export const taskDate = (value: string | null | undefined): string => {
 };
 
 /**
- * The tasks table groups by sprint, oldest first: the work that should have happened first is
+ * The months a sprint touches, as `YYYY-MM` keys, oldest first. A sprint that runs from one
+ * month into the next belongs to both: the work happens in both, and a month filter that hid it
+ * would look like missing work. A sprint without dates belongs to none, so it only shows in the
+ * unfiltered view.
+ */
+export const sprintMonths = (
+  startDate: string | null | undefined,
+  finishDate: string | null | undefined,
+): string[] => {
+  const keys = new Set(
+    [startDate, finishDate].flatMap((value) =>
+      value && /^\d{4}-\d{2}/.test(value) ? [value.slice(0, 7)] : [],
+    ),
+  );
+  const [first] = [...keys].sort();
+  if (!first) return [];
+  const last = [...keys].sort().at(-1) ?? first;
+  // Month arithmetic on integers, so a sprint that spans a new year needs no Date object.
+  const [startYear, startMonth] = first.split("-").map(Number) as [number, number];
+  const [endYear, endMonth] = last.split("-").map(Number) as [number, number];
+  const months: string[] = [];
+  for (
+    let index = startYear * 12 + (startMonth - 1);
+    index <= endYear * 12 + (endMonth - 1);
+    index += 1
+  ) {
+    months.push(`${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`);
+  }
+  return months;
+};
+
+/** `2026-10` → `octubre 2026`, capitalised the way a filter reads. */
+export const monthLabel = (key: string): string => {
+  const date = new Date(`${key}-01T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return key;
+  const label = new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric" }).format(date);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
+/**
+ * The tasks view groups by sprint, oldest first: the work that should have happened first is
  * read first. The dates travel with the work item, so grouping costs no extra call, and items
  * with no sprint fall to the end instead of pretending to be the oldest.
  */
