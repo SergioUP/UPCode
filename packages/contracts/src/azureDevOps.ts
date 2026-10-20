@@ -72,6 +72,12 @@ export const AzureDevOpsWorkItem = Schema.Struct({
   states: Schema.optionalKey(Schema.Array(AzureDevOpsWorkItemStateOption)),
   relations: Schema.optionalKey(Schema.Array(AzureDevOpsWorkItemRelation)),
   fields: Schema.optionalKey(Schema.Array(AzureDevOpsWorkItemField)),
+  /** Title of the parent task, so a list can show what the sub-task belongs to. */
+  parentTitle: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  /** Hours from `Microsoft.VSTS.Scheduling.*`: planned, spent and pending. */
+  originalEstimate: Schema.optionalKey(Schema.NullOr(Schema.Number)),
+  completedWork: Schema.optionalKey(Schema.NullOr(Schema.Number)),
+  remainingWork: Schema.optionalKey(Schema.NullOr(Schema.Number)),
 });
 export type AzureDevOpsWorkItem = typeof AzureDevOpsWorkItem.Type;
 export const AzureDevOpsRepository = Schema.Struct({

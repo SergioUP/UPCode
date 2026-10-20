@@ -236,6 +236,12 @@ export const make = Effect.gen(function* () {
       }));
     }),
   );
+  /** `Microsoft.VSTS.Scheduling.*` arrives as a number of hours, or as null/absent. */
+  const hoursField = (item: AzureItem, name: string): number | null => {
+    const value = field(item, name);
+    const hours = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(hours) ? hours : null;
+  };
   const toWorkItem = (organization: string, item: AzureItem) => {
     const project = text(field(item, "System.TeamProject"));
     const assignedTo = field(item, "System.AssignedTo");
@@ -257,10 +263,14 @@ export const make = Effect.gen(function* () {
         item._links?.html?.href ??
         `https://dev.azure.com/${encode(organization)}/${encode(project)}/_workitems/edit/${item.id}`,
       changedAt: text(field(item, "System.ChangedDate")) || null,
+      parentTitle: null,
+      originalEstimate: hoursField(item, "Microsoft.VSTS.Scheduling.OriginalEstimate"),
+      completedWork: hoursField(item, "Microsoft.VSTS.Scheduling.CompletedWork"),
+      remainingWork: hoursField(item, "Microsoft.VSTS.Scheduling.RemainingWork"),
     };
   };
   const workItemFields =
-    "System.Title,System.TeamProject,System.WorkItemType,System.State,System.AssignedTo,System.IterationPath,System.AreaPath,System.Parent,System.Description,System.ChangedDate";
+    "System.Title,System.TeamProject,System.WorkItemType,System.State,System.AssignedTo,System.IterationPath,System.AreaPath,System.Parent,System.Description,System.ChangedDate,Microsoft.VSTS.Scheduling.OriginalEstimate,Microsoft.VSTS.Scheduling.CompletedWork,Microsoft.VSTS.Scheduling.RemainingWork";
   const optional = <A>(effect: Effect.Effect<A, AzureDevOpsWorkspaceError>, fallback: A) =>
     effect.pipe(Effect.orElseSucceed(() => fallback));
   const loadComments = (project: string, id: number) =>
@@ -463,8 +473,41 @@ export const make = Effect.gen(function* () {
         fields,
       };
     });
-  const listWorkItems = (
-    project: string,
+  /** Parent titles in one batch read; the view shows the task each sub-task belongs to. */
+  const loadParentTitles = (parentIds: readonly number[]) =>
+    Effect.gen(function* () {
+      const ids = [...new Set(parentIds)].filter((id) => Number.isSafeInteger(id) && id > 0);
+      if (ids.length === 0) return new Map<number, string>();
+      const batch = yield* optional(
+        request({
+          path: `/_apis/wit/workitemsbatch?api-version=${API_VERSION}`,
+          method: "POST",
+          body: { ids, fields: ["System.Title"] },
+        }),
+        null,
+      );
+      const titles = new Map<number, string>();
+      for (const entry of (batch as { value?: AzureItem[] } | null)?.value ?? [])
+        titles.set(entry.id, text(field(entry, "System.Title")));
+      return titles;
+    });
+  const withParentTitles = <A extends { readonly parentId?: number | null | undefined }>(
+    items: readonly A[],
+  ) =>
+    loadParentTitles(items.flatMap((item) => (item.parentId == null ? [] : [item.parentId]))).pipe(
+      Effect.map((titles) =>
+        items.map((item) => ({
+          ...item,
+          parentTitle: item.parentId == null ? null : (titles.get(item.parentId) ?? null),
+        })),
+      ),
+    );
+  /**
+   * Every project at once, for the tasks view: one WIQL for the whole organisation and one
+   * batch read, the same two calls the assigned-to-me list already uses. The sprint dates are
+   * the only thing that has to be resolved per project, so the items are grouped for that step.
+   */
+  const listEveryProjectWorkItems = (
     assignedToMe: boolean,
     query?: string,
     type?: string,
@@ -478,9 +521,9 @@ export const make = Effect.gen(function* () {
       const iterationClause = iteration?.trim()
         ? ` AND [System.IterationPath] = '${wiqlLiteral(iteration.trim())}'`
         : "";
-      const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project${assignedToMe ? " AND [System.AssignedTo] = @Me" : ""}${typeClause}${iterationClause}${workItemSearchClause(query)} ORDER BY [System.ChangedDate] DESC`;
+      const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.Id] > 0${assignedToMe ? " AND [System.AssignedTo] = @Me" : ""}${typeClause}${iterationClause}${workItemSearchClause(query)} ORDER BY [System.ChangedDate] DESC`;
       const result = (yield* request({
-        path: path(project, "wit/wiql?$top=100"),
+        path: `/_apis/wit/wiql?$top=100&api-version=${API_VERSION}`,
         method: "POST",
         body: { query: wiql },
       })) as { workItems?: Array<{ id: number }> };
@@ -490,13 +533,64 @@ export const make = Effect.gen(function* () {
         .slice(0, 100);
       if (ids.length === 0) return [];
       const batch = (yield* request({
-        path: path(project, `wit/workitems?ids=${ids.join(",")}&fields=${encode(workItemFields)}`),
+        path: `/_apis/wit/workitemsbatch?api-version=${API_VERSION}`,
+        method: "POST",
+        body: { ids, fields: workItemFields.split(",") },
       })) as { value?: AzureItem[] };
-      return yield* withIterationDates(
-        project,
-        (batch.value ?? []).map((item) => toWorkItem(organization, item)),
+      const items = (batch.value ?? []).map((item) => toWorkItem(organization, item));
+      const byProject = new Map<string, Array<(typeof items)[number]>>();
+      for (const item of items) {
+        if (!item.project) continue;
+        const bucket = byProject.get(item.project);
+        if (bucket) bucket.push(item);
+        else byProject.set(item.project, [item]);
+      }
+      const dated = yield* Effect.forEach(
+        [...byProject],
+        ([project, projectItems]) => withIterationDates(project, projectItems),
+        { concurrency: 2 },
       );
+      return yield* withParentTitles(dated.flat());
     });
+  const listWorkItems = (
+    project: string | undefined,
+    assignedToMe: boolean,
+    query?: string,
+    type?: string,
+    iteration?: string,
+  ) =>
+    project?.trim()
+      ? Effect.gen(function* () {
+          const { organization } = yield* credentials;
+          const typeClause = type?.trim()
+            ? ` AND [System.WorkItemType] = '${wiqlLiteral(type.trim())}'`
+            : "";
+          const iterationClause = iteration?.trim()
+            ? ` AND [System.IterationPath] = '${wiqlLiteral(iteration.trim())}'`
+            : "";
+          const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project${assignedToMe ? " AND [System.AssignedTo] = @Me" : ""}${typeClause}${iterationClause}${workItemSearchClause(query)} ORDER BY [System.ChangedDate] DESC`;
+          const result = (yield* request({
+            path: path(project, "wit/wiql?$top=100"),
+            method: "POST",
+            body: { query: wiql },
+          })) as { workItems?: Array<{ id: number }> };
+          const ids = (result.workItems ?? [])
+            .map((item) => item.id)
+            .filter((id) => Number.isInteger(id))
+            .slice(0, 100);
+          if (ids.length === 0) return [];
+          const batch = (yield* request({
+            path: path(
+              project,
+              `wit/workitems?ids=${ids.join(",")}&fields=${encode(workItemFields)}`,
+            ),
+          })) as { value?: AzureItem[] };
+          return yield* withIterationDates(
+            project,
+            (batch.value ?? []).map((item) => toWorkItem(organization, item)),
+          );
+        })
+      : listEveryProjectWorkItems(assignedToMe, query, type, iteration);
   const listAssignedWorkItems = () =>
     Effect.gen(function* () {
       const { organization } = yield* credentials;

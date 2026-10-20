@@ -162,3 +162,61 @@ export const groupByState = (
   }
   return [...buckets].map(([state, bucketItems]) => ({ state, items: bucketItems }));
 };
+
+/** `25` → `25:00`, `6.45` → `06:27`. Azure reports `Microsoft.VSTS.Scheduling.*` as hours. */
+export const hoursLabel = (hours: number | null | undefined): string => {
+  if (hours == null || !Number.isFinite(hours)) return "—";
+  const totalMinutes = Math.round(hours * 60);
+  const whole = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(whole).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+};
+
+/** A sprint date cell, `12/10/2026`, or a dash when the sprint has no dates. */
+export const taskDate = (value: string | null | undefined): string => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+};
+
+/**
+ * The tasks table groups by sprint, oldest first: the work that should have happened first is
+ * read first. The dates travel with the work item, so grouping costs no extra call, and items
+ * with no sprint fall to the end instead of pretending to be the oldest.
+ */
+export const groupBySprint = (
+  items: readonly AzureDevOpsWorkItem[],
+): Array<{ sprint: IssueSprint | null; items: AzureDevOpsWorkItem[] }> => {
+  const groups = new Map<string, { sprint: IssueSprint | null; items: AzureDevOpsWorkItem[] }>();
+  for (const item of items) {
+    const key = item.iteration ?? "";
+    const group = groups.get(key);
+    if (group) {
+      group.items.push(item);
+      continue;
+    }
+    groups.set(key, {
+      sprint: item.iteration
+        ? {
+            name: iterationName(item.iteration) ?? item.iteration,
+            path: item.iteration,
+            startDate: item.iterationStart ?? null,
+            finishDate: item.iterationFinish ?? null,
+          }
+        : null,
+      items: [item],
+    });
+  }
+  return [...groups.values()].sort((left, right) => {
+    if (!left.sprint) return 1;
+    if (!right.sprint) return -1;
+    if (!left.sprint.startDate) return 1;
+    if (!right.sprint.startDate) return -1;
+    return Date.parse(left.sprint.startDate) - Date.parse(right.sprint.startDate);
+  });
+};
