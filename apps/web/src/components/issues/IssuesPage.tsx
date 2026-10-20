@@ -7,6 +7,7 @@ import {
   CircleAlertIcon,
   LayoutGridIcon,
   ListIcon,
+  ListTodoIcon,
   SearchIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -28,12 +29,20 @@ import { IssueBoard } from "./IssueBoard";
 import { IssueCalendar } from "./IssueCalendar";
 import { IssueDetail, type IssueDetailChanges } from "./IssueDetail";
 import { IssueList } from "./IssueList";
-import { ISSUE_WORK_ITEM_TYPE, relativeTime, sprintsFromItems } from "./issueVisuals";
+import { IssueTasks } from "./IssueTasks";
+import {
+  ISSUE_WORK_ITEM_TYPE,
+  monthLabel,
+  relativeTime,
+  sprintMonths,
+  sprintsFromItems,
+} from "./issueVisuals";
 
-type View = "list" | "board" | "calendar";
+type View = "tasks" | "list" | "board" | "calendar";
 type Notice = { tone: "ok" | "error"; text: string } | null;
 
 const VIEWS: ReadonlyArray<{ key: View; label: string; icon: typeof ListIcon }> = [
+  { key: "tasks", label: "Tareas", icon: ListTodoIcon },
   { key: "list", label: "Lista", icon: ListIcon },
   { key: "board", label: "Tablero", icon: LayoutGridIcon },
   { key: "calendar", label: "Calendario", icon: CalendarDaysIcon },
@@ -42,6 +51,7 @@ const VIEWS: ReadonlyArray<{ key: View; label: string; icon: typeof ListIcon }> 
 const PROJECT_STORAGE_KEY = "upcode:issues:project";
 const VIEW_STORAGE_KEY = "upcode:issues:view";
 const DENSITY_STORAGE_KEY = "upcode:issues:density";
+const MONTH_STORAGE_KEY = "upcode:issues:month";
 
 /** Comfortable is Jira-like; compact fits every column on a laptop screen. */
 type Density = "comoda" | "compacta";
@@ -52,7 +62,9 @@ type Density = "comoda" | "compacta";
  */
 function readStoredView(): View {
   const stored = localStorage.getItem(VIEW_STORAGE_KEY);
-  return stored === "list" || stored === "calendar" || stored === "board" ? stored : "board";
+  return stored === "tasks" || stored === "list" || stored === "calendar" || stored === "board"
+    ? stored
+    : "board";
 }
 
 /** The section fills the window, so it carries its own way back. */
@@ -131,9 +143,12 @@ function IssuesWorkspace({
   );
   const [assignedToMe, setAssignedToMe] = useState(true);
   const [iteration, setIteration] = useState("");
+  const [month, setMonth] = useState(() => localStorage.getItem(MONTH_STORAGE_KEY) ?? "");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  /** The project of the open item: the tasks view lists several, so it cannot be the selector's. */
+  const [detailProject, setDetailProject] = useState("");
   const [busyIds, setBusyIds] = useState<ReadonlySet<number>>(new Set());
   const [boardNotice, setBoardNotice] = useState<Notice>(null);
   const [detailNotice, setDetailNotice] = useState<Notice>(null);
@@ -154,12 +169,17 @@ function IssuesWorkspace({
     localStorage.setItem(DENSITY_STORAGE_KEY, density);
   }, [density]);
   useEffect(() => {
+    if (month) localStorage.setItem(MONTH_STORAGE_KEY, month);
+    else localStorage.removeItem(MONTH_STORAGE_KEY);
+  }, [month]);
+  useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => clearTimeout(timer);
   }, [search]);
 
   const projects = useEnvironmentQuery(azureDevOps.projects({ environmentId, input: {} }));
   const selectedProject = project || projects.data?.[0]?.name || "";
+  const activeProject = detailProject || selectedProject;
   const workItems = useEnvironmentQuery(
     selectedProject
       ? azureDevOps.workItems({
@@ -187,6 +207,42 @@ function IssuesWorkspace({
       : null,
   );
   const items = workItems.data ?? [];
+  /**
+   * The tasks view reads every project at once. No project in the request means one
+   * organisation-wide query on the server, not one list per project stitched here.
+   */
+  const everyProjectWorkItems = useEnvironmentQuery(
+    view === "tasks"
+      ? azureDevOps.workItems({
+          environmentId,
+          input: {
+            assignedToMe,
+            type: ISSUE_WORK_ITEM_TYPE,
+            ...(debouncedSearch ? { query: debouncedSearch } : {}),
+          },
+        })
+      : null,
+  );
+  const visibleItems = view === "tasks" ? (everyProjectWorkItems.data ?? []) : items;
+  const visibleError = view === "tasks" ? everyProjectWorkItems.error : workItems.error;
+  /** Months the loaded sprints touch, so the filter can only offer months with work. */
+  const monthOptions = useMemo(() => {
+    if (view !== "tasks") return [];
+    const keys = new Set<string>();
+    for (const item of visibleItems) {
+      for (const key of sprintMonths(item.iterationStart, item.iterationFinish)) keys.add(key);
+    }
+    return [...keys].sort();
+  }, [view, visibleItems]);
+  const tasksItems = useMemo(
+    () =>
+      month
+        ? visibleItems.filter((item) =>
+            sprintMonths(item.iterationStart, item.iterationFinish).includes(month),
+          )
+        : visibleItems,
+    [month, visibleItems],
+  );
   const sprints = useMemo(() => sprintsFromItems(catalogue.data ?? items), [catalogue.data, items]);
   /**
    * The board's columns are the states ADO defines for the type, and the existing
@@ -204,10 +260,10 @@ function IssuesWorkspace({
   );
   const states = columnSource.data?.states ?? [];
   const detail = useEnvironmentQuery(
-    selectedProject && selectedId !== null
+    activeProject && selectedId !== null
       ? azureDevOps.workItem({
           environmentId,
-          input: { project: selectedProject, id: selectedId },
+          input: { project: activeProject, id: selectedId },
         })
       : null,
   );
@@ -220,8 +276,8 @@ function IssuesWorkspace({
   const updateSettings = useAtomCommand(serverEnvironment.updateSettings, { reportFailure: false });
 
   const labelsFor = useMemo(
-    () => (itemId: number) => labelMap[azureDevOpsIssueKey(selectedProject, itemId)] ?? [],
-    [labelMap, selectedProject],
+    () => (itemId: number) => labelMap[azureDevOpsIssueKey(activeProject, itemId)] ?? [],
+    [labelMap, activeProject],
   );
   const knownLabels = useMemo(
     () =>
@@ -230,16 +286,16 @@ function IssuesWorkspace({
   );
   const people = useMemo(() => {
     const names = new Set<string>();
-    for (const item of items) if (item.assignedTo) names.add(item.assignedTo);
+    for (const item of visibleItems) if (item.assignedTo) names.add(item.assignedTo);
     const current = detail.data?.assignedTo;
     if (current) names.add(current);
     return [...names].sort((left, right) => left.localeCompare(right));
-  }, [items, detail.data?.assignedTo]);
+  }, [visibleItems, detail.data?.assignedTo]);
 
   const write = async (input: IssueDetailChanges & { id: number }) =>
     await updateWorkItem({
       environmentId,
-      input: { project: selectedProject, ...input },
+      input: { project: activeProject, ...input },
     });
 
   const moveIssue = async (itemId: number, state: string) => {
@@ -266,7 +322,7 @@ function IssuesWorkspace({
   };
 
   const saveLabels = async (itemId: number, next: readonly string[]) => {
-    const key = azureDevOpsIssueKey(selectedProject, itemId);
+    const key = azureDevOpsIssueKey(activeProject, itemId);
     const merged = { ...labelMap };
     if (next.length === 0) delete merged[key];
     else merged[key] = [...next];
@@ -292,13 +348,14 @@ function IssuesWorkspace({
     });
   };
 
-  const stale = workItems.error !== null && items.length > 0;
+  const stale = visibleError !== null && visibleItems.length > 0;
   const freshness = workItems.dataUpdatedAt
     ? (relativeTime(new Date(workItems.dataUpdatedAt).toISOString(), now) ?? "ahora")
     : null;
 
-  const openIssue = (itemId: number) => {
+  const openIssue = (itemId: number, itemProject?: string) => {
     setDetailNotice(null);
+    setDetailProject(itemProject ?? "");
     setSelectedId(itemId);
   };
 
@@ -330,40 +387,71 @@ function IssuesWorkspace({
             ))}
           </div>
 
-          <div className="flex flex-col gap-1">
-            <span className="text-3xs uppercase tracking-wide text-muted-foreground">Proyecto</span>
-            <select
-              value={selectedProject}
-              onChange={(event) => {
-                setProject(event.target.value);
-                setIteration("");
-                setSelectedId(null);
-              }}
-              className="rounded border bg-background px-1.5 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
-            >
-              {(projects.data ?? []).map((entry) => (
-                <option key={entry.id} value={entry.name}>
-                  {entry.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {view === "tasks" ? (
+            <>
+              <p className="rounded border border-dashed px-2 py-1.5 text-3xs leading-relaxed text-muted-foreground">
+                Todos los proyectos, agrupadas por sprint.
+              </p>
+              <div className="flex flex-col gap-1">
+                <span className="text-3xs uppercase tracking-wide text-muted-foreground">Mes</span>
+                <select
+                  aria-label="Mes"
+                  value={month}
+                  onChange={(event) => setMonth(event.target.value)}
+                  className="rounded border bg-background px-1.5 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+                >
+                  <option value="">Todos los meses</option>
+                  {monthOptions.map((key) => (
+                    <option key={key} value={key}>
+                      {monthLabel(key)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-col gap-1">
+                <span className="text-3xs uppercase tracking-wide text-muted-foreground">
+                  Proyecto
+                </span>
+                <select
+                  value={selectedProject}
+                  onChange={(event) => {
+                    setProject(event.target.value);
+                    setIteration("");
+                    setSelectedId(null);
+                    setDetailProject("");
+                  }}
+                  className="rounded border bg-background px-1.5 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+                >
+                  {(projects.data ?? []).map((entry) => (
+                    <option key={entry.id} value={entry.name}>
+                      {entry.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          <div className="flex flex-col gap-1">
-            <span className="text-3xs uppercase tracking-wide text-muted-foreground">Sprint</span>
-            <select
-              value={iteration}
-              onChange={(event) => setIteration(event.target.value)}
-              className="rounded border bg-background px-1.5 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
-            >
-              <option value="">Todos los sprints</option>
-              {sprints.map((sprint) => (
-                <option key={sprint.path} value={sprint.path}>
-                  {sprint.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-3xs uppercase tracking-wide text-muted-foreground">
+                  Sprint
+                </span>
+                <select
+                  value={iteration}
+                  onChange={(event) => setIteration(event.target.value)}
+                  className="rounded border bg-background px-1.5 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+                >
+                  <option value="">Todos los sprints</option>
+                  {sprints.map((sprint) => (
+                    <option key={sprint.path} value={sprint.path}>
+                      {sprint.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
           <label className="flex items-center gap-2 text-xs">
             <input
@@ -374,28 +462,30 @@ function IssuesWorkspace({
             Solo asignadas a mí
           </label>
 
-          <div className="flex flex-col gap-1">
-            <span className="text-3xs uppercase tracking-wide text-muted-foreground">
-              Ancho del tablero
-            </span>
-            <div className="flex gap-1" role="group" aria-label="Ancho del tablero">
-              {(["comoda", "compacta"] as const).map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  aria-pressed={density === option}
-                  onClick={() => setDensity(option)}
-                  className={`flex-1 rounded border px-1.5 py-1 text-2xs transition-colors ${
-                    density === option
-                      ? "border-ring bg-accent text-foreground"
-                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                  }`}
-                >
-                  {option === "comoda" ? "Cómodo" : "Compacto"}
-                </button>
-              ))}
+          {view === "board" ? (
+            <div className="flex flex-col gap-1">
+              <span className="text-3xs uppercase tracking-wide text-muted-foreground">
+                Ancho del tablero
+              </span>
+              <div className="flex gap-1" role="group" aria-label="Ancho del tablero">
+                {(["comoda", "compacta"] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-pressed={density === option}
+                    onClick={() => setDensity(option)}
+                    className={`flex-1 rounded border px-1.5 py-1 text-2xs transition-colors ${
+                      density === option
+                        ? "border-ring bg-accent text-foreground"
+                        : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    }`}
+                  >
+                    {option === "comoda" ? "Cómodo" : "Compacto"}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <label className="flex flex-col gap-1">
             <span className="text-3xs uppercase tracking-wide text-muted-foreground">Buscar</span>
@@ -429,17 +519,19 @@ function IssuesWorkspace({
               Actualizar
             </Button>
             <span>{freshness ? `Azure: datos de ${freshness}` : "Sin datos todavía"}</span>
-            <span className="font-mono">{items.length} tareas</span>
+            <span className="font-mono">
+              {view === "tasks" ? tasksItems.length : items.length} tareas
+            </span>
           </div>
         </nav>
 
         <main className="flex min-w-0 flex-1 flex-col gap-2 p-3">
-          {stale || workItems.error ? (
+          {stale || visibleError ? (
             <p className="flex items-center gap-2 rounded border border-destructive/40 bg-destructive/10 px-2 py-1 text-2xs text-destructive">
               <CircleAlertIcon className="size-3.5 shrink-0" />
               {stale
                 ? `Azure no responde ahora mismo; esto es lo último que se pudo leer (${freshness ?? "sin fecha"}).`
-                : (workItems.error ?? "")}
+                : (visibleError ?? "")}
             </p>
           ) : null}
           {boardNotice ? (
@@ -454,7 +546,14 @@ function IssuesWorkspace({
             </p>
           ) : null}
 
-          {view === "board" ? (
+          {view === "tasks" ? (
+            <IssueTasks
+              items={tasksItems}
+              states={states}
+              now={now}
+              onOpen={(item) => openIssue(item.id, item.project)}
+            />
+          ) : view === "board" ? (
             <IssueBoard
               items={items}
               states={states}
@@ -489,7 +588,10 @@ function IssuesWorkspace({
       <Dialog
         open={selectedId !== null}
         onOpenChange={(open) => {
-          if (!open) setSelectedId(null);
+          if (!open) {
+            setSelectedId(null);
+            setDetailProject("");
+          }
         }}
       >
         {selectedId !== null && !detailItem ? (

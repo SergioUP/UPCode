@@ -834,7 +834,11 @@ const WsAzureDevOpsListProjectsRpc = Rpc.make(WS_METHODS.azureDevOpsListProjects
 });
 const WsAzureDevOpsListWorkItemsRpc = Rpc.make(WS_METHODS.azureDevOpsListWorkItems, {
   payload: Schema.Struct({
-    ...AzureProjectInput.fields,
+    /**
+     * Omitted means every project of the organisation, which is what the tasks view
+     * needs: one ordered list across projects, not N lists to stitch.
+     */
+    project: Schema.optionalKey(TrimmedNonEmptyString),
     assignedToMe: Schema.Boolean,
     /** Free-text search: digits jump to an ID, anything else matches the title. */
     query: Schema.optionalKey(Schema.String),
