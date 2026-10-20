@@ -217,6 +217,14 @@ export function PullRequestDashboard() {
   );
   const entries = list.data?.entries ?? [];
   const providers = list.data?.providers ?? [];
+  /**
+   * A host without credentials is expected — this workspace holds a GitHub checkout and no GitHub
+   * login — so it is a quiet note, and it steps aside when the filter already says which host the
+   * reader cares about.
+   */
+  const unconfiguredProviders = providers.filter(
+    (provider) => !provider.configured && (!host || provider.host === host),
+  );
   // The listing refreshes on focus and every couple of minutes while the tab is visible, the
   // same liveness the rest of the pull-request surfaces have.
   useLiveRefresh(() => list.refresh(), { key: "pr-center", intervalMs: 120_000 });
@@ -437,12 +445,18 @@ export function PullRequestDashboard() {
             {list.error}
           </p>
         ) : null}
-        {providers.some((provider) => !provider.configured) ? (
-          <p className="rounded border border-warning/40 bg-warning/10 px-2 py-1 text-2xs text-warning">
-            {providers
-              .filter((provider) => !provider.configured)
-              .map((provider) => `${provider.host}: ${provider.detail ?? "sin configurar"}`)
-              .join(" · ")}
+        {unconfiguredProviders.length > 0 ? (
+          <p className="text-2xs text-muted-foreground">
+            {unconfiguredProviders
+              .map(
+                (provider) =>
+                  `${provider.host} (${provider.projectCount} ${
+                    provider.projectCount === 1 ? "proyecto" : "proyectos"
+                  })`,
+              )
+              .join(" · ")}{" "}
+            sin credenciales, así que sus PRs no se listan. Se configuran en Ajustes → Source
+            control; Azure DevOps funciona con la CLI.
           </p>
         ) : null}
 
