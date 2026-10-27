@@ -21,6 +21,8 @@ import * as Path from "effect/Path";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
+import * as ChildProcess from "effect/process/ChildProcess";
+import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 
 import * as DesktopBackendConfiguration from "../../backend/DesktopBackendConfiguration.ts";
 import * as DesktopBackendPool from "../../backend/DesktopBackendPool.ts";
@@ -49,6 +51,35 @@ import {
 const ContextMenuPosition = Schema.Struct({
   x: Schema.Number,
   y: Schema.Number,
+});
+
+/** Ask Windows to open its own dictation UI only while this app owns the foreground. */
+export const startWindowsVoiceTyping = DesktopIpc.makeIpcMethod({
+  channel: IpcChannels.START_WINDOWS_VOICE_TYPING_CHANNEL,
+  payload: Schema.Void,
+  result: Schema.Boolean,
+  handler: () =>
+    Effect.gen(function* () {
+      const platform = yield* HostProcess.Platform;
+      if (platform !== "win32") return false;
+      const script = `Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class VoiceHotkey { [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow(); [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid); [DllImport("user32.dll")] public static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra); }'; $owner = [uint32]0; [void][VoiceHotkey]::GetWindowThreadProcessId([VoiceHotkey]::GetForegroundWindow(), [ref]$owner); if ($owner -ne ${process.pid}) { exit 2 }; [VoiceHotkey]::keybd_event(0x5B,0,0,[UIntPtr]::Zero); [VoiceHotkey]::keybd_event(0x48,0,0,[UIntPtr]::Zero); [VoiceHotkey]::keybd_event(0x48,0,2,[UIntPtr]::Zero); [VoiceHotkey]::keybd_event(0x5B,0,2,[UIntPtr]::Zero)`;
+      const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+      return yield* Effect.scoped(
+        Effect.gen(function* () {
+          const child = yield* spawner.spawn(
+            ChildProcess.make(
+              "powershell.exe",
+              ["-NoProfile", "-NonInteractive", "-Command", script],
+              { stdin: "ignore", stdout: "ignore", stderr: "ignore", windowsHide: true },
+            ),
+          );
+          return (yield* child.exitCode) === 0;
+        }),
+      ).pipe(
+        Effect.timeout("5 seconds"),
+        Effect.orElseSucceed(() => false),
+      );
+    }),
 });
 
 const ContextMenuInput = Schema.Struct({

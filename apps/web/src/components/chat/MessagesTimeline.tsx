@@ -644,6 +644,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
   const [expandedRunIds, setExpandedRunIds] = useState<ReadonlySet<RunId>>(
     () => rememberedPosition?.disclosures?.runs ?? new Set(),
   );
+  const [collapsedRunIds, setCollapsedRunIds] = useState<ReadonlySet<RunId>>(() => new Set());
   const [expandedWorkGroupIds, setExpandedWorkGroupIds] = useState<ReadonlySet<string>>(
     () => rememberedPosition?.disclosures?.workGroups ?? new Set(),
   );
@@ -656,7 +657,6 @@ const ConversationTimeline = memo(function ConversationTimeline({
   const restoringThreadPosition = positionedThreadKey !== listIdentityKey;
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const listIdentityRef = useRef(listIdentityKey);
-  const previousLatestRunRef = useRef(latestRun);
   // The list stays mounted across thread switches. Its first end pins on the
   // new thread must snap, not glide, even if that thread is mid-turn.
   const [settlingListIdentity, setSettlingListIdentity] = useState<string | null>(listIdentityKey);
@@ -666,12 +666,12 @@ const ConversationTimeline = memo(function ConversationTimeline({
   if (listIdentityRef.current !== listIdentityKey) {
     listIdentityRef.current = listIdentityKey;
     setPositionedThreadKey(null);
-    previousLatestRunRef.current = latestRun;
     setSettlingListIdentity(listIdentityKey);
     paintedExpandedRunIds = rememberedPosition?.disclosures?.runs ?? new Set();
     paintedExpandedWorkGroupIds = rememberedPosition?.disclosures?.workGroups ?? new Set();
     paintedExpandedAttemptIds = rememberedPosition?.disclosures?.attempts ?? new Set();
     setExpandedRunIds(paintedExpandedRunIds);
+    setCollapsedRunIds(new Set());
     setExpandedWorkGroupIds(paintedExpandedWorkGroupIds);
     setExpandedAttemptIds(paintedExpandedAttemptIds);
   }
@@ -783,7 +783,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
   const onToggleTurnFold = useCallback(
     (runId: RunId) => {
       suspendEndScrollMaintenanceForDisclosure(`turn-fold:${runId}`);
-      setExpandedRunIds((existing) => {
+      setCollapsedRunIds((existing) => {
         const next = new Set(existing);
         if (next.has(runId)) {
           next.delete(runId);
@@ -792,12 +792,18 @@ const ConversationTimeline = memo(function ConversationTimeline({
         }
         return next;
       });
+      setExpandedRunIds((existing) => {
+        if (!existing.has(runId)) return existing;
+        const next = new Set(existing);
+        next.delete(runId);
+        return next;
+      });
     },
     [suspendEndScrollMaintenanceForDisclosure],
   );
   const onToggleWorkGroup = useCallback(
     (groupId: string, anchorKey: string) => {
-      suspendEndScrollMaintenanceForDisclosure(anchorKey, expandedWorkGroupIds.has(groupId));
+      suspendEndScrollMaintenanceForDisclosure(anchorKey, !expandedWorkGroupIds.has(groupId));
       setExpandedWorkGroupIds((existing) => {
         const next = new Set(existing);
         if (next.has(groupId)) {
@@ -826,35 +832,6 @@ const ConversationTimeline = memo(function ConversationTimeline({
     [suspendEndScrollMaintenanceForDisclosure],
   );
 
-  // An in-session interrupt leaves its turn expanded so the user keeps their
-  // place; the next turn (or a reload, since this is local state) folds it.
-
-  useEffect(() => {
-    const previous = previousLatestRunRef.current;
-    previousLatestRunRef.current = latestRun;
-    if (!latestRun || previous?.runId === undefined) {
-      return;
-    }
-    if (latestRun.runId === previous.runId) {
-      if (previous.status === "running" && latestRun.status === "interrupted") {
-        setExpandedRunIds((existing) => {
-          const next = new Set(existing);
-          next.add(latestRun.runId);
-          return next;
-        });
-      }
-      return;
-    }
-    setExpandedRunIds((existing) => {
-      if (!existing.has(previous.runId)) {
-        return existing;
-      }
-      const next = new Set(existing);
-      next.delete(previous.runId);
-      return next;
-    });
-  }, [latestRun]);
-
   // Find the fold that hides the match: imported turns have no run id but still
   // fold under a synthetic key, so the match's own run id cannot open them.
   const findFoldRunIds = useMemo(
@@ -880,11 +857,29 @@ const ConversationTimeline = memo(function ConversationTimeline({
     );
   }, [activeFindRunId]);
   const visibleExpandedRunIds = useMemo(() => {
-    if (!activeFindRunId || paintedExpandedRunIds.has(activeFindRunId)) {
-      return paintedExpandedRunIds;
-    }
-    return new Set(paintedExpandedRunIds).add(activeFindRunId);
-  }, [activeFindRunId, paintedExpandedRunIds]);
+    const runs = new Set(
+      timelineTurnFoldRunIdsByEntryId({
+        timelineEntries,
+        latestRun,
+        runningRunId,
+        isWorking,
+        runlessWorkActive,
+      }).values(),
+    );
+    for (const runId of collapsedRunIds) runs.delete(runId);
+    for (const runId of paintedExpandedRunIds) runs.add(runId);
+    if (activeFindRunId) runs.add(activeFindRunId);
+    return runs;
+  }, [
+    activeFindRunId,
+    collapsedRunIds,
+    paintedExpandedRunIds,
+    timelineEntries,
+    latestRun,
+    runningRunId,
+    isWorking,
+    runlessWorkActive,
+  ]);
 
   const activeFindAttemptId = activeFindMatch
     ? timelineEntries.find((entry) => entry.id === activeFindMatch.entryId)?.attempt?.id
@@ -918,6 +913,7 @@ const ConversationTimeline = memo(function ConversationTimeline({
         expandedRunIds: visibleExpandedRunIds,
         expandedAttemptIds: visibleExpandedAttemptIds,
         expandedWorkGroupIds,
+        workGroupsExpandedByDefault: true,
         isWorking,
         runlessWorkActive,
         activeTurnStartedAt,
@@ -3603,8 +3599,8 @@ function WorkingTimer({ createdAt }: { createdAt: string }) {
   );
 }
 
-// Matches the grouped WorkLog row's min-h-6.
-const compactWorkEntryHeight = 24;
+// Estimated height of a collapsed activity card, including its spacing.
+const compactWorkEntryHeight = 58;
 
 function ExpandedWorkGroupEntries({
   anchorKey,
@@ -3873,11 +3869,32 @@ function CompactingLabel() {
 function ThinkingTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "thinking" }> }) {
   const ctx = use(TimelineRowCtx);
   const { isCompacting, isPreparingWorktree } = use(TimelineRowActivityCtx);
+  const [showUnavailable, setShowUnavailable] = useState(false);
   // Reserve the activity row during setup so the handoff keeps the same height.
   if (isPreparingWorktree || isCompacting) return <WorkLogRow label="" />;
-  const activity = <LiveActivityRow label="Thinking" iconName="brain" active shimmer />;
+  const activity = (
+    <LiveActivityRow label="Thinking · click to see details" iconName="brain" active shimmer />
+  );
   const { groupId } = row;
-  if (groupId === undefined) return activity;
+  if (groupId === undefined) {
+    return (
+      <div>
+        <button
+          type="button"
+          className="w-full cursor-pointer rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
+          aria-expanded={showUnavailable}
+          onClick={() => setShowUnavailable((open) => !open)}
+        >
+          {activity}
+        </button>
+        {showUnavailable ? (
+          <p className="ms-7 py-1 text-sm text-muted-foreground">
+            Waiting for the provider to share a reasoning summary. Some models do not provide one.
+          </p>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <button
       type="button"
@@ -4091,7 +4108,7 @@ function LiveWorkEntryTimelineRow({ row }: { row: Extract<TimelineRow, { kind: "
         label={
           thoughtIsStatus ? (
             row.active ? (
-              "Thinking"
+              "Thinking · click to see details"
             ) : (
               "Thought"
             )
@@ -5494,9 +5511,13 @@ function WorkEntryLogRow(props: WorkEntryRowProps) {
       ? notificationChildThreadId(workEntry.projectedItem.item.source)
       : undefined;
   const groupView = use(WorkGroupViewCtx);
-  const [expanded, setExpanded] = useState(
-    () => groupView?.state.expandedEntries.has(workEntry.id) ?? false,
-  );
+  const [expanded, setExpanded] = useState(() => {
+    const initiallyExpanded =
+      (groupView?.state.expandedEntries.has(workEntry.id) ?? false) ||
+      workEntry.projectedItem?.item.type === "file_change";
+    if (initiallyExpanded) groupView?.state.expandedEntries.add(workEntry.id);
+    return initiallyExpanded;
+  });
   const toggleExpanded = () => {
     const next = !expanded;
     if (groupView) {
@@ -5662,7 +5683,7 @@ function WorkEntryLogRow(props: WorkEntryRowProps) {
             );
   // Reserve destructive row styling for severe failures, not routine tool errors.
   const iconWrapperClass = cn(
-    "flex size-4 items-center justify-center",
+    "flex size-5 items-center justify-center",
     showWarningIndicator
       ? "text-warning"
       : showDestructiveRowStyle
@@ -5670,7 +5691,7 @@ function WorkEntryLogRow(props: WorkEntryRowProps) {
         : showFailedIndicator
           ? failedToolIconClassName
           : workEntry.tone === "tool"
-            ? "text-icon-muted"
+            ? "text-primary"
             : iconConfig.className,
   );
   const headingClass = showWarningIndicator
@@ -5705,6 +5726,7 @@ function WorkEntryLogRow(props: WorkEntryRowProps) {
 
   return (
     <WorkLogRow
+      activityCard
       data-v2-item-type={workEntry.projectedItem?.item.type}
       data-v2-item-visibility={workEntry.projectedItem?.visibility}
       {...rowToggleProps}
@@ -5717,8 +5739,8 @@ function WorkEntryLogRow(props: WorkEntryRowProps) {
           <ToolActivityIconView
             icon={entryToolIcon}
             fallbackName={entryIconName}
-            className="block size-4 shrink-0 stroke-2"
-            muted
+            className="block size-5 shrink-0 stroke-2"
+            muted={false}
           />
         </span>
       }

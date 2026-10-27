@@ -48,7 +48,6 @@ const VIEWS: ReadonlyArray<{ key: View; label: string; icon: typeof ListIcon }> 
   { key: "calendar", label: "Calendario", icon: CalendarDaysIcon },
 ];
 
-const PROJECT_STORAGE_KEY = "upcode:issues:project";
 const VIEW_STORAGE_KEY = "upcode:issues:view";
 const DENSITY_STORAGE_KEY = "upcode:issues:density";
 const MONTH_STORAGE_KEY = "upcode:issues:month";
@@ -136,7 +135,7 @@ function IssuesWorkspace({
   readonly environmentId: EnvironmentId;
   readonly organization: string;
 }) {
-  const [project, setProject] = useState(() => localStorage.getItem(PROJECT_STORAGE_KEY) ?? "");
+  const [project, setProject] = useState("");
   const [view, setView] = useState<View>(readStoredView);
   const [density, setDensity] = useState<Density>(() =>
     localStorage.getItem(DENSITY_STORAGE_KEY) === "compacta" ? "compacta" : "comoda",
@@ -160,9 +159,6 @@ function IssuesWorkspace({
     return () => clearInterval(timer);
   }, []);
   useEffect(() => {
-    if (project) localStorage.setItem(PROJECT_STORAGE_KEY, project);
-  }, [project]);
-  useEffect(() => {
     localStorage.setItem(VIEW_STORAGE_KEY, view);
   }, [view]);
   useEffect(() => {
@@ -178,14 +174,15 @@ function IssuesWorkspace({
   }, [search]);
 
   const projects = useEnvironmentQuery(azureDevOps.projects({ environmentId, input: {} }));
-  const selectedProject = project || projects.data?.[0]?.name || "";
+  const selectedProject = view === "board" ? project : project || projects.data?.[0]?.name || "";
+  const allProjectsBoard = view === "board" && !selectedProject;
   const activeProject = detailProject || selectedProject;
   const workItems = useEnvironmentQuery(
-    selectedProject
+    selectedProject || allProjectsBoard
       ? azureDevOps.workItems({
           environmentId,
           input: {
-            project: selectedProject,
+            ...(selectedProject ? { project: selectedProject } : {}),
             assignedToMe,
             type: ISSUE_WORK_ITEM_TYPE,
             ...(iteration ? { iteration } : {}),
@@ -298,10 +295,13 @@ function IssuesWorkspace({
       input: { project: activeProject, ...input },
     });
 
-  const moveIssue = async (itemId: number, state: string) => {
+  const moveIssue = async (itemId: number, itemProject: string, state: string) => {
     setBoardNotice(null);
     setBusyIds((current) => new Set(current).add(itemId));
-    const result = await write({ id: itemId, state });
+    const result = await updateWorkItem({
+      environmentId,
+      input: { project: itemProject, id: itemId, state },
+    });
     setBusyIds((current) => {
       const next = new Set(current);
       next.delete(itemId);
@@ -310,6 +310,7 @@ function IssuesWorkspace({
     if (result._tag === "Success") {
       setBoardNotice({ tone: "ok", text: `#${itemId} → ${state} en Azure DevOps.` });
       workItems.refresh();
+      everyProjectWorkItems.refresh();
       catalogue.refresh();
       columnSource.refresh();
       detail.refresh();
@@ -338,6 +339,7 @@ function IssuesWorkspace({
       setDetailNotice({ tone: "ok", text: "Publicado en Azure DevOps." });
       detail.refresh();
       workItems.refresh();
+      everyProjectWorkItems.refresh();
       catalogue.refresh();
       columnSource.refresh();
       return;
@@ -416,6 +418,7 @@ function IssuesWorkspace({
                   Proyecto
                 </span>
                 <select
+                  aria-label="Proyecto"
                   value={selectedProject}
                   onChange={(event) => {
                     setProject(event.target.value);
@@ -425,6 +428,7 @@ function IssuesWorkspace({
                   }}
                   className="rounded border bg-background px-1.5 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
                 >
+                  {view === "board" ? <option value="">Todos los proyectos</option> : null}
                   {(projects.data ?? []).map((entry) => (
                     <option key={entry.id} value={entry.name}>
                       {entry.name}
@@ -510,6 +514,7 @@ function IssuesWorkspace({
               size="sm"
               onClick={() => {
                 workItems.refresh();
+                everyProjectWorkItems.refresh();
                 catalogue.refresh();
                 columnSource.refresh();
                 projects.refresh();
@@ -546,6 +551,12 @@ function IssuesWorkspace({
             </p>
           ) : null}
 
+          {allProjectsBoard ? (
+            <p className="text-xs text-muted-foreground">
+              Estados agrupados por nombre. Selecciona un proyecto para mover tareas entre estados.
+            </p>
+          ) : null}
+
           {view === "tasks" ? (
             <IssueTasks
               items={tasksItems}
@@ -557,12 +568,13 @@ function IssuesWorkspace({
             <IssueBoard
               items={items}
               states={states}
+              allowMove={!allProjectsBoard}
               density={density}
-              labelsFor={(item) => labelsFor(item.id)}
+              labelsFor={(item) => labelMap[azureDevOpsIssueKey(item.project, item.id)] ?? []}
               now={now}
               busyIds={busyIds}
-              onOpen={(item) => openIssue(item.id)}
-              onMove={(item, state) => void moveIssue(item.id, state)}
+              onOpen={(item) => openIssue(item.id, item.project)}
+              onMove={(item, state) => void moveIssue(item.id, item.project, state)}
             />
           ) : view === "list" ? (
             <IssueList
@@ -611,7 +623,7 @@ function IssuesWorkspace({
             people={people}
             labels={labelsFor(detailItem.id)}
             knownLabels={knownLabels}
-            projectRoot={selectedProject}
+            projectRoot={activeProject}
             saving={savingDetail}
             notice={detailNotice}
             onClose={() => setSelectedId(null)}

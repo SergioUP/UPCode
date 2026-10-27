@@ -104,6 +104,8 @@ describe("provider compatibility", () => {
     for (const [version, expected] of [
       ["2.0.18", "supported"],
       ["2.1.0", "supported"],
+      // The version this fork ships and develops against.
+      ["2.2.0", "supported"],
       // Early OpenCode 2 releases predate the API the adapter was built against.
       ["2.0.17", "unsupported"],
       ["2.0.0", "unsupported"],

@@ -20,6 +20,7 @@ import * as Schema from "effect/Schema";
 import {
   projectTurnItemForWire,
   projectTurnItemForDetail,
+  projectCommandOutputPage,
   projectDomainEventForWire,
 } from "./WireProjection.ts";
 import { threadShellFromProjection } from "./ProjectionStore.ts";
@@ -343,6 +344,16 @@ describe("orchestration V2 wire projection", () => {
     });
   });
 
+  it("pages command output without losing characters at a surrogate boundary", () => {
+    const output = "a".repeat(65535) + "😀" + "tail";
+    const item = { ...base, type: "command_execution" as const, input: "test", output };
+    const first = projectCommandOutputPage(item, 0);
+    expect(first.nextOutputOffset).toBe(65535);
+    const second = projectCommandOutputPage(item, first.nextOutputOffset!);
+    expect(first.item.output + second.item.output).toBe(output);
+    expect(second.nextOutputOffset).toBeUndefined();
+  });
+
   it("omits inline file bodies but preserves file identity and change counts", () => {
     const item = {
       ...base,
@@ -353,13 +364,22 @@ describe("orchestration V2 wire projection", () => {
       diffStr: "+new code",
       oldStr: "old code",
       newStr: "new code",
+      changes: [{ operation: "update", path: "src/main.ts", diff: "+new code" }],
     };
     const projected = projectTurnItemForWire(item);
     expect(projected).not.toHaveProperty("diffStr");
     expect(projected).not.toHaveProperty("oldStr");
     expect(projected).not.toHaveProperty("newStr");
+    expect(projected).toMatchObject({ changes: [{ operation: "update", path: "src/main.ts" }] });
+    if (projected.type === "file_change") expect(projected.changes?.[0]).not.toHaveProperty("diff");
     expect(projected).toMatchObject({ fileName: "src/main.ts", additions: 3, deletions: 1 });
     expect(item.diffStr).toBe("+new code");
+    expect(projectTurnItemForDetail(item)).toMatchObject({
+      diffStr: "+new code",
+      oldStr: "old code",
+      newStr: "new code",
+      changes: [{ operation: "update", path: "src/main.ts", diff: "+new code" }],
+    });
     // A failed edit keeps the provider's error so expanding the row can show it.
     const failed = projectTurnItemForWire({
       ...item,

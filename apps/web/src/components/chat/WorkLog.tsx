@@ -42,25 +42,38 @@ type RowContent = {
   label: ReactNode;
   trailing?: ReactNode;
   wrapLabel?: boolean;
+  activityCard?: boolean;
 };
 
-function WorkLogLine({ icon, label, trailing, wrapLabel }: RowContent) {
+function WorkLogLine({ icon, label, trailing, wrapLabel, activityCard = false }: RowContent) {
   return (
     <div
       className={cn(
         "flex min-h-6 min-w-0 gap-1.5 text-sm leading-relaxed select-none [&_*]:select-none",
+        activityCard && "min-h-10 gap-2",
         wrapLabel ? "items-start" : "items-center",
       )}
     >
-      <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+      <div
+        className={cn(
+          "flex min-w-0 flex-1 gap-1.5",
+          activityCard ? "items-center gap-2.5" : "items-baseline",
+        )}
+      >
         {icon ? (
-          // Align with the first line's capital letters. Centering line boxes drifts
-          // when font ascent/descent rounding changes at fractional browser zoom.
-          <span className="relative w-6 shrink-0 leading-0">
-            <span className="inline-block size-6 overflow-hidden align-[calc(0.5cap_-_0.75rem)]">
-              <span className="flex size-full items-center justify-center">{icon}</span>
+          activityCard ? (
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10">
+              {icon}
             </span>
-          </span>
+          ) : (
+            // Align with the first line's capital letters. Centering line boxes drifts
+            // when font ascent/descent rounding changes at fractional browser zoom.
+            <span className="relative w-6 shrink-0 leading-0">
+              <span className="inline-block size-6 overflow-hidden align-[calc(0.5cap_-_0.75rem)]">
+                <span className="flex size-full items-center justify-center">{icon}</span>
+              </span>
+            </span>
+          )
         ) : null}
         <div
           className={cn(
@@ -110,13 +123,27 @@ export function WorkLogRow({
   label,
   trailing,
   wrapLabel = false,
+  activityCard = false,
   children,
   ...rowProps
 }: RowContent & Omit<ComponentProps<"div">, "className" | "style">) {
   const className = useRowClassName(rowProps.onClick !== undefined);
   return (
-    <div {...rowProps} className={className}>
-      <WorkLogLine icon={icon} label={label} trailing={trailing} wrapLabel={wrapLabel} />
+    <div
+      {...rowProps}
+      className={cn(
+        className,
+        activityCard &&
+          "my-0.5 rounded-lg border border-border/50 bg-muted/25 px-2 py-1.5 hover:bg-muted/45",
+      )}
+    >
+      <WorkLogLine
+        icon={icon}
+        label={label}
+        trailing={trailing}
+        wrapLabel={wrapLabel}
+        activityCard={activityCard}
+      />
       {children}
     </div>
   );

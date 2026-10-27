@@ -6,6 +6,7 @@ import { isLocalEnvironmentDisabled } from "../../localEnvironment";
 import { usePrimaryEnvironmentId } from "../../state/environments";
 import { useRightPanelStore } from "~/rightPanelStore";
 import { AttachmentFilePreview } from "../files/AttachmentFilePreview";
+import { ComposerProviderLimit } from "./ComposerProviderLimit";
 import { Dialog, DialogPopup, DialogTitle } from "../ui/dialog";
 import { filterComposerPullRequestMatches } from "@t3tools/shared/composerPullRequestMatches";
 import { importPastedComposerText, readPastedComposerContext } from "../composerInlineTokenPaste";
@@ -1084,6 +1085,7 @@ import {
   FileIcon,
   BotIcon,
   CircleAlertIcon,
+  MicIcon,
   PaperclipIcon,
   PencilRulerIcon,
   PlayIcon,
@@ -1566,6 +1568,8 @@ export interface ChatComposerProps {
   onToggleKeepFullHistory: () => void;
   /** Picking /usage-limits from the menu is the action itself; the draft keeps nothing of it. */
   onUsageLimitsCommand?: (() => void) | undefined;
+  providerUsageLimits?: import("@t3tools/contracts").ServerProviderUsageLimits | undefined;
+  onOpenProviderUsageLimits?: (() => void) | undefined;
   environmentUnavailable: {
     readonly label: string;
     readonly connection: EnvironmentConnectionPresentation;
@@ -7727,6 +7731,46 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                       </Tooltip>
                     </>
                   ) : null}
+                  {typeof navigator !== "undefined" && /win/i.test(navigator.platform) ? (
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="Start Windows voice typing"
+                            onPointerDown={(event) => event.preventDefault()}
+                            onClick={() => {
+                              focusComposer();
+                              const showShortcut = () =>
+                                toastManager.add({
+                                  type: "info",
+                                  title: "Windows voice typing",
+                                  description:
+                                    "Press Windows + H to start dictation. Review your text before sending.",
+                                });
+                              const start = window.desktopBridge?.startWindowsVoiceTyping;
+                              if (!start) showShortcut();
+                              else
+                                void start()
+                                  .then((started) => {
+                                    if (!started) showShortcut();
+                                  })
+                                  .catch(showShortcut);
+                            }}
+                          />
+                        }
+                      >
+                        <MicIcon />
+                      </TooltipTrigger>
+                      <TooltipPopup>Windows voice typing</TooltipPopup>
+                    </Tooltip>
+                  ) : null}
+                  <ComposerProviderLimit
+                    limits={props.providerUsageLimits}
+                    onOpen={props.onOpenProviderUsageLimits}
+                  />
                   <ComposerFooterPrimaryActions
                     compact={isComposerResting || isComposerPrimaryActionsCompact}
                     canOperateThread={canOperateThread}

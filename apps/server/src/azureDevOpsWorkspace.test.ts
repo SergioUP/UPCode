@@ -5,6 +5,42 @@ import * as AzureDevOpsWorkspace from "./azureDevOpsWorkspace.ts";
 
 afterEach(() => vi.unstubAllGlobals());
 
+it.effect("loads assigned work across projects in batches without the 100-item cutoff", () =>
+  Effect.gen(function* () {
+    const batches: number[][] = [];
+    let query = "";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>().mockImplementation(async (url, init) => {
+        const body = JSON.parse(String(init?.body ?? "{}"));
+        if (String(url).includes("/wiql")) {
+          query = body.query;
+          return new Response(
+            JSON.stringify({ workItems: Array.from({ length: 205 }, (_, i) => ({ id: i + 1 })) }),
+          );
+        }
+        if (String(url).includes("workitemsbatch")) batches.push(body.ids);
+        return new Response(JSON.stringify({ value: [] }));
+      }),
+    );
+    const workspace = yield* AzureDevOpsWorkspace.make;
+    yield* workspace.listWorkItems(undefined, true, undefined, "Sub Tarea");
+    assert.isTrue(query.includes("[System.AssignedTo] = @Me"));
+    assert.deepStrictEqual(
+      batches.map((batch) => batch.length),
+      [200, 5],
+    );
+  }).pipe(
+    Effect.provide(
+      ServerSettings.layerTest({
+        sourceControlHosts: {
+          "azure-devops": { organization: "upango", personalAccessToken: "secret-pat" },
+        },
+      }),
+    ),
+  ),
+);
+
 it.effect("reads PR work item links and blocking policies through the configured PAT", () =>
   Effect.gen(function* () {
     const calls: Array<{ url: string; authorization: string }> = [];

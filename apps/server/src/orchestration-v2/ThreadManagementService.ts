@@ -48,7 +48,7 @@ import * as Orchestrator from "./Orchestrator.ts";
 import * as ProviderSessionManager from "./ProviderSessionManager.ts";
 import * as ThreadCommandExecutor from "./ThreadCommandExecutor.ts";
 import { DispatchModeLimit, exceededDispatchModeLimit } from "./DispatchModeLimit.ts";
-import { projectTurnItemForDetail } from "./WireProjection.ts";
+import { projectCommandOutputPage, projectTurnItemForDetail } from "./WireProjection.ts";
 import * as LegacyV1ThreadImporter from "./legacy/LegacyV1ThreadImporter.ts";
 import * as ServerSettings from "../serverSettings.ts";
 
@@ -329,6 +329,7 @@ export interface ThreadManagementServiceShape {
   readonly getTurnItem: (input: {
     readonly threadId: ThreadId;
     readonly itemId: TurnItemId;
+    readonly outputOffset?: number | undefined;
   }) => Effect.Effect<OrchestrationV2GetTurnItemResult, Orchestrator.OrchestratorV2Error>;
   readonly getThreadRecords: Orchestrator.OrchestratorV2["Service"]["getThreadRecords"];
   readonly getThreadProjection: (
@@ -1127,7 +1128,12 @@ const make = Effect.gen(function* () {
     getTurnItem: (input) =>
       ensureProjectionTranscript(input.threadId).pipe(
         Effect.andThen(orchestrator.getTurnItem(input)),
-        Effect.map((item) => ({ item: item === null ? null : projectTurnItemForDetail(item) })),
+        Effect.map((item) => {
+          if (item?.type === "command_execution" && input.outputOffset !== undefined) {
+            return projectCommandOutputPage(item, input.outputOffset);
+          }
+          return { item: item === null ? null : projectTurnItemForDetail(item) };
+        }),
       ),
     getThreadRecords: (threadId, fields, filter) =>
       ensureProjectionTranscript(threadId).pipe(

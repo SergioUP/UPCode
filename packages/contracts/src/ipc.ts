@@ -1195,6 +1195,7 @@ export interface DesktopBridge {
   pickFolder: (options?: PickFolderOptions) => Promise<string | null>;
   /** Optional while older desktop shells can host a newer web client. */
   pickProjectFavicon?: (initialPath?: string) => Promise<string | null>;
+  startWindowsVoiceTyping?: () => Promise<boolean>;
   /**
    * Multi-select JSON file picker that opens in the VS Code extensions
    * directory when one exists. Optional: older desktop builds lack it, and

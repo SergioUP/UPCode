@@ -11286,6 +11286,7 @@ export default function ChatView(props: ChatViewProps) {
     threadId: activeThread.id,
     ...(draftId ? { draftId } : {}),
     activeProjectName: activeProject?.title,
+    projectId: activeProject?.id ?? null,
     activeProjectScripts: activeProject ? activeProjectScripts : undefined,
     preferredScriptId: activeProject
       ? (lastInvokedScriptByProjectId[activeProject.id] ?? null)
@@ -11803,6 +11804,12 @@ export default function ChatView(props: ChatViewProps) {
                               bannerItems={composerBannerItems}
                               resumeCompactionTokens={resumeCompactionTokens}
                               keepFullHistory={keepFullHistory}
+                              providerUsageLimits={activeProviderStatus?.usageLimits}
+                              onOpenProviderUsageLimits={
+                                usageLimitsOffered && usageLimitsKey !== null
+                                  ? openUsageLimits
+                                  : undefined
+                              }
                               onToggleKeepFullHistory={toggleKeepFullHistory}
                               // With attachments or contexts aboard the pick just inserts the
                               // text, so it sends as a prompt like the typed path would.

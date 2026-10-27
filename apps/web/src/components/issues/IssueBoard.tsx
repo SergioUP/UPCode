@@ -18,6 +18,7 @@ export function IssueBoard({
   busyIds,
   onOpen,
   onMove,
+  allowMove = true,
 }: {
   readonly items: readonly AzureDevOpsWorkItem[];
   readonly states: readonly AzureDevOpsWorkItemStateOption[];
@@ -27,6 +28,7 @@ export function IssueBoard({
   readonly busyIds: ReadonlySet<number>;
   readonly onOpen: (item: AzureDevOpsWorkItem) => void;
   readonly onMove: (item: AzureDevOpsWorkItem, state: string) => void;
+  readonly allowMove?: boolean;
 }) {
   const [dragOver, setDragOver] = useState<string | null>(null);
   const [dragging, setDragging] = useState<number | null>(null);
@@ -52,6 +54,7 @@ export function IssueBoard({
             key={column.state}
             aria-label={column.state}
             onDragOver={(event) => {
+              if (!allowMove) return;
               event.preventDefault();
               event.dataTransfer.dropEffect = "move";
               setDragOver(column.state);
@@ -61,6 +64,7 @@ export function IssueBoard({
               setDragOver((current) => (current === column.state ? null : current));
             }}
             onDrop={(event) => {
+              if (!allowMove) return;
               event.preventDefault();
               setDragOver(null);
               const id = Number(event.dataTransfer.getData("text/plain"));
@@ -107,12 +111,15 @@ export function IssueBoard({
                     now={now}
                     compact={density === "compacta"}
                     onOpen={() => onOpen(item)}
-                    onDragStart={() => setDragging(item.id)}
+                    {...(allowMove ? { onDragStart: () => setDragging(item.id) } : {})}
                     onDragEnd={() => {
                       setDragging(null);
                       setDragOver(null);
                     }}
                   />
+                  {!allowMove ? (
+                    <p className="px-2 pt-1 text-3xs text-muted-foreground">{item.project}</p>
+                  ) : null}
                 </div>
               ))}
               {column.items.length === 0 ? (

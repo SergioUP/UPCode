@@ -405,6 +405,8 @@ export function applyServerSettingsPatch(
     usageModelAliases: usageModelAliasesPatch,
     // Entry replacement: deepMerge would keep keys the client meant to clear.
     projectSettingsOverrides: projectSettingsOverridesPatch,
+    // Arrays replace whole: deepMerge would keep old prompt entries.
+    projectPrompts: projectPromptsPatch,
     // Already translated into `projectSettingsOverrides` above; the legacy
     // maps are derived views and must never be merged directly.
     projectAgentBrowserAccessOverrides: _legacyBrowserAccess,
@@ -499,6 +501,7 @@ export function applyServerSettingsPatch(
     ...(azureDevOpsThreadLinksPatch === undefined
       ? {}
       : { azureDevOpsThreadLinks: azureDevOpsThreadLinksPatch }),
+    ...(projectPromptsPatch === undefined ? {} : { projectPrompts: projectPromptsPatch }),
     favorites,
     providerModelPreferences: nextModelPreferences,
     ...(worktreeCleanupPatch === undefined

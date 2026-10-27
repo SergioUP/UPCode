@@ -1649,6 +1649,15 @@ describe("resolveComposerProviderSelection", () => {
 });
 
 describe("resolveComposerInteractionMode", () => {
+  it("shows Codex plan and build controls without enabling other providers' beta modes", () => {
+    expect(
+      resolveComposerInteractionMode({
+        planModeEnabled: false,
+        provider: { driver: ProviderDriverKind.make("codex"), showInteractionModeToggle: true },
+        interactionMode: "plan",
+      }),
+    ).toEqual({ enabled: true, interactionMode: "plan" });
+  });
   it("resets a restored plan draft when the selected instance does not support plan mode", () => {
     expect(
       resolveComposerInteractionMode({

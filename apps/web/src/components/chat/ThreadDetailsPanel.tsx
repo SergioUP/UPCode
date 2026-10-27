@@ -1,6 +1,7 @@
 import type {
   EditorId,
   EnvironmentId,
+  ProjectId,
   ProjectScript,
   ResolvedKeybindingsConfig,
   ThreadId,
@@ -22,6 +23,7 @@ import { ThreadDetailsSection } from "./ThreadDetailsSection";
 import { ThreadAutomationsPanel } from "./ThreadAutomationsPanel";
 import { ThreadRelationshipsPanel } from "./ThreadRelationshipsControl";
 import { ThreadWorkItemControl } from "./ThreadWorkItemControl";
+import { ProjectPromptsControl } from "./ProjectPromptsControl";
 
 const GitActionsControl = memo(BaseGitActionsControl);
 
@@ -34,6 +36,7 @@ export interface ThreadDetailsPanelProps extends Pick<
   threadId: ThreadId;
   draftId?: DraftId;
   activeProjectName: string | undefined;
+  projectId: ProjectId | null;
   activeProjectScripts: ReadonlyArray<ProjectScript> | undefined;
   preferredScriptId: string | null;
   keybindings: ResolvedKeybindingsConfig;
@@ -143,6 +146,13 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
                   onAddScript={props.onAddProjectScript}
                   onUpdateScript={props.onUpdateProjectScript}
                   onDeleteScript={props.onDeleteProjectScript}
+                />
+              ) : null}
+
+              {props.projectId ? (
+                <ProjectPromptsControl
+                  environmentId={props.environmentId}
+                  projectId={props.projectId}
                 />
               ) : null}
             </div>

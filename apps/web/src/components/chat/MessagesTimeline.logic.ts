@@ -695,6 +695,26 @@ function expandedWorkGroupRow(
   };
 }
 
+function visibleActionDetailRows(
+  groupId: string,
+  createdAt: string,
+  entries: WorkLogEntry[],
+): Extract<MessagesTimelineRow, { kind: "work" }>[] {
+  return entries
+    .filter(
+      (entry) =>
+        entry.projectedItem?.item.type === "file_change" ||
+        entry.projectedItem?.item.type === "command_execution",
+    )
+    .map((entry) => ({
+      kind: "work" as const,
+      id: `${groupId}:action:${entry.id}`,
+      createdAt,
+      groupedEntries: [entry],
+      isExpandedToolGroup: false,
+    }));
+}
+
 export function resolveAssistantMessageCopyState({
   text,
   showCopyButton,
@@ -1389,6 +1409,8 @@ export function deriveMessagesTimelineRows(input: {
   expandedRunIds?: ReadonlySet<RunId>;
   expandedAttemptIds?: ReadonlySet<RunAttemptId>;
   expandedWorkGroupIds?: ReadonlySet<string>;
+  /** Interpret the group set as explicitly collapsed groups instead. */
+  workGroupsExpandedByDefault?: boolean;
   isWorking: boolean;
   /**
    * The live work has no app run (a provider-native subagent thread), so
@@ -1403,6 +1425,10 @@ export function deriveMessagesTimelineRows(input: {
   /** Live bootstrap progress. Renders a stage card under the first user message. */
   worktreeSetup?: WorktreeSetupSnapshot | null;
 }): MessagesTimelineRow[] {
+  const isWorkGroupExpanded = (groupId: string) =>
+    input.workGroupsExpandedByDefault
+      ? !input.expandedWorkGroupIds?.has(groupId)
+      : (input.expandedWorkGroupIds?.has(groupId) ?? false);
   const timelineEntries = timelineRowEntries(input.timelineEntries);
   const turnDiffSummaryByAssistantMessageId = new Map<MessageId, TurnDiffSummary>();
   for (const summary of input.turnDiffSummaries) {
@@ -1543,7 +1569,7 @@ export function deriveMessagesTimelineRows(input: {
             entry: (latestRunningToolEntry ?? latestVisibleToolEntry).entry,
             groupedEntries: visibleActiveToolEntries.map((entry) => entry.entry),
             groupId,
-            expanded: input.expandedWorkGroupIds?.has(groupId) ?? false,
+            expanded: isWorkGroupExpanded(groupId),
             active: latestToolKeepsActivityLive,
             ...(latestThoughtEntry ? { thought: latestThoughtEntry.entry } : {}),
           };
@@ -1565,7 +1591,16 @@ export function deriveMessagesTimelineRows(input: {
     if (activeWorkRow === null) return;
     nextRows.push(activeWorkRow);
     hasActivityRow ||= activeWorkRow.active;
-    if (!activeWorkRow.expanded) return;
+    if (!activeWorkRow.expanded) {
+      nextRows.push(
+        ...visibleActionDetailRows(
+          activeWorkRow.groupId,
+          activeWorkRow.createdAt,
+          activeWorkRow.groupedEntries,
+        ),
+      );
+      return;
+    }
     nextRows.push(
       expandedWorkGroupRow(
         activeWorkRow.groupId,
@@ -1702,7 +1737,7 @@ export function deriveMessagesTimelineRows(input: {
         const activeInProgressToolEntries = visibleGroupedEntries.filter(workEntryIsInActiveRun);
         if (activeInProgressToolEntries.length > 0) {
           const groupId = workGroupId(timelineEntry.id);
-          const expanded = input.expandedWorkGroupIds?.has(groupId) ?? false;
+          const expanded = isWorkGroupExpanded(groupId);
           const latestActiveToolEntry = activeInProgressToolEntries.at(-1)!;
           nextRows.push({
             kind: "work-live",
@@ -1718,6 +1753,10 @@ export function deriveMessagesTimelineRows(input: {
           if (expanded) {
             nextRows.push(
               expandedWorkGroupRow(groupId, timelineEntry.createdAt, visibleGroupedEntries),
+            );
+          } else {
+            nextRows.push(
+              ...visibleActionDetailRows(groupId, timelineEntry.createdAt, visibleGroupedEntries),
             );
           }
         } else if (
@@ -1738,7 +1777,7 @@ export function deriveMessagesTimelineRows(input: {
           });
         } else {
           const groupId = workGroupId(timelineEntry.id);
-          const expanded = input.expandedWorkGroupIds?.has(groupId) ?? false;
+          const expanded = isWorkGroupExpanded(groupId);
           const summaryKind = toolGroupSummaryKind(visibleGroupedEntries);
           const primarySourceEntry = visibleGroupedEntries.find(
             (entry) => entry.toolSource !== undefined,
@@ -1790,6 +1829,10 @@ export function deriveMessagesTimelineRows(input: {
           if (expanded) {
             nextRows.push(
               expandedWorkGroupRow(groupId, timelineEntry.createdAt, visibleGroupedEntries),
+            );
+          } else {
+            nextRows.push(
+              ...visibleActionDetailRows(groupId, timelineEntry.createdAt, visibleGroupedEntries),
             );
           }
         }
@@ -1970,7 +2013,7 @@ export function deriveMessagesTimelineRows(input: {
     const failedGroupAnchor = latestToolFailed ? activeWorkAnchor : undefined;
     if (failedGroupAnchor) {
       const groupId = workGroupId(failedGroupAnchor.id);
-      const expanded = input.expandedWorkGroupIds?.has(groupId) ?? false;
+      const expanded = isWorkGroupExpanded(groupId);
       nextRows.push({
         kind: "thinking",
         id: LIVE_ACTIVITY_ROW_ID,

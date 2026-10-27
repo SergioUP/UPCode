@@ -1346,6 +1346,7 @@ export const OrchestrationV2FileChangeDetail = Schema.Struct({
   oldPath: Schema.optional(TrimmedNonEmptyString),
   fileType: Schema.optional(TrimmedNonEmptyString),
   mimeType: Schema.optional(TrimmedNonEmptyString),
+  diff: Schema.optional(Schema.String),
 });
 export type OrchestrationV2FileChangeDetail = typeof OrchestrationV2FileChangeDetail.Type;
 
@@ -3647,12 +3648,15 @@ export const OrchestrationV2GetTurnItemInput = Schema.Struct({
   itemId: TurnItemId,
   /** The item updatedAt the client last saw. Only keys the client cache. */
   revision: Schema.optional(Schema.String),
+  /** UTF-16 offset for a bounded page of command output. */
+  outputOffset: Schema.optional(NonNegativeInt),
 });
 export type OrchestrationV2GetTurnItemInput = typeof OrchestrationV2GetTurnItemInput.Type;
 
 /** One persisted turn item with its full, size-bounded input and output. */
 export const OrchestrationV2GetTurnItemResult = Schema.Struct({
   item: Schema.NullOr(OrchestrationV2TurnItem),
+  nextOutputOffset: Schema.optional(NonNegativeInt),
 });
 export type OrchestrationV2GetTurnItemResult = typeof OrchestrationV2GetTurnItemResult.Type;
 

@@ -125,7 +125,7 @@ html[data-mobile-composer-route-transition="true"]::view-transition-old(t3-mobil
   --workspace-titlebar-control-size: 1.75rem;
   --workspace-titlebar-control-gap: 0.75rem;
   --workspace-titlebar-scroll-fade-height: 1.5rem;
-  --chat-content-max-width: 46rem;
+  --chat-content-max-width: 90rem;
   --thread-details-panel-width: 17.5rem;
   /* The prompt on phones: iOS zooms into any input under 16px on focus. */
   --font-size-prompt-touch: max(var(--font-size-prompt, 1rem), 16px);
@@ -1767,6 +1767,19 @@ code {
 
 /* Chat markdown rendering */
 
+.chat-content-lane .chat-markdown {
+  font-size: 1rem;
+}
+
+.chat-markdown strong {
+  color: light-dark(#805b1c, #e5c07b);
+  font-weight: 700;
+}
+
+.chat-markdown :is(ul, ol) > li::marker {
+  color: light-dark(#31777f, #56b6c2);
+}
+
 .chat-markdown > :first-child {
   margin-top: 0;
 }
@@ -1818,6 +1831,10 @@ code {
 
 :is(.chat-markdown, .composer-tiptap) h6 {
   color: var(--contrast-muted-foreground);
+}
+
+.chat-markdown :is(h1, h2, h3, h4, h5) {
+  color: light-dark(#81479b, #c678dd);
 }
 
 :is(.chat-markdown, .composer-tiptap) ul {
@@ -1892,7 +1909,7 @@ code {
 
 /* File links are Chips and own their color and focus ring. */
 .chat-markdown a:not(.chat-markdown-file-link) {
-  color: var(--info-foreground);
+  color: light-dark(#376fa8, #61afef);
 }
 
 .chat-markdown a:not(.chat-markdown-file-link, [data-markdown-image-link]):hover,
@@ -2084,7 +2101,7 @@ code {
 /* Chat width setting. Comfortable keeps the default --chat-content-max-width,
    which sizes the timeline lane, the composer, and ChatCanvas's width probe. */
 :root[data-chat-width="wide"] {
-  --chat-content-max-width: 72rem;
+  --chat-content-max-width: 110rem;
 }
 
 :root[data-chat-width="full"] {
