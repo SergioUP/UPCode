@@ -2,7 +2,11 @@ import { ThreadId, TurnItemId } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
 import { describe, expect, it } from "vite-plus/test";
 
-import { turnItemOutputImages, turnItemOutputText } from "./itemDetail.ts";
+import {
+  turnItemNeedsDetailFetch,
+  turnItemOutputImages,
+  turnItemOutputText,
+} from "./itemDetail.ts";
 
 const screenshot = {
   id: TurnItemId.make("tool-screenshot"),
@@ -30,6 +34,12 @@ const screenshot = {
   completedAt: DateTime.makeUnsafe("2026-10-05T00:00:01.000Z"),
   updatedAt: DateTime.makeUnsafe("2026-10-05T00:00:01.000Z"),
 };
+
+it("fetches a file change's withheld detail when it is opened", () => {
+  expect(
+    turnItemNeedsDetailFetch({ ...screenshot, type: "file_change", fileName: "src/main.ts" }),
+  ).toBe(true);
+});
 
 describe("tool output images", () => {
   it("shows a screenshot as an image asset, not as text", () => {

@@ -523,21 +523,31 @@ export const make = Effect.gen(function* () {
         : "";
       const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.Id] > 0${assignedToMe ? " AND [System.AssignedTo] = @Me" : ""}${typeClause}${iterationClause}${workItemSearchClause(query)} ORDER BY [System.ChangedDate] DESC`;
       const result = (yield* request({
-        path: `/_apis/wit/wiql?$top=100&api-version=${API_VERSION}`,
+        path: `/_apis/wit/wiql?$top=20000&api-version=${API_VERSION}`,
         method: "POST",
         body: { query: wiql },
       })) as { workItems?: Array<{ id: number }> };
       const ids = (result.workItems ?? [])
         .map((item) => item.id)
-        .filter((id) => Number.isInteger(id))
-        .slice(0, 100);
+        .filter((id) => Number.isInteger(id));
       if (ids.length === 0) return [];
-      const batch = (yield* request({
-        path: `/_apis/wit/workitemsbatch?api-version=${API_VERSION}`,
-        method: "POST",
-        body: { ids, fields: workItemFields.split(",") },
-      })) as { value?: AzureItem[] };
-      const items = (batch.value ?? []).map((item) => toWorkItem(organization, item));
+      const batches = yield* Effect.forEach(
+        Array.from({ length: Math.ceil(ids.length / 200) }, (_, index) =>
+          ids.slice(index * 200, (index + 1) * 200),
+        ),
+        (batchIds) =>
+          request({
+            path: `/_apis/wit/workitemsbatch?api-version=${API_VERSION}`,
+            method: "POST",
+            body: { ids: batchIds, fields: workItemFields.split(",") },
+          }),
+        { concurrency: 2 },
+      );
+      const items = batches.flatMap((batch) =>
+        ((batch as { value?: AzureItem[] }).value ?? []).map((item) =>
+          toWorkItem(organization, item),
+        ),
+      );
       const byProject = new Map<string, Array<(typeof items)[number]>>();
       for (const item of items) {
         if (!item.project) continue;

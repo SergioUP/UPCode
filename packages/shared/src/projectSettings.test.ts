@@ -59,6 +59,21 @@ describe("resolveProjectSettings", () => {
     );
   });
 
+  it("replaces a project's saved prompts whole instead of merging arrays", () => {
+    const first = applyServerSettingsPatch(DEFAULT_SERVER_SETTINGS, {
+      projectPrompts: {
+        [projectId]: [
+          { id: "a", title: "A", prompt: "First" },
+          { id: "b", title: "B", prompt: "Second" },
+        ],
+      },
+    });
+    const removed = applyServerSettingsPatch(first, {
+      projectPrompts: { [projectId]: [{ id: "a", title: "A", prompt: "First" }] },
+    });
+    expect(removed.projectPrompts[projectId]).toEqual([{ id: "a", title: "A", prompt: "First" }]);
+  });
+
   it("applies overrides per key and reports their source", () => {
     const settings = applyServerSettingsPatch(DEFAULT_SERVER_SETTINGS, {
       defaultAutoPull: true,

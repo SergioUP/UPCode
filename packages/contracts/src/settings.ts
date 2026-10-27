@@ -47,6 +47,21 @@ import {
 } from "./providerInstance.ts";
 import { PullRequestMergeMethod } from "./pullRequest.ts";
 
+/**
+ * A saved prompt for one project. Local to this environment: it is inserted
+ * into the composer, never sent anywhere until the user submits it.
+ */
+export const ProjectPrompt = Schema.Struct({
+  id: TrimmedNonEmptyString,
+  title: TrimmedNonEmptyString,
+  prompt: TrimmedNonEmptyString,
+});
+export type ProjectPrompt = typeof ProjectPrompt.Type;
+
+/** Custom prompts keyed by project id. */
+export const ProjectPrompts = Schema.Record(Schema.String, Schema.Array(ProjectPrompt));
+export type ProjectPrompts = typeof ProjectPrompts.Type;
+
 // ── Client Settings (local-only) ───────────────────────────────
 
 export const TimestampFormat = Schema.Literals(["locale", "12-hour", "24-hour"]);
@@ -1364,6 +1379,8 @@ export const ServerSettings = Schema.Struct({
   azureDevOpsIssueLabels: AzureDevOpsIssueLabels.pipe(
     Schema.withDecodingDefault(Effect.succeed({})),
   ),
+  /** Saved composer prompts, keyed by project id. Local to this environment. */
+  projectPrompts: ProjectPrompts.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   // Keyed by a user-chosen id so a source keeps its rows across edits. Entries
   // this build cannot decode round-trip untouched, as provider instances do.
   usageLimitSources: Schema.Record(UsageLimitSourceId, UsageLimitSourceConfig).pipe(
@@ -1667,6 +1684,8 @@ export const ServerSettingsPatch = Schema.Struct({
   azureDevOpsThreadLinks: Schema.optionalKey(Schema.Record(Schema.String, AzureDevOpsWorkItemLink)),
   /** Whole-map replacement, like the thread links: the map is small and conflicts are rare. */
   azureDevOpsIssueLabels: Schema.optionalKey(AzureDevOpsIssueLabels),
+  /** Saved composer prompts keyed by project id; patching replaces the whole map. */
+  projectPrompts: Schema.optionalKey(ProjectPrompts),
   // Whole-map replacement for the new instance config. Patching individual
   // entries is intentionally out of scope: the map is small, and partial
   // patches risk leaving driver-specific config in a half-merged state.

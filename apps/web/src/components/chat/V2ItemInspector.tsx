@@ -13,10 +13,17 @@ import {
 } from "@t3tools/client-runtime/work-log/item-detail";
 import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
 import { isJavaScriptReplTool } from "@t3tools/shared/toolActivity";
-import { ExternalLinkIcon, GitBranchIcon, RotateCcwIcon } from "lucide-react";
-import { memo, Suspense, use, useMemo } from "react";
+import {
+  CopyIcon,
+  ExternalLinkIcon,
+  FileCodeIcon,
+  GitBranchIcon,
+  RotateCcwIcon,
+} from "lucide-react";
+import { memo, Suspense, use, useMemo, useState } from "react";
 
 import { useTheme } from "../../hooks/useTheme";
+import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";
 import { cn } from "../../lib/utils";
 import { resolveDiffThemeName } from "../../lib/diffRendering";
 import { getSyntaxHighlighterPromise } from "../../lib/syntaxHighlighting";
@@ -126,6 +133,7 @@ function useFetchedTurnItem(
           threadId: projectedItem.sourceThreadId,
           itemId: projectedItem.sourceItemId,
           revision: turnItemDetailRevision(wireItem),
+          ...(wireItem.type === "command_execution" ? { outputOffset: 0 } : {}),
         }
       : null,
   );
@@ -145,6 +153,7 @@ function useFetchedTurnItem(
             ? "Output is no longer available."
             : detail.error,
       empty: fetches && item !== wireItem,
+      nextOutputOffset: detail.data?.nextOutputOffset,
     },
   };
 }
@@ -156,7 +165,64 @@ interface ToolOutputState {
   readonly pending: boolean;
   readonly error: string | null;
   readonly empty: boolean;
+  readonly nextOutputOffset?: number | undefined;
   readonly onImageExpand?: ((preview: ExpandedImagePreview) => void) | undefined;
+}
+
+function CopyTextButton({ text, label }: { readonly text: string; readonly label: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <Button
+      size="xs"
+      variant="outline"
+      onClick={() => {
+        void writeTextToClipboard(text, label)
+          .then(setCopied)
+          .catch(() => setCopied(false));
+      }}
+    >
+      <CopyIcon /> {copied ? "Copied" : `Copy ${label}`}
+    </Button>
+  );
+}
+
+function CommandOutputPage(props: {
+  readonly projectedItem: OrchestrationV2ProjectedTurnItem;
+  readonly environmentId: EnvironmentId;
+  readonly offset: number;
+}) {
+  const [showNext, setShowNext] = useState(false);
+  const detail = useTurnItemDetail({
+    environmentId: props.environmentId,
+    threadId: props.projectedItem.sourceThreadId,
+    itemId: props.projectedItem.sourceItemId,
+    revision: turnItemDetailRevision(props.projectedItem.item),
+    outputOffset: props.offset,
+  });
+  const item = detail.data?.item;
+  if (detail.isPending) return <p className="text-muted-foreground">Loading output…</p>;
+  if (detail.error || item?.type !== "command_execution") {
+    return <p className="text-destructive">Couldn&apos;t load the next output page.</p>;
+  }
+  return (
+    <>
+      {item.output ? (
+        <pre className={cn("whitespace-pre-wrap break-words text-muted-foreground", monoClassName)}>
+          {item.output}
+        </pre>
+      ) : null}
+      {item.output ? <CopyTextButton text={item.output} label="output page" /> : null}
+      {detail.data?.nextOutputOffset !== undefined ? (
+        showNext ? (
+          <CommandOutputPage {...props} offset={detail.data.nextOutputOffset} />
+        ) : (
+          <Button size="xs" variant="outline" onClick={() => setShowNext(true)}>
+            Load more output
+          </Button>
+        )
+      ) : null}
+    </>
+  );
 }
 
 function ToolOutput(props: ToolOutputState) {
@@ -187,6 +253,113 @@ function ToolOutput(props: ToolOutputState) {
   );
 }
 
+/** A provider patch, or the exact replacement fragments when no patch was supplied. */
+function FileChangeContent({
+  item,
+  workspaceRoot,
+}: {
+  readonly item: Extract<OrchestrationV2ProjectedTurnItem["item"], { type: "file_change" }>;
+  readonly workspaceRoot?: string | undefined;
+}) {
+  if (item.status === "failed") {
+    return item.diffStr?.trim() ? <StructuredValue value={item.diffStr} /> : null;
+  }
+  const changesWithDiff = item.changes?.filter((change) => change.diff?.trim()) ?? [];
+  const oldSections = [...(item.diffStr ?? "").matchAll(/^--- (.+)\n(?=@@)/gm)];
+  const files =
+    changesWithDiff.length > 0
+      ? changesWithDiff.map((change) => ({ path: change.path, diff: change.diff! }))
+      : oldSections.length > 1
+        ? oldSections.map((section, index) => ({
+            path: section[1]!,
+            diff: item.diffStr!.slice(
+              section.index! + section[0].length,
+              oldSections[index + 1]?.index,
+            ),
+          }))
+        : item.diffStr?.trim()
+          ? [{ path: item.fileName, diff: item.diffStr }]
+          : [];
+  if (files.length > 0) {
+    return (
+      <div className="space-y-2">
+        {files.map((file, index) => (
+          <details
+            key={`${file.path}:${index}`}
+            open
+            className="overflow-hidden rounded-lg border border-border/60 bg-muted/15"
+          >
+            <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 font-medium">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                <FileCodeIcon className="size-4" />
+              </span>
+              <span className="min-w-0 break-all font-mono">
+                {formatWorkspaceRelativePath(file.path, workspaceRoot)}
+              </span>
+            </summary>
+            <PatchContent diff={file.diff} />
+          </details>
+        ))}
+      </div>
+    );
+  }
+  if (item.oldStr !== undefined || item.newStr !== undefined) {
+    return (
+      <div className="space-y-2">
+        <p className="text-muted-foreground">
+          Replacement fragments reported by the provider (not a full file diff).
+        </p>
+        {item.oldStr !== undefined ? (
+          <div>
+            <div className="text-destructive">Before</div>
+            <StructuredValue value={item.oldStr} />
+          </div>
+        ) : null}
+        {item.newStr !== undefined ? (
+          <div>
+            <div className="text-success">After</div>
+            <StructuredValue value={item.newStr} />
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+  return (
+    <p className="text-muted-foreground italic">
+      The provider did not report a diff for this action.
+    </p>
+  );
+}
+
+function PatchContent({ diff }: { readonly diff: string }) {
+  return (
+    <pre
+      className={cn(
+        "overflow-x-auto rounded-md border border-border/50 bg-muted/15 p-2",
+        monoClassName,
+      )}
+    >
+      {diff.split("\n").map((line, index) => (
+        <span
+          key={index}
+          className={cn(
+            "block",
+            line.startsWith("+") && !line.startsWith("+++")
+              ? "bg-success/10 text-success"
+              : line.startsWith("-") && !line.startsWith("---")
+                ? "bg-destructive/10 text-destructive"
+                : line.startsWith("@@")
+                  ? "text-primary"
+                  : "text-muted-foreground",
+          )}
+        >
+          {line || " "}
+        </span>
+      ))}
+    </pre>
+  );
+}
+
 /** Fetched output for rows that show their own plain text instead of the inspector. */
 export function FetchedToolOutput(props: {
   readonly projectedItem: OrchestrationV2ProjectedTurnItem;
@@ -208,12 +381,21 @@ function ToolCallBody(
     readonly args?: unknown;
     readonly toolName?: string | null;
     readonly exitCode?: number | undefined;
+    readonly projectedItem?: OrchestrationV2ProjectedTurnItem;
   },
 ) {
   const call = toolCallLines({ command: props.command, args: props.args });
   return (
     <div className={cn("space-y-1.5", monoClassName)}>
-      {call.command ? <ShellCommandBlock command={call.command} /> : null}
+      {call.command ? (
+        <div className="space-y-2 rounded-md border border-border/50 bg-muted/20 p-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-sans font-medium">Command</span>
+            <CopyTextButton text={call.command} label="command" />
+          </div>
+          <ShellCommandBlock command={call.command} />
+        </div>
+      ) : null}
       {call.args ? (
         <div className="text-foreground/85">
           {call.args.map(([key, value]) => (
@@ -229,11 +411,41 @@ function ToolCallBody(
         </div>
       ) : null}
       {call.argsText ? <StructuredValue value={call.argsText} highlightJson /> : null}
+      {props.command !== undefined ? (
+        <div className="flex items-center justify-between gap-2 font-sans">
+          <span className="font-medium">Output</span>
+          {props.output ? <CopyTextButton text={props.output} label="output page" /> : null}
+        </div>
+      ) : null}
       <ToolOutput {...props} />
-      {props.exitCode !== undefined && props.exitCode !== 0 ? (
-        <div className="text-destructive">exit {props.exitCode}</div>
+      {props.nextOutputOffset !== undefined && props.projectedItem ? (
+        <NextCommandOutput
+          projectedItem={props.projectedItem}
+          environmentId={props.environmentId}
+          offset={props.nextOutputOffset}
+        />
+      ) : null}
+      {props.exitCode !== undefined ? (
+        <div className={props.exitCode === 0 ? "text-success" : "text-destructive"}>
+          Exit code: {props.exitCode}
+        </div>
       ) : null}
     </div>
+  );
+}
+
+function NextCommandOutput(props: {
+  readonly projectedItem: OrchestrationV2ProjectedTurnItem;
+  readonly environmentId: EnvironmentId;
+  readonly offset: number;
+}) {
+  const [open, setOpen] = useState(false);
+  return open ? (
+    <CommandOutputPage {...props} />
+  ) : (
+    <Button size="xs" variant="outline" onClick={() => setOpen(true)}>
+      Load more output
+    </Button>
   );
 }
 
@@ -266,6 +478,7 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
         <ToolCallBody
           command={item.input}
           exitCode={item.exitCode}
+          projectedItem={props.projectedItem}
           {...outputState}
           onImageExpand={props.onImageExpand}
         />
@@ -293,10 +506,18 @@ export const V2ItemInspector = memo(function V2ItemInspector(props: V2ItemInspec
               </Button>
             ) : null}
           </div>
-          {item.status === "failed" && item.diffStr?.trim() ? (
-            <StructuredValue value={item.diffStr} />
-          ) : null}
-          {item.changes !== undefined && item.changes.length > 0 ? (
+          {outputState.pending ? (
+            <p className="text-muted-foreground italic">Loading change details…</p>
+          ) : outputState.error ? (
+            <p className="text-destructive">
+              Couldn&apos;t load change details: {outputState.error}
+            </p>
+          ) : (
+            <FileChangeContent item={item} workspaceRoot={props.workspaceRoot} />
+          )}
+          {item.changes !== undefined &&
+          item.changes.length > 0 &&
+          !item.changes.some((change) => change.diff) ? (
             <ul className="space-y-1 font-mono text-muted-foreground">
               {item.changes.map((change, index) => (
                 <li key={`${change.operation}:${change.path}:${index}`}>

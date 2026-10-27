@@ -53,18 +53,18 @@ Esta es la razón de ser del fork. Todo lo de Azure se lee de **tu organización
 
 ### Qué se puede hacer hoy
 
-| Función              | Cómo                                                                                     |
-| -------------------- | ---------------------------------------------------------------------------------------- |
-| 🔎 Ver work items    | Sección **DevOps**: tablero, lista y calendario, un proyecto a la vez                    |
-| 👤 Mi trabajo        | Filtro «asignado a mí» dentro del proyecto elegido                                       |
-| 🎨 Estados y colores | Se leen del proceso de Azure en tiempo real; el color de la columna es el del estado     |
-| ↔️ Mover una tarea   | Arrastrar y soltar escribe el estado en Azure (sin confirmación, sin deshacer)           |
-| 🗓️ Sprints           | El calendario va por iteraciones; las fechas viajan con el work item                     |
-| 🏷️ Etiquetas         | Locales de la app, guardadas en ajustes; **nunca** se escriben en Azure                  |
-| 🧵 Vincular un hilo  | Fila **Work item** del panel del hilo → buscar por `#id` o por título                    |
-| 📝 Editar la tarea   | Título, estado, descripción, comentario, campos y relaciones; «Guardar» publica en Azure |
-| 🔗 Quitar el vínculo | Botón **Quitar** de la ficha: solo desvincula el hilo, la tarea sigue en Azure           |
-| 🔀 Pull requests     | Checks y políticas del repositorio, comentarios y merge desde la app                     |
+| Función              | Cómo                                                                                                               |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 🔎 Ver work items    | Sección **DevOps**: tablero de todos los proyectos o filtrado por proyecto; lista y calendario por proyecto        |
+| 👤 Mi trabajo        | Filtro «asignado a mí» dentro del proyecto elegido                                                                 |
+| 🎨 Estados y colores | Se leen del proceso de Azure en tiempo real; el color de la columna es el del estado                               |
+| ↔️ Mover una tarea   | Selecciona un proyecto en el tablero; arrastrar y soltar escribe el estado en Azure (sin confirmación ni deshacer) |
+| 🗓️ Sprints           | El calendario va por iteraciones; las fechas viajan con el work item                                               |
+| 🏷️ Etiquetas         | Locales de la app, guardadas en ajustes; **nunca** se escriben en Azure                                            |
+| 🧵 Vincular un hilo  | Fila **Work item** del panel del hilo → buscar por `#id` o por título                                              |
+| 📝 Editar la tarea   | Título, estado, descripción, comentario, campos y relaciones; «Guardar» publica en Azure                           |
+| 🔗 Quitar el vínculo | Botón **Quitar** de la ficha: solo desvincula el hilo, la tarea sigue en Azure                                     |
+| 🔀 Pull requests     | Checks y políticas del repositorio, comentarios y merge desde la app                                               |
 
 ### Cómo se conecta
 

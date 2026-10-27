@@ -2346,6 +2346,7 @@ describe("deriveMessagesTimelineRows", () => {
       "user:launch",
       "fold:Worked for 8.0s",
       "work-toggle",
+      "work",
       "assistant:launch-answer",
       "user:resume",
       "fold:Worked for 8.0s",
@@ -2360,6 +2361,7 @@ describe("deriveMessagesTimelineRows", () => {
       "user:resume",
       "working",
       "work-live",
+      "work",
     ]);
 
     // A failed run stays open, as on a normal thread.
@@ -3134,6 +3136,18 @@ describe("deriveMessagesTimelineRows", () => {
       ...baseInput,
       expandedWorkGroupIds: new Set(["work-group:work-entry-1"]),
     });
+    const expandedByDefault = deriveMessagesTimelineRows({
+      ...baseInput,
+      workGroupsExpandedByDefault: true,
+      expandedWorkGroupIds: new Set(),
+    });
+    const manuallyCollapsed = deriveMessagesTimelineRows({
+      ...baseInput,
+      workGroupsExpandedByDefault: true,
+      expandedWorkGroupIds: new Set(["work-group:work-entry-1"]),
+    });
+    expect(expandedByDefault.map((row) => row.id)).toEqual(expandedRows.map((row) => row.id));
+    expect(manuallyCollapsed.map((row) => row.id)).toEqual(collapsedRows.map((row) => row.id));
 
     expect(collapsedRows.map((row) => row.id)).toEqual(["work-toggle:work-entry-1"]);
     expect(collapsedRows.find((row) => row.kind === "work-toggle")).toMatchObject({

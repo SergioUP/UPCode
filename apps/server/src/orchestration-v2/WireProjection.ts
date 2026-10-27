@@ -97,11 +97,16 @@ export function projectTurnItemForWire(item: OrchestrationV2TurnItem): Orchestra
     case "file_change": {
       // File identity and counts are enough for activity. Full diffs already
       // have a dedicated read path and remain intact in persistence.
-      const { diffStr, oldStr: _old, newStr: _new, ...projected } = item;
+      const { diffStr, oldStr: _old, newStr: _new, changes, ...projected } = item;
+      const fileChanges = changes?.map(({ diff: _diff, ...change }) => change);
       // A failed edit stores the provider's error where the diff would be.
       return item.status === "failed" && diffStr?.trim()
-        ? { ...projected, diffStr: truncateDetail(diffStr) }
-        : projected;
+        ? {
+            ...projected,
+            ...(fileChanges ? { changes: fileChanges } : {}),
+            diffStr: truncateDetail(diffStr),
+          }
+        : { ...projected, ...(fileChanges ? { changes: fileChanges } : {}) };
     }
     case "subagent":
       return {
@@ -192,12 +197,41 @@ export function projectTurnItemForDetail(item: OrchestrationV2TurnItem): Orchest
         result:
           item.result === null ? null : (truncateDetail(item.result, MAX_ON_DEMAND_BYTES) ?? null),
       };
-    case "handoff":
     case "file_change":
+      return {
+        ...item,
+        diffStr: truncateDetail(item.diffStr, MAX_ON_DEMAND_BYTES),
+        oldStr: truncateDetail(item.oldStr, MAX_ON_DEMAND_BYTES),
+        newStr: truncateDetail(item.newStr, MAX_ON_DEMAND_BYTES),
+        changes: item.changes?.map((change) => ({
+          ...change,
+          diff: truncateDetail(change.diff, MAX_ON_DEMAND_BYTES),
+        })),
+      };
+    case "handoff":
       return projectTurnItemForWire(item);
     default:
       return item;
   }
+}
+
+/** A bounded output page, addressed by UTF-16 offsets and never splitting a surrogate pair. */
+export function projectCommandOutputPage(
+  item: Extract<OrchestrationV2TurnItem, { type: "command_execution" }>,
+  offset: number,
+) {
+  const output = item.output ?? "";
+  const start = Math.min(offset, output.length);
+  let end = Math.min(start + 64 * 1024, output.length);
+  if (end < output.length && /[\uD800-\uDBFF]/u.test(output[end - 1] ?? "")) end -= 1;
+  return {
+    item: {
+      ...item,
+      input: truncateDetail(item.input, MAX_ON_DEMAND_BYTES) ?? "",
+      output: output.slice(start, end),
+    },
+    ...(end < output.length ? { nextOutputOffset: end } : {}),
+  };
 }
 
 export function projectContextHandoffForWire(

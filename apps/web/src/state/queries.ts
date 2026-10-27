@@ -389,6 +389,7 @@ export function useTurnItemDetail(
     readonly threadId: ThreadId;
     readonly itemId: TurnItemId;
     readonly revision: string;
+    readonly outputOffset?: number;
   } | null,
 ) {
   return useEnvironmentQuery(
@@ -396,7 +397,12 @@ export function useTurnItemDetail(
       ? null
       : orchestrationEnvironment.turnItem({
           environmentId: target.environmentId,
-          input: { threadId: target.threadId, itemId: target.itemId, revision: target.revision },
+          input: {
+            threadId: target.threadId,
+            itemId: target.itemId,
+            revision: target.revision,
+            ...(target.outputOffset === undefined ? {} : { outputOffset: target.outputOffset }),
+          },
         }),
   );
 }

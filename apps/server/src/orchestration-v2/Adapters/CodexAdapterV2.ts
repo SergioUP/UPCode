@@ -3606,7 +3606,16 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
               updatedAt,
               type: "file_change",
               fileName: firstChange.path,
-              diffStr: firstChange.diff,
+              changes: item.changes.map((change) => ({
+                operation: change.kind.type,
+                path: change.path,
+                diff: change.diff,
+              })),
+              diffStr: item.changes
+                .map((change) =>
+                  item.changes.length === 1 ? change.diff : `--- ${change.path}\n${change.diff}`,
+                )
+                .join("\n\n"),
             };
             return { node, turnItem };
           });

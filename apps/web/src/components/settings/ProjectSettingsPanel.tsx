@@ -26,6 +26,7 @@ import {
 } from "../../sidebarProjectGrouping";
 import { useEnvironments, usePrimaryEnvironmentId } from "../../state/environments";
 import { useThreadShells } from "../../state/entities";
+import { threadRuntimeIsActive } from "@t3tools/client-runtime/state/models";
 import { projectEnvironment } from "../../state/projects";
 import { ProjectFavicon } from "../ProjectFavicon";
 import { Alert, AlertDescription } from "../ui/alert";
@@ -55,6 +56,69 @@ const ProjectIconPickerDialog = lazy(() =>
 
 function memberKey(member: { environmentId: string; id: string }): string {
   return `${member.environmentId}:${member.id}`;
+}
+
+function ProjectFolderRow({
+  member,
+  disabled,
+  onSave,
+}: {
+  readonly member: SidebarProjectGroupMember;
+  readonly disabled: boolean;
+  readonly onSave: (path: string) => void;
+}) {
+  const [path, setPath] = useState(member.workspaceRoot);
+  const primaryEnvironmentId = usePrimaryEnvironmentId();
+  const canBrowse =
+    typeof window !== "undefined" &&
+    !!window.desktopBridge &&
+    member.environmentId === primaryEnvironmentId &&
+    !(navigator.platform.toLowerCase().includes("win") && member.workspaceRoot.startsWith("/"));
+  return (
+    <SettingsRow
+      title="Project folder"
+      description={`Path on ${member.environmentLabel ?? "this environment"}. Files are not moved.`}
+      control={
+        <div className="flex min-w-0 items-center gap-2">
+          <Input
+            size="sm"
+            className="w-full sm:w-64"
+            aria-label={`Project folder on ${member.environmentLabel ?? "this environment"}`}
+            value={path}
+            disabled={disabled}
+            onChange={(event) => setPath(event.target.value)}
+          />
+          {canBrowse ? (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={disabled}
+              onClick={() => {
+                void window
+                  .desktopBridge!.pickFolder({ initialPath: member.workspaceRoot })
+                  .then((selected) => {
+                    if (selected) setPath(selected);
+                  })
+                  .catch(() =>
+                    toastManager.add({ type: "error", title: "Could not open folder picker" }),
+                  );
+              }}
+            >
+              Browse…
+            </Button>
+          ) : null}
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={disabled || !path.trim() || path.trim() === member.workspaceRoot}
+            onClick={() => onSave(path)}
+          >
+            Save
+          </Button>
+        </div>
+      }
+    />
+  );
 }
 
 /** `project` is the Projects page shortcut: the new-thread defaults people change most. */
@@ -329,6 +393,58 @@ function ProjectDetail({
 
   const hasMultipleCheckouts = group.memberProjects.length > 1;
 
+  const changeProjectFolder = async (member: SidebarProjectGroupMember, path: string) => {
+    const workspaceRoot = path.trim();
+    if (!workspaceRoot || workspaceRoot === member.workspaceRoot) return;
+    if (checkProjectAccess([member], "Failed to change project folder")) return;
+    const api = readLocalApi();
+    if (!api) return;
+    const memberThreads = threads.filter(
+      (thread) => thread.environmentId === member.environmentId && thread.projectId === member.id,
+    );
+    const checkoutThreads = memberThreads.filter((thread) => thread.worktreePath === null);
+    const worktreeThreads = memberThreads.filter((thread) => thread.worktreePath !== null);
+    const activeThreads = memberThreads.filter((thread) => threadRuntimeIsActive(thread.runtime));
+    if (activeThreads.length > 0) {
+      toastManager.add({
+        type: "error",
+        title: "Stop running work first",
+        description: `${activeThreads.length} thread${activeThreads.length === 1 ? " is" : "s are"} running in this project. Stop ${activeThreads.length === 1 ? "it" : "them"} before changing the project folder.`,
+      });
+      return;
+    }
+    const affected = checkoutThreads.length + worktreeThreads.length;
+    const confirmed = await settlePromise(() =>
+      api.dialogs.confirm(
+        [
+          `Change the project folder from:\n${member.workspaceRoot}\n\nto:\n${workspaceRoot}`,
+          ...(affected === 0
+            ? ["This project has no threads yet."]
+            : [
+                `${checkoutThreads.length} thread${checkoutThreads.length === 1 ? "" : "s"} run in the project checkout and will use the new folder on their next message.`,
+                ...(worktreeThreads.length === 0
+                  ? []
+                  : [
+                      `${worktreeThreads.length} thread${worktreeThreads.length === 1 ? " has" : "s have"} their own worktree. ${worktreeThreads.length === 1 ? "It is" : "They are"} not moved, so ${worktreeThreads.length === 1 ? "it keeps" : "they keep"} working in the old location.`,
+                    ]),
+                "Checkpoints and diffs from before this change belong to the old folder. Reverting them afterwards can apply changes to different files.",
+              ]),
+          "Files are not moved or copied.",
+        ].join("\n\n"),
+        affected > 0 ? { variant: "destructive" } : undefined,
+      ),
+    );
+    if (confirmed._tag === "Failure" || !confirmed.value) return;
+    const result = mapAtomCommandResult(
+      await updateProject({
+        environmentId: member.environmentId,
+        input: { projectId: member.id, workspaceRoot },
+      }),
+      () => undefined,
+    );
+    reportFailure("Failed to change project folder", result);
+  };
+
   const removeMembers = useCallback(
     async (members: ReadonlyArray<SidebarProjectGroupMember>) => {
       if (checkProjectAccess(members, "Failed to remove project")) return;
@@ -487,6 +603,14 @@ function ProjectDetail({
               />
             }
           />
+          {group.memberProjects.map((member) => (
+            <ProjectFolderRow
+              key={`${member.physicalProjectKey}:${member.workspaceRoot}`}
+              member={member}
+              disabled={!editableIds.has(member.environmentId)}
+              onSave={(path) => void changeProjectFolder(member, path)}
+            />
+          ))}
           <SettingsRow
             title="Project icon"
             description={

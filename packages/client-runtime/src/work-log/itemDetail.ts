@@ -135,12 +135,17 @@ const LIVE_TURN_ITEM_STATUSES: ReadonlySet<OrchestrationV2TurnItem["status"]> = 
  * fetches once while it streams and again when it finishes, not on every update.
  */
 export function turnItemDetailRevision(item: OrchestrationV2TurnItem): string {
+  if (item.type === "file_change" || item.type === "command_execution") {
+    return DateTime.formatIso(item.updatedAt);
+  }
   return LIVE_TURN_ITEM_STATUSES.has(item.status) ? "live" : DateTime.formatIso(item.updatedAt);
 }
 
 /** True when the timeline item withholds content that `getTurnItem` returns. */
 export function turnItemNeedsDetailFetch(item: OrchestrationV2TurnItem): boolean {
   switch (item.type) {
+    case "file_change":
+      return true;
     case "command_execution":
       return item.outputOmitted === true;
     case "dynamic_tool":
