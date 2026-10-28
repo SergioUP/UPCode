@@ -131,6 +131,7 @@ const RPC_AGGREGATES = {
   [WS_METHODS.azureDevOpsConfig]: "azure-devops",
   [WS_METHODS.azureDevOpsListProjects]: "azure-devops",
   [WS_METHODS.azureDevOpsListWorkItems]: "azure-devops",
+  [WS_METHODS.azureDevOpsListWorkItemStates]: "azure-devops",
   [WS_METHODS.azureDevOpsMyWorkItems]: "azure-devops",
   [WS_METHODS.azureDevOpsAzCliStatus]: "azure-devops",
   [WS_METHODS.azureDevOpsAzCliOpen]: "azure-devops",

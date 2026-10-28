@@ -25,6 +25,32 @@ const buildLayer = (token = "private-pat") =>
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Azure DevOps PAT transport", () => {
+  it.effect("uses the PAT for detail reads and refuses write commands in read mode", () =>
+    Effect.gen(function* () {
+      const fetchMock = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response(JSON.stringify({ pullRequestId: 42 }), { status: 200 }));
+      vi.stubGlobal("fetch", fetchMock);
+      const azure = yield* AzureDevOpsCli.AzureDevOpsCli;
+      const result = yield* azure.execute({
+        cwd: "/repo",
+        args: ["repos", "pr", "show", "--id", "42"],
+        usePatRead: true,
+      });
+      assert.strictEqual(JSON.parse(result.stdout).pullRequestId, 42);
+      assert.strictEqual(fetchMock.mock.calls[0]?.[1]?.method, "GET");
+      const rejected = yield* azure
+        .execute({
+          cwd: "/repo",
+          args: ["repos", "pr", "update", "--id", "42"],
+          usePatRead: true,
+        })
+        .pipe(Effect.flip);
+      assert.strictEqual(rejected._tag, "AzureDevOpsRestReadError");
+      assert.strictEqual(fetchMock.mock.calls.length, 1);
+    }).pipe(Effect.provide(buildLayer())),
+  );
+
   it.effect("fetches a PR branch using the same PAT without putting it in Git arguments", () => {
     vi.stubGlobal(
       "fetch",

@@ -18,8 +18,50 @@ import {
   type NormalizedAzureDevOpsPullRequestRecord,
 } from "./azureDevOpsPullRequests.ts";
 import * as SourceControlProvider from "@t3tools/source-control-core/server/SourceControlProvider";
+import {
+  makeAzureDevOpsRestTransport,
+  AzureDevOpsRestTransportError,
+} from "./AzureDevOpsRestTransport.ts";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
+
+function isSupportedPatRead(args: ReadonlyArray<string>): boolean {
+  if (args.slice(0, 3).join(" ") === "repos pr show") return true;
+  if (args[0] !== "devops" || args[1] !== "invoke") return false;
+  const resourceIndex = args.indexOf("--resource");
+  return (
+    resourceIndex >= 0 &&
+    [
+      "pullRequestThreads",
+      "pullRequestIterations",
+      "pullRequestIterationChanges",
+      "items",
+    ].includes(args[resourceIndex + 1] ?? "")
+  );
+}
+
+export class AzureDevOpsRestReadError extends Schema.TaggedError<AzureDevOpsRestReadError>()(
+  "AzureDevOpsRestReadError",
+  {
+    reason: Schema.Literals([
+      "configuration",
+      "authentication",
+      "forbidden",
+      "not-found",
+      "rate-limited",
+      "failed",
+    ]),
+    cause: Schema.Defect(),
+  },
+) {
+  readonly command = "az" as const;
+  get detail(): string {
+    return `Azure DevOps PAT read failed (${this.reason}).`;
+  }
+  override get message(): string {
+    return this.detail;
+  }
+}
 
 const azureDevOpsCommandErrorFields = {
   operation: Schema.Literal("execute"),
@@ -192,6 +234,7 @@ export class AzureDevOpsRepositoryDecodeError extends Schema.TaggedError<AzureDe
 }
 
 export const AzureDevOpsCliError = Schema.Union([
+  AzureDevOpsRestReadError,
   AzureDevOpsCliUnavailableError,
   AzureDevOpsCliAuthenticationError,
   AzureDevOpsCliRateLimitError,
@@ -217,6 +260,7 @@ export class AzureDevOpsCli extends Context.Service<
       readonly args: ReadonlyArray<string>;
       readonly timeoutMs?: number;
       readonly maxOutputBytes?: number;
+      readonly usePatRead?: boolean;
     }) => Effect.Effect<SourceControlHost.SourceControlProcessOutput, AzureDevOpsCliError>;
 
     readonly listPullRequests: (input: {
@@ -352,31 +396,46 @@ function decodeAzureDevOpsJson<S extends Schema.Top>(
 
 /** @public Service construction is part of the canonical Effect module API. */
 export const make = Effect.gen(function* () {
-  const { process } = yield* SourceControlHost.SourceControlHost;
+  const host = yield* SourceControlHost.SourceControlHost;
+  const { process } = host;
+  const rest = makeAzureDevOpsRestTransport(host);
 
   const execute: AzureDevOpsCli["Service"]["execute"] = (input) =>
-    process
-      .run({
-        operation: "AzureDevOpsCli.execute",
-        command: "az",
-        args: input.args,
-        cwd: input.cwd,
-        timeoutMs: input.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-        ...(input.maxOutputBytes === undefined ? {} : { maxOutputBytes: input.maxOutputBytes }),
-      })
-      .pipe(
-        Effect.mapError((error) =>
-          AzureDevOpsCommandFailedError.fromVcsError(
-            {
-              operation: "execute",
-              command: "az",
-              cwd: input.cwd,
-              argumentCount: input.args.length,
-            },
-            error,
+    input.usePatRead
+      ? (isSupportedPatRead(input.args)
+          ? rest.execute(input)
+          : Effect.fail(new AzureDevOpsRestTransportError("configuration"))
+        ).pipe(
+          Effect.mapError(
+            (cause) =>
+              new AzureDevOpsRestReadError({
+                reason: cause instanceof AzureDevOpsRestTransportError ? cause.reason : "failed",
+                cause,
+              }),
           ),
-        ),
-      );
+        )
+      : process
+          .run({
+            operation: "AzureDevOpsCli.execute",
+            command: "az",
+            args: input.args,
+            cwd: input.cwd,
+            timeoutMs: input.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+            ...(input.maxOutputBytes === undefined ? {} : { maxOutputBytes: input.maxOutputBytes }),
+          })
+          .pipe(
+            Effect.mapError((error) =>
+              AzureDevOpsCommandFailedError.fromVcsError(
+                {
+                  operation: "execute",
+                  command: "az",
+                  cwd: input.cwd,
+                  argumentCount: input.args.length,
+                },
+                error,
+              ),
+            ),
+          );
 
   const executeJson = (input: Parameters<AzureDevOpsCli["Service"]["execute"]>[0]) =>
     execute({

@@ -19,6 +19,7 @@ import {
   PULL_REQUEST_ROW_CLASS,
   PULL_REQUEST_ROW_NUMBER_CLASS,
   PullRequestRowAuthor,
+  PullRequestRowBranches,
   PullRequestRowGlyph,
   PullRequestRowLines,
 } from "./PullRequestListRow";
@@ -254,6 +255,7 @@ function PullRequestRowImpl({
               {environmentLabel ? (
                 <span className="min-w-0 max-w-32 truncate">{environmentLabel}</span>
               ) : null}
+              <PullRequestRowBranches head={entry.headBranch} base={entry.baseBranch} />
               {entry.labels.length > 0 ? <PullRequestRowLabels labels={entry.labels} /> : null}
             </>
           }

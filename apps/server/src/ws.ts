@@ -2448,6 +2448,8 @@ const layerWsRpc = (
             input.iteration,
           ),
         [WS_METHODS.azureDevOpsMyWorkItems]: () => azureDevOpsWorkspace.listAssignedWorkItems(),
+        [WS_METHODS.azureDevOpsListWorkItemStates]: (input) =>
+          azureDevOpsWorkspace.listWorkItemStates(input.projects, input.type),
         [WS_METHODS.azureDevOpsAzCliStatus]: () => azureDevOpsAzCli.status(),
         [WS_METHODS.azureDevOpsAzCliOpen]: () => azureDevOpsAzCli.open(),
         [WS_METHODS.incidentsList]: () => incidentStore.list(),

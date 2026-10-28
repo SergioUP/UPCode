@@ -4,6 +4,7 @@ import type {
   PullRequestState,
 } from "@t3tools/contracts";
 import type { ReactNode } from "react";
+import { ArrowRightIcon, GitBranchIcon } from "lucide-react";
 
 import { cn } from "~/lib/utils";
 import { formatRelativeTimeLabel } from "~/timestampFormat";
@@ -156,9 +157,14 @@ export function PullRequestRowAuthor({
  */
 export function PullRequestRowBranches({ head, base }: { head: string; base: string }) {
   return (
-    <span className="flex min-w-0 items-center gap-1 font-mono">
+    <span
+      className="flex min-w-0 items-center gap-1 font-mono"
+      aria-label={`Source ${head}, target ${base}`}
+    >
+      <GitBranchIcon aria-hidden className="size-3 shrink-0 text-sky-500" />
       <MiddleTruncate value={head} />
-      <span className="shrink-0">→</span>
+      <ArrowRightIcon aria-hidden className="size-3 shrink-0" />
+      <GitBranchIcon aria-hidden className="size-3 shrink-0 text-emerald-500" />
       <MiddleTruncate value={base} className="max-w-[45%] shrink-0" />
     </span>
   );

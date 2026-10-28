@@ -2078,6 +2078,11 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
           Effect.orElseSucceed(() => undefined),
         )
       : undefined;
+    const workingTreeChanges = options?.includeBranchChanges
+      ? yield* readBranchChangeTotals(repositoryPaths?.worktreeRoot ?? cwd, refName, "HEAD").pipe(
+          Effect.orElseSucceed(() => undefined),
+        )
+      : undefined;
 
     return {
       isRepo: true,
@@ -2088,8 +2093,8 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
       hasWorkingTreeChanges,
       workingTree: {
         files,
-        insertions,
-        deletions,
+        insertions: workingTreeChanges?.insertions ?? insertions,
+        deletions: workingTreeChanges?.deletions ?? deletions,
       },
       ...(branchChanges ? { branchChanges } : {}),
       hasUpstream: upstreamRef !== null,
@@ -2757,8 +2762,12 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
   const readBranchChangeTotals = Effect.fn("readBranchChangeTotals")(function* (
     cwd: string,
     branch: string | null,
+    baseRef?: string,
   ) {
-    const { baseRef, mergeBase } = yield* resolveReviewMergeBase(cwd, branch);
+    const { baseRef: resolvedBaseRef, mergeBase } =
+      baseRef === "HEAD"
+        ? { baseRef: "HEAD", mergeBase: "HEAD" }
+        : yield* resolveReviewMergeBase(cwd, branch, baseRef);
     const untracked = yield* prepareUntrackedReviewIndex(cwd, []);
     if (untracked === null) {
       return yield* new GitCommandError({
@@ -2798,7 +2807,7 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
       insertions += file.additions;
       deletions += file.deletions;
     }
-    return { baseRef, insertions, deletions };
+    return { baseRef: resolvedBaseRef, insertions, deletions };
   }, Effect.scoped);
 
   const getReviewDiffPreview = Effect.fn("getReviewDiffPreview")(function* (

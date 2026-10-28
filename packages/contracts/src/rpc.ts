@@ -35,6 +35,7 @@ import {
   AzureDevOpsRepository,
   AzureDevOpsWorkItem,
   AzureDevOpsWorkItemLink,
+  AzureDevOpsWorkItemStateOption,
   AzureDevOpsWorkspaceError,
 } from "./azureDevOps.ts";
 import {
@@ -507,6 +508,7 @@ export const WS_METHODS = {
   azureDevOpsConfig: "azureDevOps.config",
   azureDevOpsListProjects: "azureDevOps.listProjects",
   azureDevOpsListWorkItems: "azureDevOps.listWorkItems",
+  azureDevOpsListWorkItemStates: "azureDevOps.listWorkItemStates",
   azureDevOpsMyWorkItems: "azureDevOps.myWorkItems",
   azureDevOpsAzCliStatus: "azureDevOps.azCliStatus",
   azureDevOpsAzCliOpen: "azureDevOps.azCliOpen",
@@ -848,6 +850,19 @@ const WsAzureDevOpsListWorkItemsRpc = Rpc.make(WS_METHODS.azureDevOpsListWorkIte
     iteration: Schema.optionalKey(Schema.String),
   }),
   success: Schema.Array(AzureDevOpsWorkItem),
+  error: azureReadError,
+});
+/**
+ * The all-projects board has no single process to read its columns from, so it
+ * asks every project for the type's states and merges them by name on the server.
+ */
+const WsAzureDevOpsListWorkItemStatesRpc = Rpc.make(WS_METHODS.azureDevOpsListWorkItemStates, {
+  payload: Schema.Struct({
+    projects: Schema.Array(TrimmedNonEmptyString),
+    /** Work-item type display name, such as `Sub Tarea`. */
+    type: TrimmedNonEmptyString,
+  }),
+  success: Schema.Array(AzureDevOpsWorkItemStateOption),
   error: azureReadError,
 });
 const WsAzureDevOpsMyWorkItemsRpc = Rpc.make(WS_METHODS.azureDevOpsMyWorkItems, {
@@ -2090,6 +2105,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsAzureDevOpsConfigRpc,
   WsAzureDevOpsListProjectsRpc,
   WsAzureDevOpsListWorkItemsRpc,
+  WsAzureDevOpsListWorkItemStatesRpc,
   WsAzureDevOpsMyWorkItemsRpc,
   WsAzureDevOpsAzCliStatusRpc,
   WsAzureDevOpsAzCliOpenRpc,

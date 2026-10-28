@@ -352,10 +352,12 @@ export const make = Effect.gen(function* () {
     readonly cwd: string;
     readonly args: ReadonlyArray<string>;
     readonly maxOutputBytes?: number;
+    readonly usePatRead?: boolean;
   }) =>
     azure.execute({
       cwd: input.cwd,
       args: [...input.args, "--only-show-errors", "--output", "json"],
+      ...(input.usePatRead ? { usePatRead: true } : {}),
       ...(input.maxOutputBytes === undefined ? {} : { maxOutputBytes: input.maxOutputBytes }),
     });
 
@@ -377,6 +379,7 @@ export const make = Effect.gen(function* () {
   }): Effect.Effect<A, AzureDevOpsPullRequestCliError> =>
     executeJson({
       cwd: input.cwd,
+      usePatRead: true,
       ...(input.maxOutputBytes === undefined ? {} : { maxOutputBytes: input.maxOutputBytes }),
       args: [
         "devops",
@@ -601,6 +604,7 @@ export const make = Effect.gen(function* () {
     getPullRequest: (input) =>
       executeJson({
         cwd: input.cwd,
+        usePatRead: true,
         args: ["repos", "pr", "show", ...detectArgs, "--id", String(input.number)],
       }).pipe(
         Effect.flatMap(

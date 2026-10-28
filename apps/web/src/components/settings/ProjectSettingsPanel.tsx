@@ -18,6 +18,11 @@ import { InfoIcon, Trash2Icon } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useComposerDraftStore } from "../../composerDraftStore";
+import { useClientSettings, useUpdateClientSettings } from "../../hooks/useSettings";
+import {
+  deriveProjectGroupingOverrideKey,
+  selectProjectGroupingSettings,
+} from "../../logicalProject";
 import { releaseProjectDraftUploads } from "../../lib/composerDraftUploads";
 import { readLocalApi } from "../../localApi";
 import {
@@ -62,10 +67,16 @@ function ProjectFolderRow({
   member,
   disabled,
   onSave,
+  onSeparate,
+  separated,
+  onRemove,
 }: {
   readonly member: SidebarProjectGroupMember;
   readonly disabled: boolean;
   readonly onSave: (path: string) => void;
+  readonly onSeparate: (() => void) | undefined;
+  readonly separated: boolean;
+  readonly onRemove: () => void;
 }) {
   const [path, setPath] = useState(member.workspaceRoot);
   const primaryEnvironmentId = usePrimaryEnvironmentId();
@@ -77,9 +88,9 @@ function ProjectFolderRow({
   return (
     <SettingsRow
       title="Project folder"
-      description={`Path on ${member.environmentLabel ?? "this environment"}. Files are not moved.`}
+      description={`${member.title} on ${member.environmentLabel ?? "this environment"}. Choose the Git checkout folder for branches and diffs.`}
       control={
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <Input
             size="sm"
             className="w-full sm:w-64"
@@ -114,6 +125,26 @@ function ProjectFolderRow({
             onClick={() => onSave(path)}
           >
             Save
+          </Button>
+          {onSeparate ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onSeparate}
+              aria-label={`${separated ? "Reset grouping for" : "Separate checkout"} ${member.workspaceRoot}`}
+            >
+              {separated ? "Use default grouping" : "Separate"}
+            </Button>
+          ) : null}
+          <Button
+            size="sm"
+            variant="destructive-outline"
+            disabled={disabled}
+            onClick={onRemove}
+            aria-label={`Remove checkout ${member.workspaceRoot}`}
+          >
+            <Trash2Icon />
+            Remove
           </Button>
         </div>
       }
@@ -247,6 +278,8 @@ function ProjectDetail({
       (member) => environmentById.get(member.environmentId)?.serverConfig != null,
     ) ?? group.memberProjects[0]!;
   const threads = useThreadShells();
+  const groupingSettings = useClientSettings(selectProjectGroupingSettings);
+  const updateClientSettings = useUpdateClientSettings();
   const updateProject = useOrchestrationCommand(projectEnvironment.update, {
     reportFailure: false,
   });
@@ -393,6 +426,17 @@ function ProjectDetail({
 
   const hasMultipleCheckouts = group.memberProjects.length > 1;
 
+  const toggleSeparateProject = (member: SidebarProjectGroupMember) => {
+    const key = deriveProjectGroupingOverrideKey(member);
+    const overrides = { ...groupingSettings.sidebarProjectGroupingOverrides };
+    if (overrides[key] === "separate") {
+      delete overrides[key];
+    } else {
+      overrides[key] = "separate";
+    }
+    void updateClientSettings({ sidebarProjectGroupingOverrides: overrides });
+  };
+
   const changeProjectFolder = async (member: SidebarProjectGroupMember, path: string) => {
     const workspaceRoot = path.trim();
     if (!workspaceRoot || workspaceRoot === member.workspaceRoot) return;
@@ -538,29 +582,6 @@ function ProjectDetail({
     ],
   );
 
-  const checkoutChoices = (
-    <SettingsSection title="Checkouts">
-      {group.memberProjects.map((member) => (
-        <SettingsRow
-          key={member.physicalProjectKey}
-          title={member.environmentLabel ?? "Environment"}
-          description={member.workspaceRoot}
-          control={
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={!editableIds.has(member.environmentId)}
-              onClick={() => void removeMembers([member])}
-              aria-label={`Remove checkout ${member.workspaceRoot}`}
-            >
-              Remove
-            </Button>
-          }
-        />
-      ))}
-    </SettingsSection>
-  );
-
   return (
     <>
       <SettingsPageContainer className="gap-6">
@@ -570,6 +591,16 @@ function ProjectDetail({
             Can't find a setting? Keep this project picked above and hop to any other settings page.
           </AlertDescription>
         </Alert>
+        {hasMultipleCheckouts ? (
+          <Alert variant="info">
+            <InfoIcon aria-hidden />
+            <AlertDescription>
+              These folders are grouped together. Use Separate to keep a client as its own project
+              with its conversations. Remove deletes that folder's project entry and conversations
+              after confirmation.
+            </AlertDescription>
+          </Alert>
+        ) : null}
         <SettingsSection id="project-overview" title="Project" hideTitle>
           {!canEditGroup ? (
             <p className="px-3 py-2 text-sm text-muted-foreground sm:px-4">
@@ -609,6 +640,21 @@ function ProjectDetail({
               member={member}
               disabled={!editableIds.has(member.environmentId)}
               onSave={(path) => void changeProjectFolder(member, path)}
+              separated={
+                groupingSettings.sidebarProjectGroupingOverrides?.[
+                  deriveProjectGroupingOverrideKey(member)
+                ] === "separate"
+              }
+              onSeparate={
+                hasMultipleCheckouts ||
+                hasOtherMembers ||
+                groupingSettings.sidebarProjectGroupingOverrides?.[
+                  deriveProjectGroupingOverrideKey(member)
+                ] === "separate"
+                  ? () => toggleSeparateProject(member)
+                  : undefined
+              }
+              onRemove={() => void removeMembers([member])}
             />
           ))}
           <SettingsRow
@@ -662,7 +708,6 @@ function ProjectDetail({
         </SettingsSection>
         <ProjectDefaultsSettings category="project" />
         <ProjectActionsSettings />
-        {hasMultipleCheckouts ? checkoutChoices : null}
         <SettingsSection title="Danger">
           <SettingsRow
             title={

@@ -18,6 +18,10 @@ export const azureDevOps = {
     label: "azure-devops:work-items",
     tag: WS_METHODS.azureDevOpsListWorkItems,
   }),
+  workItemStates: createEnvironmentRpcQueryAtomFamily(connectionAtomRuntime, {
+    label: "azure-devops:work-item-states",
+    tag: WS_METHODS.azureDevOpsListWorkItemStates,
+  }),
   myWorkItems: createEnvironmentRpcQueryAtomFamily(connectionAtomRuntime, {
     label: "azure-devops:my-work-items",
     tag: WS_METHODS.azureDevOpsMyWorkItems,
