@@ -696,6 +696,7 @@ function runStackedAction(
     commitMessage?: string;
     featureBranch?: boolean;
     filePaths?: readonly string[];
+    baseBranch?: string;
   },
   options?: Parameters<GitManager.GitManager["Service"]["runStackedAction"]>[1],
 ) {
@@ -4418,6 +4419,88 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
           call.includes("pr create --base master --head feature/master-default"),
         ),
       ).toBe(true);
+    }),
+  );
+
+  it.effect("create_pr targets the base branch the caller picked", () =>
+    Effect.gen(function* () {
+      const repoDir = yield* makeTempDir("t3code-git-manager-");
+      yield* initRepo(repoDir);
+      const remoteDir = yield* createBareRemote();
+      yield* runGit(repoDir, ["remote", "add", "origin", remoteDir]);
+      yield* runGit(repoDir, ["push", "origin", "HEAD:main"]);
+      yield* runGit(repoDir, ["push", "origin", "HEAD:develop"]);
+      yield* runGit(repoDir, ["fetch", "origin"]);
+      yield* runGit(repoDir, ["remote", "set-head", "origin", "main"]);
+
+      yield* runGit(repoDir, ["checkout", "-b", "feature/picked-base"]);
+      NodeFS.writeFileSync(NodePath.join(repoDir, "picked-base.txt"), "picked base\n");
+      yield* runGit(repoDir, ["add", "picked-base.txt"]);
+      yield* runGit(repoDir, ["commit", "-m", "Picked base"]);
+
+      const { manager, ghCalls } = yield* makeManager({
+        ghScenario: {
+          prListSequence: [
+            "[]",
+            JSON.stringify([
+              {
+                number: 606,
+                title: "Picked base",
+                url: "https://github.com/pingdotgg/codething-mvp/pull/606",
+                baseRefName: "develop",
+                headRefName: "feature/picked-base",
+              },
+            ]),
+          ],
+        },
+      });
+
+      const result = yield* runStackedAction(manager, {
+        cwd: repoDir,
+        action: "create_pr",
+        baseBranch: "develop",
+      });
+
+      expect(result.pr.status).toBe("created");
+      expect(result.pr.baseBranch).toBe("develop");
+      // A remote-only base is accepted by its bare name, which is what the picker sends.
+      expect(
+        ghCalls.some((call) =>
+          call.includes("pr create --base develop --head feature/picked-base"),
+        ),
+      ).toBe(true);
+    }),
+  );
+
+  it.effect("create_pr rejects a base branch this checkout cannot resolve", () =>
+    Effect.gen(function* () {
+      const repoDir = yield* makeTempDir("t3code-git-manager-");
+      yield* initRepo(repoDir);
+      const remoteDir = yield* createBareRemote();
+      yield* runGit(repoDir, ["remote", "add", "origin", remoteDir]);
+      yield* runGit(repoDir, ["push", "origin", "HEAD:main"]);
+      yield* runGit(repoDir, ["fetch", "origin"]);
+      yield* runGit(repoDir, ["remote", "set-head", "origin", "main"]);
+
+      yield* runGit(repoDir, ["checkout", "-b", "feature/missing-base"]);
+      NodeFS.writeFileSync(NodePath.join(repoDir, "missing-base.txt"), "missing base\n");
+      yield* runGit(repoDir, ["add", "missing-base.txt"]);
+      yield* runGit(repoDir, ["commit", "-m", "Missing base"]);
+
+      const { manager, ghCalls } = yield* makeManager({
+        ghScenario: { prListSequence: ["[]"] },
+      });
+
+      const errorMessage = yield* runStackedAction(manager, {
+        cwd: repoDir,
+        action: "create_pr",
+        baseBranch: "release/nope",
+      }).pipe(
+        Effect.flip,
+        Effect.map((error) => error.message),
+      );
+      expect(errorMessage).toContain("release/nope");
+      expect(ghCalls.some((call) => call.startsWith("pr create "))).toBe(false);
     }),
   );
 

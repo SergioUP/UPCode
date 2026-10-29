@@ -171,10 +171,12 @@ export const make = Effect.gen(function* () {
     method?: string;
     body?: unknown;
     contentType?: string;
+    /** The Identity API lives on vssps; everything else is on dev.azure.com. */
+    origin?: string;
   }) =>
     Effect.gen(function* () {
       const credential = yield* credentials;
-      const url = `https://dev.azure.com/${encode(credential.organization)}${input.path}`;
+      const url = `https://${input.origin ?? "dev.azure.com"}/${encode(credential.organization)}${input.path}`;
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 15_000);
       try {
@@ -846,6 +848,175 @@ export const make = Effect.gen(function* () {
       return yield* getWorkItem(input.project, input.id);
     });
 
+  /**
+   * People search for the reviewer pickers. The Identity API is on vssps, and it
+   * refuses to look at fewer than two characters, so a shorter query costs nothing
+   * instead of a request that would answer with everyone.
+   */
+  const MIN_IDENTITY_SEARCH_LENGTH = 2;
+  const identityEmail = (entry: { properties?: Record<string, { $value?: unknown }> }) => {
+    const account = entry.properties?.["Account"]?.$value;
+    const mail = entry.properties?.["Mail"]?.$value;
+    return text(account) || text(mail) || null;
+  };
+  const reviewerCandidates = (query: string) =>
+    Effect.gen(function* () {
+      const search = query.trim();
+      if (search.length < MIN_IDENTITY_SEARCH_LENGTH) return [];
+      const result = (yield* request({
+        origin: "vssps.dev.azure.com",
+        path: `/_apis/identities?searchFilter=General&filterValue=${encode(search)}&queryMembership=None&api-version=7.1-preview.1`,
+      })) as {
+        value?: Array<{
+          id?: string;
+          displayName?: string;
+          properties?: Record<string, { $value?: unknown }>;
+        }>;
+      };
+      return (result.value ?? []).flatMap((entry) =>
+        entry.id
+          ? [
+              {
+                id: entry.id,
+                displayName: text(entry.displayName) || entry.id,
+                email: identityEmail(entry),
+              },
+            ]
+          : [],
+      );
+    });
+  /** The pull request a `dev.azure.com` URL names, or nothing when it names something else. */
+  const parsePullRequestUrl = (input: string) => {
+    const parsed = (() => {
+      try {
+        return new URL(input.trim());
+      } catch {
+        return null;
+      }
+    })();
+    if (!parsed || parsed.protocol !== "https:" || parsed.hostname !== "dev.azure.com") return null;
+    const segments = parsed.pathname
+      .split("/")
+      .filter((segment) => segment.length > 0)
+      .map((segment) => decodeURIComponent(segment));
+    const [organization, project, api, repository, collection, idSegment] = segments;
+    if (!organization || !project || api !== "_git" || !repository) return null;
+    if (collection !== "pullrequest" || !idSegment) return null;
+    const id = Number(idSegment);
+    if (!Number.isSafeInteger(id) || id <= 0) return null;
+    return { organization, project, repository, id };
+  };
+  /**
+   * A PR link is what the UI holds, so the server resolves the project's repository
+   * from it: ADO addresses a pull request by repository id, which the URL never has.
+   */
+  const resolvePullRequestUrl = (pullRequestUrl: string) =>
+    Effect.gen(function* () {
+      const parsed = parsePullRequestUrl(pullRequestUrl);
+      if (!parsed)
+        return yield* Effect.fail(
+          error(
+            "configuration",
+            "Esa URL no es la de una pull request de Azure DevOps (…/_git/{repositorio}/pullrequest/{id}).",
+          ),
+        );
+      const { organization } = yield* credentials;
+      if (parsed.organization.toLowerCase() !== organization.toLowerCase())
+        return yield* Effect.fail(
+          error(
+            "configuration",
+            `La pull request es de la organización "${parsed.organization}" y la configurada es "${organization}".`,
+          ),
+        );
+      const repositories = yield* listRepositories(parsed.project);
+      const repository = repositories.find(
+        (entry) => entry.name.toLowerCase() === parsed.repository.toLowerCase(),
+      );
+      if (!repository)
+        return yield* Effect.fail(
+          error(
+            "not-found",
+            `No se encontró el repositorio "${parsed.repository}" en el proyecto "${parsed.project}".`,
+          ),
+        );
+      return { project: parsed.project, repositoryId: repository.id, id: parsed.id };
+    });
+  type PullRequestTarget = { project: string; repositoryId: string; id: number };
+  /** ADO answers both of these with a bare array, and `{ value }` under some versions. */
+  const arrayOrValue = <A>(response: Array<A> | { value?: Array<A> }): Array<A> =>
+    Array.isArray(response) ? response : (response.value ?? []);
+  const readPullRequestExtras = (target: PullRequestTarget) =>
+    Effect.gen(function* () {
+      const base = `git/repositories/${encode(target.repositoryId)}/pullrequests/${target.id}`;
+      const workItems = arrayOrValue(
+        (yield* request({ path: path(target.project, `${base}/workitems`) })) as
+          | Array<{ id?: string }>
+          | { value?: Array<{ id?: string }> },
+      );
+      const reviewers = arrayOrValue(
+        (yield* request({ path: path(target.project, `${base}/reviewers`) })) as
+          | Array<{ id?: string; displayName?: string; uniqueName?: string; vote?: number }>
+          | {
+              value?: Array<{
+                id?: string;
+                displayName?: string;
+                uniqueName?: string;
+                vote?: number;
+              }>;
+            },
+      );
+      return {
+        linkedWorkItemIds: workItems
+          .map((entry) => Number(entry.id))
+          .filter((value) => Number.isSafeInteger(value) && value > 0),
+        reviewers: reviewers.flatMap((entry) =>
+          entry.id
+            ? [
+                {
+                  id: entry.id,
+                  displayName: text(entry.displayName) || entry.id,
+                  uniqueName: text(entry.uniqueName) || null,
+                  vote: typeof entry.vote === "number" ? entry.vote : null,
+                },
+              ]
+            : [],
+        ),
+      };
+    });
+  const pullRequestExtras = (pullRequestUrl: string) =>
+    resolvePullRequestUrl(pullRequestUrl).pipe(Effect.flatMap(readPullRequestExtras));
+  const updatePullRequestExtras = (input: {
+    pullRequestUrl: string;
+    workItem?: { id: number; linked: boolean };
+    reviewer?: { id: string; requested: boolean };
+  }) =>
+    Effect.gen(function* () {
+      if ((input.workItem === undefined) === (input.reviewer === undefined))
+        return yield* Effect.fail(
+          error(
+            "configuration",
+            "Hay que enlazar un work item o pedir una revisión, y solo una de las dos cosas.",
+          ),
+        );
+      const target = yield* resolvePullRequestUrl(input.pullRequestUrl);
+      const base = `git/repositories/${encode(target.repositoryId)}/pullrequests/${target.id}`;
+      if (input.workItem) {
+        yield* request({
+          path: path(target.project, `${base}/workitems/${input.workItem.id}`),
+          method: input.workItem.linked ? "POST" : "DELETE",
+        });
+      }
+      if (input.reviewer) {
+        yield* request({
+          path: path(target.project, `${base}/reviewers/${encode(input.reviewer.id)}`),
+          method: input.reviewer.requested ? "PUT" : "DELETE",
+          // 0 is ADO's "asked, has not voted yet"; the vote itself is theirs to cast.
+          ...(input.reviewer.requested ? { body: { vote: 0 } } : {}),
+        });
+      }
+      return yield* readPullRequestExtras(target);
+    });
+
   return {
     config,
     listProjects,
@@ -858,5 +1029,8 @@ export const make = Effect.gen(function* () {
     listPullRequests,
     getPullRequestDetail,
     updateWorkItem,
+    reviewerCandidates,
+    pullRequestExtras,
+    updatePullRequestExtras,
   };
 });

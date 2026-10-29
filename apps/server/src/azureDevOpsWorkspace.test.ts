@@ -123,3 +123,145 @@ it.effect("searches work items by id or escaped title through WIQL", () =>
     ),
   ),
 );
+
+const pullRequestUrl = "https://dev.azure.com/upango/Shopify/_git/UPG.Pataky/pullrequest/7";
+
+/** The two reads every extras call ends with, plus the repository lookup that resolves the URL. */
+const extrasResponses = (target: string) => {
+  if (target.includes("/git/repositories?"))
+    return { value: [{ id: "repo-guid", name: "UPG.Pataky" }] };
+  if (target.includes("/workitems")) return [{ id: "123" }];
+  if (target.includes("/reviewers")) return [{ id: "reviewer-guid", displayName: "Ana" }];
+  return null;
+};
+
+it.effect("links a work item to the pull request named by its URL", () =>
+  Effect.gen(function* () {
+    const calls: Array<{ method: string; url: string }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>().mockImplementation(async (url, init) => {
+        const target = String(url);
+        calls.push({ method: String(init?.method ?? "GET"), url: target });
+        return new Response(JSON.stringify(extrasResponses(target)), { status: 200 });
+      }),
+    );
+    const workspace = yield* AzureDevOpsWorkspace.make;
+    const extras = yield* workspace.updatePullRequestExtras({
+      pullRequestUrl,
+      workItem: { id: 123, linked: true },
+    });
+    const link = calls.find((call) => call.url.includes("/pullrequests/7/workitems/123"));
+    assert.strictEqual(link?.method, "POST");
+    assert.isTrue(calls.some((call) => call.url.includes("/git/repositories?api-version=")));
+    assert.deepStrictEqual(extras.linkedWorkItemIds, [123]);
+  }).pipe(
+    Effect.provide(
+      ServerSettings.layerTest({
+        sourceControlHosts: {
+          "azure-devops": { organization: "upango", personalAccessToken: "secret-pat" },
+        },
+      }),
+    ),
+  ),
+);
+
+it.effect("asks somebody for a review with a zero vote and returns the reviewers", () =>
+  Effect.gen(function* () {
+    const calls: Array<{ method: string; url: string; body: unknown }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>().mockImplementation(async (url, init) => {
+        const target = String(url);
+        calls.push({
+          method: String(init?.method ?? "GET"),
+          url: target,
+          body: init?.body === undefined ? null : JSON.parse(String(init.body)),
+        });
+        return new Response(JSON.stringify(extrasResponses(target)), { status: 200 });
+      }),
+    );
+    const workspace = yield* AzureDevOpsWorkspace.make;
+    const extras = yield* workspace.updatePullRequestExtras({
+      pullRequestUrl,
+      reviewer: { id: "reviewer-guid", requested: true },
+    });
+    const request = calls.find((call) => call.url.includes("/reviewers/reviewer-guid"));
+    assert.strictEqual(request?.method, "PUT");
+    assert.deepStrictEqual(request?.body, { vote: 0 });
+    assert.deepStrictEqual(
+      extras.reviewers.map((reviewer) => reviewer.id),
+      ["reviewer-guid"],
+    );
+  }).pipe(
+    Effect.provide(
+      ServerSettings.layerTest({
+        sourceControlHosts: {
+          "azure-devops": { organization: "upango", personalAccessToken: "secret-pat" },
+        },
+      }),
+    ),
+  ),
+);
+
+it.effect("refuses a pull request URL from another organization without calling the host", () =>
+  Effect.gen(function* () {
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal("fetch", fetchMock);
+    const workspace = yield* AzureDevOpsWorkspace.make;
+    const failure = yield* workspace
+      .pullRequestExtras("https://dev.azure.com/otra/Shopify/_git/UPG.Pataky/pullrequest/7")
+      .pipe(Effect.flip);
+    assert.strictEqual(failure.reason, "configuration");
+    assert.isTrue(failure.message.includes("otra"));
+    assert.strictEqual(fetchMock.mock.calls.length, 0);
+  }).pipe(
+    Effect.provide(
+      ServerSettings.layerTest({
+        sourceControlHosts: {
+          "azure-devops": { organization: "upango", personalAccessToken: "secret-pat" },
+        },
+      }),
+    ),
+  ),
+);
+
+it.effect("does not search the identity API for a one-character query", () =>
+  Effect.gen(function* () {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>().mockImplementation(async (url) => {
+        calls.push(String(url));
+        return new Response(
+          JSON.stringify({
+            value: [
+              {
+                id: "reviewer-guid",
+                displayName: "Ana",
+                properties: { Account: { $value: "ana@upango.es" } },
+              },
+            ],
+          }),
+          { status: 200 },
+        );
+      }),
+    );
+    const workspace = yield* AzureDevOpsWorkspace.make;
+    assert.deepStrictEqual(yield* workspace.reviewerCandidates("a"), []);
+    assert.strictEqual(calls.length, 0);
+    const candidates = yield* workspace.reviewerCandidates("ana");
+    assert.isTrue(calls[0]?.startsWith("https://vssps.dev.azure.com/upango/_apis/identities?"));
+    assert.deepStrictEqual(candidates, [
+      { id: "reviewer-guid", displayName: "Ana", email: "ana@upango.es" },
+    ]);
+  }).pipe(
+    Effect.provide(
+      ServerSettings.layerTest({
+        sourceControlHosts: {
+          "azure-devops": { organization: "upango", personalAccessToken: "secret-pat" },
+        },
+      }),
+    ),
+  ),
+);
