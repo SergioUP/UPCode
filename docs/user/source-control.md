@@ -138,11 +138,17 @@ make your first commit before pushing.
 ## Create a pull request
 
 Use a thread's Git actions to commit, push, and create a pull request. T3 Code can generate commit
-messages, review titles, and descriptions from your changes.
+messages, review titles, and descriptions from your changes. The create-pull-request dialog opens
+with the branch your work is already compared against and lets you search for any other local or
+remote branch as the target, so a change can land on `develop` instead of the repository default.
 
 An existing fork PR can appear beside the branch even if you pushed without setting an upstream.
 If its badge is missing because several remotes hold that branch, set the branch's upstream to
 the intended remote with `git branch --set-upstream-to=<remote>/<branch>`.
+
+Against Azure DevOps the dialog also asks which work item the pull request belongs to and whom to
+ask for a review; both are applied as soon as the pull request exists. Afterwards the thread's
+details panel links and unlinks its work items and asks for, or takes back, reviews.
 
 Choose the writing style and model in **Settings → Source Control**. **Repository conventions**
 uses the project's instructions and recent commit subjects.

@@ -101,6 +101,10 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.azureDevOpsListPullRequests]: AuthOrchestrationReadScope,
   [WS_METHODS.azureDevOpsGetPullRequestDetail]: AuthOrchestrationReadScope,
   [WS_METHODS.azureDevOpsThreadLinks]: AuthOrchestrationReadScope,
+  [WS_METHODS.azureDevOpsReviewerCandidates]: AuthOrchestrationReadScope,
+  [WS_METHODS.azureDevOpsPullRequestExtras]: AuthOrchestrationReadScope,
+  // Linking a work item and asking for a review change the pull request on the host.
+  [WS_METHODS.azureDevOpsUpdatePullRequestExtras]: AuthOrchestrationOperateScope,
   [WS_METHODS.serverUpdateSettings]: AuthSettingsWriteScope,
   [WS_METHODS.serverSearchAcpRegistry]: AuthOrchestrationReadScope,
   [WS_METHODS.serverPrepareAcpRegistryAgent]: AuthProvidersManageScope,

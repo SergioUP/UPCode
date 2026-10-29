@@ -11,6 +11,7 @@ import {
   resolveGitActionProgressPresentation,
   resolveGitActionResultToastTiming,
   resolveLiveThreadBranchUpdate,
+  resolvePullRequestBaseBranchDefault,
   resolveQuickAction,
   resolveThreadBranchUpdate,
   resolveThreadBranchMetadataPatch,
@@ -110,6 +111,37 @@ describe("git action progress presentation", () => {
     assert.equal(formatGitActionElapsed(10_000, 9_000), "0s");
     assert.equal(formatGitActionElapsed(10_000, 14_900), "4s");
     assert.equal(formatGitActionElapsed(10_000, 75_000), "1m 5s");
+  });
+});
+
+describe("pull request base branch default", () => {
+  it("reuses the branch the status already compares against", () => {
+    assert.equal(
+      resolvePullRequestBaseBranchDefault(
+        status({ branchChanges: { baseRef: "origin/develop", insertions: 1, deletions: 0 } }),
+      ),
+      "origin/develop",
+    );
+  });
+
+  it("falls back to the open change request's base and then to nothing", () => {
+    assert.equal(
+      resolvePullRequestBaseBranchDefault(
+        status({
+          pr: {
+            number: 7,
+            title: "Existing",
+            url: "https://example.test/pull/7",
+            baseRef: "develop",
+            headRef: "feature/test",
+            state: "open",
+          },
+        }),
+      ),
+      "develop",
+    );
+    assert.equal(resolvePullRequestBaseBranchDefault(status()), null);
+    assert.equal(resolvePullRequestBaseBranchDefault(null), null);
   });
 });
 

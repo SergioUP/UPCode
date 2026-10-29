@@ -3,7 +3,7 @@ import * as Exit from "effect/Exit";
 import * as Schema from "effect/Schema";
 
 import { ORCHESTRATION_V2_WS_METHODS } from "./orchestrationV2.ts";
-import { WsRpcGroup, WsSubscribeServerConfigRpc } from "./rpc.ts";
+import { WsRpcGroup, WsRpcGroupCore, WsRpcGroupUpango, WsSubscribeServerConfigRpc } from "./rpc.ts";
 
 /**
  * The client always sends `environmentThemes`, including to servers built
@@ -28,6 +28,19 @@ describe("subscribeServerConfig payload compatibility", () => {
   it("stays optional, so a client that never sends it still subscribes", () => {
     const decoded = Schema.decodeSync(WsSubscribeServerConfigRpc.payloadSchema)({});
     expect(decoded).toEqual({});
+  });
+});
+
+describe("WebSocket RPC group split", () => {
+  /**
+   * The group is assembled from two halves so each handler object type-checks on its
+   * own. This is the invariant that split has to keep: a method registered in one half
+   * and lost in the merge would only surface as a runtime "unknown method".
+   */
+  it("merges both halves back into one group without losing or duplicating a method", () => {
+    const halves = [...WsRpcGroupCore.requests.keys(), ...WsRpcGroupUpango.requests.keys()];
+    expect(new Set(halves).size).toBe(halves.length);
+    expect([...WsRpcGroup.requests.keys()].sort()).toEqual([...halves].sort());
   });
 });
 

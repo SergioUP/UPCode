@@ -132,6 +132,11 @@ export const GitRunStackedActionInput = Schema.Struct({
   filePaths: Schema.optional(
     Schema.Array(TrimmedNonEmptyStringSchema).check(Schema.isMinLength(1)),
   ),
+  /**
+   * Branch a change request targets. Absent means the server resolves it from git and provider
+   * defaults, which is what every non-interactive caller wants.
+   */
+  baseBranch: Schema.optional(TrimmedNonEmptyStringSchema.check(Schema.isMaxLength(256))),
   /** The thread the action runs beside; a pull request it creates is linked to it. */
   threadId: Schema.optional(ThreadId),
   projectId: Schema.optional(ProjectId),

@@ -125,6 +125,25 @@ describe("GitRunStackedActionInput", () => {
     expect(parsed.actionId).toBe("action-1");
     expect(parsed.action).toBe("create_pr");
   });
+
+  it("carries an explicit change request base branch and rejects a blank one", () => {
+    const parsed = decodeRunStackedActionInput({
+      actionId: "action-2",
+      cwd: "/repo",
+      action: "create_pr",
+      baseBranch: "develop",
+    });
+
+    expect(parsed.baseBranch).toBe("develop");
+    expect(() =>
+      decodeRunStackedActionInput({
+        actionId: "action-3",
+        cwd: "/repo",
+        action: "create_pr",
+        baseBranch: "  ",
+      }),
+    ).toThrow();
+  });
 });
 
 describe("GitRunStackedActionResult", () => {

@@ -124,6 +124,53 @@ export const AzureDevOpsPullRequestDetail = Schema.Struct({
   qualityGate: AzureDevOpsQualityGate,
 });
 
+/**
+ * Somebody a review can be asked of, as the Identity API names them. `id` is the
+ * identity guid the reviewers endpoint addresses.
+ */
+export const AzureDevOpsIdentity = Schema.Struct({
+  id: Schema.String,
+  displayName: Schema.String,
+  email: Schema.NullOr(Schema.String),
+});
+export type AzureDevOpsIdentity = typeof AzureDevOpsIdentity.Type;
+
+/** A reviewer already on a pull request: `vote` is ADO's -10..10 scale, 0 = no vote yet. */
+export const AzureDevOpsPullRequestReviewer = Schema.Struct({
+  id: Schema.String,
+  displayName: Schema.String,
+  uniqueName: Schema.NullOr(Schema.String),
+  vote: Schema.NullOr(Schema.Int),
+});
+export type AzureDevOpsPullRequestReviewer = typeof AzureDevOpsPullRequestReviewer.Type;
+
+/** What a pull request carries beyond its own fields: its work items and its reviewers. */
+export const AzureDevOpsPullRequestExtras = Schema.Struct({
+  linkedWorkItemIds: Schema.Array(Schema.Int),
+  reviewers: Schema.Array(AzureDevOpsPullRequestReviewer),
+});
+export type AzureDevOpsPullRequestExtras = typeof AzureDevOpsPullRequestExtras.Type;
+
+export const AzureDevOpsReviewerCandidatesInput = Schema.Struct({
+  query: Schema.String,
+});
+export type AzureDevOpsReviewerCandidatesInput = typeof AzureDevOpsReviewerCandidatesInput.Type;
+
+export const AzureDevOpsPullRequestExtrasInput = Schema.Struct({
+  /** `https://dev.azure.com/{org}/{project}/_git/{repo}/pullrequest/{id}`. */
+  pullRequestUrl: Schema.String,
+});
+export type AzureDevOpsPullRequestExtrasInput = typeof AzureDevOpsPullRequestExtrasInput.Type;
+
+/** Exactly one of `workItem` and `reviewer` per call; the server refuses both and neither. */
+export const AzureDevOpsUpdatePullRequestExtrasInput = Schema.Struct({
+  ...AzureDevOpsPullRequestExtrasInput.fields,
+  workItem: Schema.optionalKey(Schema.Struct({ id: Schema.Int, linked: Schema.Boolean })),
+  reviewer: Schema.optionalKey(Schema.Struct({ id: Schema.String, requested: Schema.Boolean })),
+});
+export type AzureDevOpsUpdatePullRequestExtrasInput =
+  typeof AzureDevOpsUpdatePullRequestExtrasInput.Type;
+
 export const AzureDevOpsAzCliStatus = Schema.Struct({
   installed: Schema.Boolean,
   devopsExtension: Schema.Boolean,

@@ -54,6 +54,18 @@ export const azureDevOps = {
     label: "azure-devops:pull-request-detail",
     tag: WS_METHODS.azureDevOpsGetPullRequestDetail,
   }),
+  reviewerCandidates: createEnvironmentRpcQueryAtomFamily(connectionAtomRuntime, {
+    label: "azure-devops:reviewer-candidates",
+    tag: WS_METHODS.azureDevOpsReviewerCandidates,
+  }),
+  pullRequestExtras: createEnvironmentRpcQueryAtomFamily(connectionAtomRuntime, {
+    label: "azure-devops:pull-request-extras",
+    tag: WS_METHODS.azureDevOpsPullRequestExtras,
+  }),
+  updatePullRequestExtras: createEnvironmentRpcCommand(connectionAtomRuntime, {
+    label: "azure-devops:update-pull-request-extras",
+    tag: WS_METHODS.azureDevOpsUpdatePullRequestExtras,
+  }),
   threadLinks: createEnvironmentRpcQueryAtomFamily(connectionAtomRuntime, {
     label: "azure-devops:thread-links",
     tag: WS_METHODS.azureDevOpsThreadLinks,

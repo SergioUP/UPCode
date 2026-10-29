@@ -1981,6 +1981,33 @@ export const make = Effect.gen(function* () {
     };
   });
 
+  // A caller-selected base (the create-PR dialog) outranks every heuristic below, but it still
+  // has to name a branch this checkout can resolve, and it cannot be the branch the PR is from.
+  const resolveRequestedBaseBranch = Effect.fn("resolveRequestedBaseBranch")(function* (
+    cwd: string,
+    requested: string,
+    headBranch: string,
+  ) {
+    const resolved = yield* gitCore
+      .resolveBranchName(cwd, requested)
+      .pipe(Effect.orElseSucceed(() => null));
+    if (resolved === null) {
+      return yield* new GitManagerError({
+        operation: "runPrStep",
+        cwd,
+        detail: `Base branch '${requested}' does not exist. Fetch and pick a branch that does.`,
+      });
+    }
+    if (resolved === headBranch) {
+      return yield* new GitManagerError({
+        operation: "runPrStep",
+        cwd,
+        detail: `Cannot open a pull request from '${headBranch}' into itself. Pick a different base branch.`,
+      });
+    }
+    return resolved;
+  });
+
   const resolveBaseBranch = Effect.fn("resolveBaseBranch")(function* (
     cwd: string,
     branch: string,
@@ -2216,6 +2243,7 @@ export const make = Effect.gen(function* () {
     cwd: string,
     fallbackBranch: string | null,
     emit: GitActionProgressEmitter,
+    requestedBaseBranch: string | null,
   ) {
     const provider = yield* sourceControlProvider(cwd);
     const terms = getChangeRequestTerminologyForKind(provider.kind);
@@ -2253,7 +2281,10 @@ export const make = Effect.gen(function* () {
       };
     }
 
-    const baseBranch = yield* resolveBaseBranch(cwd, branch, details.upstreamRef, headContext);
+    const baseBranch =
+      requestedBaseBranch === null
+        ? yield* resolveBaseBranch(cwd, branch, details.upstreamRef, headContext)
+        : yield* resolveRequestedBaseBranch(cwd, requestedBaseBranch, headContext.headBranch);
     yield* emit({
       kind: "phase_started",
       phase: "pr",
@@ -3144,7 +3175,13 @@ export const make = Effect.gen(function* () {
               .pipe(
                 Effect.tap(() => Ref.set(currentPhase, Option.some("pr"))),
                 Effect.flatMap(() =>
-                  runPrStep(textGenerationSettings, input.cwd, currentBranch, progress.emit),
+                  runPrStep(
+                    textGenerationSettings,
+                    input.cwd,
+                    currentBranch,
+                    progress.emit,
+                    input.baseBranch ?? null,
+                  ),
                 ),
               )
           : { status: "skipped_not_requested" as const };
