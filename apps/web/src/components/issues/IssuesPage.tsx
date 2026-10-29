@@ -176,7 +176,6 @@ function IssuesWorkspace({
   const projects = useEnvironmentQuery(azureDevOps.projects({ environmentId, input: {} }));
   const selectedProject = view === "board" ? project : project || projects.data?.[0]?.name || "";
   const allProjectsBoard = view === "board" && !selectedProject;
-  const activeProject = detailProject || selectedProject;
   const workItems = useEnvironmentQuery(
     selectedProject || allProjectsBoard
       ? azureDevOps.workItems({
@@ -204,6 +203,16 @@ function IssuesWorkspace({
       : null,
   );
   const items = workItems.data ?? [];
+  /**
+   * A work item's project is what every read needs, and a card knows it even when
+   * the view keeps no project filter (the all-projects board) or a list handed the
+   * item over without one. Falling back to the loaded item keeps the detail dialog
+   * from asking a project-less question and sitting on its spinner forever.
+   */
+  const detailProjectName =
+    detailProject ||
+    (selectedId === null ? "" : (items.find((item) => item.id === selectedId)?.project ?? ""));
+  const activeProject = detailProjectName || selectedProject;
   /**
    * The tasks view reads every project at once. No project in the request means one
    * organisation-wide query on the server, not one list per project stitched here.
@@ -256,6 +265,27 @@ function IssuesWorkspace({
       : null,
   );
   const states = columnSource.data?.states ?? [];
+  /**
+   * The all-projects board and the tasks view read every project at once, so no
+   * single process can lend them a column list or a colour: borrowing it from the
+   * first project left every column grey and in arrival order. Asking each project
+   * for the type's states restores ADO's own order and palette; the server merges
+   * them by name and the first project that defines a state owns its colour.
+   */
+  const projectNames = useMemo(
+    () => (projects.data ?? []).flatMap((project) => (project.name ? [project.name] : [])),
+    [projects.data],
+  );
+  const everyProjectStates = useEnvironmentQuery(
+    (allProjectsBoard || view === "tasks") && projectNames.length > 0
+      ? azureDevOps.workItemStates({
+          environmentId,
+          input: { projects: projectNames, type: ISSUE_WORK_ITEM_TYPE },
+        })
+      : null,
+  );
+  const statePalette =
+    allProjectsBoard || view === "tasks" ? (everyProjectStates.data ?? states) : states;
   const detail = useEnvironmentQuery(
     activeProject && selectedId !== null
       ? azureDevOps.workItem({
@@ -311,6 +341,7 @@ function IssuesWorkspace({
       setBoardNotice({ tone: "ok", text: `#${itemId} → ${state} en Azure DevOps.` });
       workItems.refresh();
       everyProjectWorkItems.refresh();
+      everyProjectStates.refresh();
       catalogue.refresh();
       columnSource.refresh();
       detail.refresh();
@@ -515,6 +546,7 @@ function IssuesWorkspace({
               onClick={() => {
                 workItems.refresh();
                 everyProjectWorkItems.refresh();
+                everyProjectStates.refresh();
                 catalogue.refresh();
                 columnSource.refresh();
                 projects.refresh();
@@ -560,14 +592,14 @@ function IssuesWorkspace({
           {view === "tasks" ? (
             <IssueTasks
               items={tasksItems}
-              states={states}
+              states={statePalette}
               now={now}
               onOpen={(item) => openIssue(item.id, item.project)}
             />
           ) : view === "board" ? (
             <IssueBoard
               items={items}
-              states={states}
+              states={statePalette}
               allowMove={!allProjectsBoard}
               density={density}
               labelsFor={(item) => labelMap[azureDevOpsIssueKey(item.project, item.id)] ?? []}
@@ -579,19 +611,19 @@ function IssuesWorkspace({
           ) : view === "list" ? (
             <IssueList
               items={items}
-              states={states}
+              states={statePalette}
               labelsFor={(item) => labelsFor(item.id)}
               now={now}
-              onOpen={(item) => openIssue(item.id)}
+              onOpen={(item) => openIssue(item.id, item.project)}
             />
           ) : (
             <IssueCalendar
               items={items}
               iterations={sprints}
-              states={states}
+              states={statePalette}
               labelsFor={(item) => labelsFor(item.id)}
               now={now}
-              onOpen={(item) => openIssue(item.id)}
+              onOpen={(item) => openIssue(item.id, item.project)}
             />
           )}
         </main>
@@ -611,7 +643,11 @@ function IssuesWorkspace({
             <DialogHeader>
               <DialogTitle>Tarea #{selectedId}</DialogTitle>
             </DialogHeader>
-            <DialogPanel>{detail.error ?? "Leyendo la tarea de Azure DevOps…"}</DialogPanel>
+            <DialogPanel>
+              {activeProject === ""
+                ? `No sé en qué proyecto vive la tarea #${selectedId}. Elige un proyecto en el filtro y vuelve a abrirla.`
+                : (detail.error ?? "Leyendo la tarea de Azure DevOps…")}
+            </DialogPanel>
           </DialogContent>
         ) : null}
         {detailItem ? (

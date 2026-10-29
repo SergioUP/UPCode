@@ -13,6 +13,8 @@ import {
 } from "@t3tools/client-runtime/work-log/item-detail";
 import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
 import { isJavaScriptReplTool } from "@t3tools/shared/toolActivity";
+import { FileDiff } from "@pierre/diffs/react";
+import { getFiletypeFromFileName } from "@pierre/diffs";
 import {
   CopyIcon,
   ExternalLinkIcon,
@@ -25,14 +27,20 @@ import { memo, Suspense, use, useMemo, useState } from "react";
 import { useTheme } from "../../hooks/useTheme";
 import { writeTextToClipboard } from "../../hooks/useCopyToClipboard";
 import { cn } from "../../lib/utils";
-import { resolveDiffThemeName } from "../../lib/diffRendering";
-import { getSyntaxHighlighterPromise } from "../../lib/syntaxHighlighting";
+import {
+  DIFF_SURFACE_THEME_UNSAFE_CSS,
+  getRenderablePatch,
+  resolveDiffThemeName,
+} from "../../lib/diffRendering";
+import { getSyntaxHighlighterPromise, PREFERRED_HIGHLIGHTER } from "../../lib/syntaxHighlighting";
 import { useTurnItemDetail } from "../../state/queries";
 import { useV2ItemSupport } from "../../state/v2ItemSupport";
 import { formatWorkspaceRelativePath } from "../../filePathDisplay";
 import { Button } from "../ui/button";
 import ChatMarkdown, { ChatMarkdownAssetImage } from "../ChatMarkdown";
 import { RenderErrorBoundary } from "../RenderErrorBoundary";
+import { DiffWorkerPoolProvider } from "../DiffWorkerPoolProvider";
+import { normalizeProviderPatch } from "./providerPatch";
 import { resolveExternalWebLinkHref } from "./externalLinkContextMenu";
 import type { ExpandedImagePreview } from "./ExpandedImagePreview";
 import { ShellCommandBlock } from "./ShellCommandBlock";
@@ -51,13 +59,7 @@ interface V2ItemInspectorProps {
   readonly onImageExpand?: ((preview: ExpandedImagePreview) => void) | undefined;
 }
 
-function SyntaxTokens({
-  text,
-  language,
-}: {
-  readonly text: string;
-  readonly language: "json" | "typescript";
-}) {
+function SyntaxTokens({ text, language }: { readonly text: string; readonly language: string }) {
   const { resolvedTheme } = useTheme();
   const highlighter = use(getSyntaxHighlighterPromise(language));
   const { tokens } = useMemo(
@@ -88,7 +90,7 @@ function StructuredValue({
 }: {
   readonly value: unknown;
   readonly highlightJson?: boolean;
-  readonly language?: "typescript";
+  readonly language?: string;
 }) {
   const text = typeof value === "string" ? value : JSON.stringify(value, null, 2);
   const isJson = useMemo(() => {
@@ -297,7 +299,7 @@ function FileChangeContent({
                 {formatWorkspaceRelativePath(file.path, workspaceRoot)}
               </span>
             </summary>
-            <PatchContent diff={file.diff} />
+            <PatchContent diff={file.diff} path={file.path} />
           </details>
         ))}
       </div>
@@ -312,13 +314,19 @@ function FileChangeContent({
         {item.oldStr !== undefined ? (
           <div>
             <div className="text-destructive">Before</div>
-            <StructuredValue value={item.oldStr} />
+            <StructuredValue
+              value={item.oldStr}
+              language={getFiletypeFromFileName(item.fileName)}
+            />
           </div>
         ) : null}
         {item.newStr !== undefined ? (
           <div>
             <div className="text-success">After</div>
-            <StructuredValue value={item.newStr} />
+            <StructuredValue
+              value={item.newStr}
+              language={getFiletypeFromFileName(item.fileName)}
+            />
           </div>
         ) : null}
       </div>
@@ -331,7 +339,41 @@ function FileChangeContent({
   );
 }
 
-function PatchContent({ diff }: { readonly diff: string }) {
+function PatchContent({ diff, path }: { readonly diff: string; readonly path: string }) {
+  const { resolvedTheme } = useTheme();
+  const patch = useMemo(
+    () =>
+      getRenderablePatch(normalizeProviderPatch(diff, path), "provider-edit", {
+        compactPartialHunkOffsets: true,
+      }),
+    [diff, path],
+  );
+  const fallback = <RawPatchContent diff={diff} />;
+  if (patch?.kind !== "files") return fallback;
+  return (
+    <RenderErrorBoundary fallback={fallback} resetKeys={[diff, path, resolvedTheme]}>
+      <Suspense fallback={fallback}>
+        <DiffWorkerPoolProvider>
+          {patch.files.map((file, index) => (
+            <FileDiff
+              key={`${file.name ?? file.prevName}:${index}`}
+              fileDiff={file}
+              options={{
+                collapsed: false,
+                diffStyle: "unified",
+                theme: resolveDiffThemeName(resolvedTheme),
+                preferredHighlighter: PREFERRED_HIGHLIGHTER,
+                unsafeCSS: DIFF_SURFACE_THEME_UNSAFE_CSS,
+              }}
+            />
+          ))}
+        </DiffWorkerPoolProvider>
+      </Suspense>
+    </RenderErrorBoundary>
+  );
+}
+
+function RawPatchContent({ diff }: { readonly diff: string }) {
   return (
     <pre
       className={cn(

@@ -2315,6 +2315,8 @@ it.layer(layerTest)("GitVcsDriver core integration", (it) => {
           insertions: 3,
           deletions: 0,
         });
+        assert.strictEqual(status.workingTree.insertions, 2);
+        assert.strictEqual(status.workingTree.deletions, 0);
         assert.isUndefined((yield* driver.statusDetailsLocal(cwd)).branchChanges);
       }),
     );

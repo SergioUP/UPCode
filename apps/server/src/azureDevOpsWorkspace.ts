@@ -371,6 +371,35 @@ export const make = Effect.gen(function* () {
   const loadStates = (project: string, type: string) =>
     type ? optional(listStates(project, type), []) : Effect.succeed([]);
   /**
+   * The all-projects board draws one column per state name, so it needs the states
+   * of every project at once: each project owns its process, and the same name can
+   * carry a different colour in each. The first project that defines a state fixes
+   * both its position and its colour, which keeps the columns stable across reads.
+   * A project that fails contributes nothing instead of breaking the whole board.
+   */
+  const listWorkItemStates = (projects: readonly string[], type: string) =>
+    Effect.gen(function* () {
+      const typeName = type.trim();
+      const names = [...new Set(projects.map((project) => project.trim()))]
+        .filter((project) => project.length > 0)
+        .slice(0, 40);
+      if (!typeName || names.length === 0) return [];
+      const perProject = yield* Effect.all(
+        names.map((project) => loadStates(project, typeName)),
+        { concurrency: 4 },
+      );
+      const merged: Array<{ name: string; color: string; category: string }> = [];
+      const seen = new Set<string>();
+      for (const states of perProject) {
+        for (const state of states) {
+          if (seen.has(state.name)) continue;
+          seen.add(state.name);
+          merged.push(state);
+        }
+      }
+      return merged;
+    });
+  /**
    * Sprints travel with the items: the calendar and the sprint selector read the
    * dates from the work items themselves, so the board costs one extra ADO call
    * for the project's iteration tree and nothing else.
@@ -821,6 +850,7 @@ export const make = Effect.gen(function* () {
     config,
     listProjects,
     listWorkItems,
+    listWorkItemStates,
     listAssignedWorkItems,
     getWorkItem,
     listRepositories,

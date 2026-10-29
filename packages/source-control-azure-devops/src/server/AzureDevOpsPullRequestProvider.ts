@@ -108,6 +108,12 @@ const AZURE_DEVOPS_VIEWER_PERMISSIONS: PullRequestViewerPermissions = {
 export function azureDevOpsProviderFailure(
   error: AzureDevOpsPullRequestCli.AzureDevOpsPullRequestCliError,
 ): PullRequestProviderFailure {
+  if (error._tag === "AzureDevOpsRestReadError") {
+    if (error.reason === "authentication") return { reason: "unauthenticated" };
+    if (error.reason === "rate-limited") return { reason: "rate-limited" };
+    if (error.reason === "not-found") return { reason: "not-found" };
+    return { reason: "failed" };
+  }
   if (error._tag === "AzureDevOpsCliUnavailableError") return { reason: "missing-tool" };
   if (error._tag === "AzureDevOpsCliAuthenticationError") return { reason: "unauthenticated" };
   if (error._tag === "AzureDevOpsCliRateLimitError") return { reason: "rate-limited" };
