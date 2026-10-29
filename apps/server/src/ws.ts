@@ -101,6 +101,8 @@ import {
   type PullRequestRef,
   WS_METHODS,
   WsRpcGroup,
+  WsRpcGroupCore,
+  WsRpcGroupUpango,
 } from "@t3tools/contracts";
 import { resolveServerBackgroundActivitySettings } from "@t3tools/shared/backgroundActivitySettings";
 import {
@@ -550,8 +552,11 @@ function projectFileFailureContext(
 
 const PROVIDER_STATUS_DEBOUNCE_MS = 200;
 
-// Middleware added later wraps middleware added earlier, so instrumentation wraps authorization.
-const ServerWsRpcGroup = WsRpcGroup.middleware(RpcInstrumentation);
+export const ServerWsRpcGroup = WsRpcGroup.middleware(RpcInstrumentation);
+// One `toLayer` per half: a single handler object for every RPC is past the type
+// checker's instantiation limit (TS2589 in this file, TS377030 downstream).
+const ServerWsRpcGroupCore = WsRpcGroupCore.middleware(RpcInstrumentation);
+const ServerWsRpcGroupUpango = WsRpcGroupUpango.middleware(RpcInstrumentation);
 // When a resuming client's cursor is more than this many events behind the
 // current head, skip the per-event catch-up replay and send a fresh shell
 // snapshot instead. Replaying each intervening event costs a shell refetch;
@@ -1200,14 +1205,14 @@ export const subscribeOrchestrationV2Shell = Effect.fn("ws.orchestrationV2.subsc
   },
 );
 
-const layerWsRpc = (
+const layerWsRpcCore = (
   currentSession: EnvironmentAuth.AuthenticatedSession,
   clientOrigin: OrchestrationClientOrigin,
   clientAnalyticsProps: Readonly<Record<string, unknown>>,
   previewAutomationBroker: PreviewAutomationBroker.PreviewAutomationBroker["Service"],
   serverBrowser: ServerBrowser.ServerBrowser["Service"],
 ) =>
-  ServerWsRpcGroup.toLayer(
+  ServerWsRpcGroupCore.toLayer(
     Effect.gen(function* () {
       const currentSessionId = currentSession.sessionId;
       const sql = yield* SqlClient.SqlClient;
@@ -1303,10 +1308,6 @@ const layerWsRpc = (
       const lifecycleEvents = yield* ServerLifecycleEvents.ServerLifecycleEvents;
       const storageCleanup = yield* StorageCleanup.StorageCleanup;
       const serverSettings = yield* ServerSettings.ServerSettingsService;
-      const azureDevOpsWorkspace = yield* AzureDevOpsWorkspace.make;
-      const azureDevOpsAzCli = yield* AzureDevOpsAzCli.make;
-      const incidentStore = yield* IncidentStore.make;
-      yield* incidentStore.list().pipe(Effect.ignore);
       const startup = yield* ServerRuntimeStartup.ServerRuntimeStartup;
       const workspaceEntries = yield* WorkspaceEntries.WorkspaceEntries;
       const workspaceFileSystem = yield* WorkspaceFileSystem.WorkspaceFileSystem;
@@ -1839,7 +1840,7 @@ const layerWsRpc = (
         return result;
       });
 
-      const handlers = ServerWsRpcGroup.of({
+      const handlers = ServerWsRpcGroupCore.of({
         [ORCHESTRATION_V2_WS_METHODS.dispatchCommand]: (command) =>
           Effect.annotateCurrentSpan({
             "orchestration_v2.command_id": command.commandId,
@@ -2437,48 +2438,6 @@ const layerWsRpc = (
             return ServerSettings.redactServerSettingsForClient(settings);
           }),
         [WS_METHODS.serverDiscoverSourceControl]: (_input) => sourceControlDiscovery.discover,
-        [WS_METHODS.azureDevOpsConfig]: () => azureDevOpsWorkspace.config,
-        [WS_METHODS.azureDevOpsListProjects]: () => azureDevOpsWorkspace.listProjects,
-        [WS_METHODS.azureDevOpsListWorkItems]: (input) =>
-          azureDevOpsWorkspace.listWorkItems(
-            input.project,
-            input.assignedToMe,
-            input.query,
-            input.type,
-            input.iteration,
-          ),
-        [WS_METHODS.azureDevOpsMyWorkItems]: () => azureDevOpsWorkspace.listAssignedWorkItems(),
-        [WS_METHODS.azureDevOpsListWorkItemStates]: (input) =>
-          azureDevOpsWorkspace.listWorkItemStates(input.projects, input.type),
-        [WS_METHODS.azureDevOpsAzCliStatus]: () => azureDevOpsAzCli.status(),
-        [WS_METHODS.azureDevOpsAzCliOpen]: () => azureDevOpsAzCli.open(),
-        [WS_METHODS.incidentsList]: () => incidentStore.list(),
-        [WS_METHODS.incidentsMutate]: (input) => incidentStore.mutateAll(input),
-        [WS_METHODS.azureDevOpsGetWorkItem]: (input) =>
-          azureDevOpsWorkspace.getWorkItem(input.project, input.id),
-        [WS_METHODS.azureDevOpsListRepositories]: (input) =>
-          azureDevOpsWorkspace.listRepositories(input.project),
-        [WS_METHODS.azureDevOpsListBranches]: (input) =>
-          azureDevOpsWorkspace.listBranches(input.project, input.repositoryId),
-        [WS_METHODS.azureDevOpsListPullRequests]: (input) =>
-          azureDevOpsWorkspace.listPullRequests(input.project, input.repositoryId),
-        [WS_METHODS.azureDevOpsGetPullRequestDetail]: (input) =>
-          azureDevOpsWorkspace.getPullRequestDetail(input.project, input.repositoryId, input.id),
-        [WS_METHODS.azureDevOpsUpdateWorkItem]: (input) =>
-          azureDevOpsWorkspace.updateWorkItem(input),
-        [WS_METHODS.azureDevOpsThreadLinks]: () =>
-          serverSettings.getSettings.pipe(
-            Effect.map((settings) => settings.azureDevOpsThreadLinks),
-          ),
-        [WS_METHODS.azureDevOpsLinkThread]: ({ threadId, link }) =>
-          Effect.gen(function* () {
-            const settings = yield* serverSettings.getSettings;
-            const links = { ...settings.azureDevOpsThreadLinks };
-            if (link === null) delete links[threadId];
-            else links[threadId] = link;
-            const updated = yield* serverSettings.updateSettings({ azureDevOpsThreadLinks: links });
-            return updated.azureDevOpsThreadLinks;
-          }),
         [WS_METHODS.serverGetTraceDiagnostics]: (_input) =>
           TraceDiagnostics.readTraceDiagnostics({
             traceFilePath: config.serverTracePath,
@@ -3200,6 +3159,90 @@ const layerWsRpc = (
       });
       return handlers;
     }),
+  );
+
+/**
+ * The UPANGO half, implemented in its own `toLayer` call so each handler object
+ * stays small enough to type-check. It owns the Azure DevOps and incident
+ * services, which nothing in the core half reads.
+ */
+const layerWsRpcUpango = () =>
+  ServerWsRpcGroupUpango.toLayer(
+    Effect.gen(function* () {
+      const serverSettings = yield* ServerSettings.ServerSettingsService;
+      const azureDevOpsWorkspace = yield* AzureDevOpsWorkspace.make;
+      const azureDevOpsAzCli = yield* AzureDevOpsAzCli.make;
+      const incidentStore = yield* IncidentStore.make;
+      yield* incidentStore.list().pipe(Effect.ignore);
+      return ServerWsRpcGroupUpango.of({
+        [WS_METHODS.azureDevOpsConfig]: () => azureDevOpsWorkspace.config,
+        [WS_METHODS.azureDevOpsListProjects]: () => azureDevOpsWorkspace.listProjects,
+        [WS_METHODS.azureDevOpsListWorkItems]: (input) =>
+          azureDevOpsWorkspace.listWorkItems(
+            input.project,
+            input.assignedToMe,
+            input.query,
+            input.type,
+            input.iteration,
+          ),
+        [WS_METHODS.azureDevOpsMyWorkItems]: () => azureDevOpsWorkspace.listAssignedWorkItems(),
+        [WS_METHODS.azureDevOpsListWorkItemStates]: (input) =>
+          azureDevOpsWorkspace.listWorkItemStates(input.projects, input.type),
+        [WS_METHODS.azureDevOpsAzCliStatus]: () => azureDevOpsAzCli.status(),
+        [WS_METHODS.azureDevOpsAzCliOpen]: () => azureDevOpsAzCli.open(),
+        [WS_METHODS.incidentsList]: () => incidentStore.list(),
+        [WS_METHODS.incidentsMutate]: (input) => incidentStore.mutateAll(input),
+        [WS_METHODS.azureDevOpsGetWorkItem]: (input) =>
+          azureDevOpsWorkspace.getWorkItem(input.project, input.id),
+        [WS_METHODS.azureDevOpsListRepositories]: (input) =>
+          azureDevOpsWorkspace.listRepositories(input.project),
+        [WS_METHODS.azureDevOpsListBranches]: (input) =>
+          azureDevOpsWorkspace.listBranches(input.project, input.repositoryId),
+        [WS_METHODS.azureDevOpsListPullRequests]: (input) =>
+          azureDevOpsWorkspace.listPullRequests(input.project, input.repositoryId),
+        [WS_METHODS.azureDevOpsGetPullRequestDetail]: (input) =>
+          azureDevOpsWorkspace.getPullRequestDetail(input.project, input.repositoryId, input.id),
+        [WS_METHODS.azureDevOpsUpdateWorkItem]: (input) =>
+          azureDevOpsWorkspace.updateWorkItem(input),
+        [WS_METHODS.azureDevOpsThreadLinks]: () =>
+          serverSettings.getSettings.pipe(
+            Effect.map((settings) => settings.azureDevOpsThreadLinks),
+          ),
+        [WS_METHODS.azureDevOpsLinkThread]: ({ threadId, link }) =>
+          Effect.gen(function* () {
+            const settings = yield* serverSettings.getSettings;
+            const links = { ...settings.azureDevOpsThreadLinks };
+            if (link === null) delete links[threadId];
+            else links[threadId] = link;
+            const updated = yield* serverSettings.updateSettings({ azureDevOpsThreadLinks: links });
+            return updated.azureDevOpsThreadLinks;
+          }),
+        [WS_METHODS.azureDevOpsReviewerCandidates]: ({ query }) =>
+          azureDevOpsWorkspace.reviewerCandidates(query),
+        [WS_METHODS.azureDevOpsPullRequestExtras]: ({ pullRequestUrl }) =>
+          azureDevOpsWorkspace.pullRequestExtras(pullRequestUrl),
+        [WS_METHODS.azureDevOpsUpdatePullRequestExtras]: (input) =>
+          azureDevOpsWorkspace.updatePullRequestExtras(input),
+      });
+    }),
+  );
+
+const layerWsRpc = (
+  currentSession: EnvironmentAuth.AuthenticatedSession,
+  clientOrigin: OrchestrationClientOrigin,
+  clientAnalyticsProps: Readonly<Record<string, unknown>>,
+  previewAutomationBroker: PreviewAutomationBroker.PreviewAutomationBroker["Service"],
+  serverBrowser: ServerBrowser.ServerBrowser["Service"],
+) =>
+  Layer.mergeAll(
+    layerWsRpcCore(
+      currentSession,
+      clientOrigin,
+      clientAnalyticsProps,
+      previewAutomationBroker,
+      serverBrowser,
+    ),
+    layerWsRpcUpango(),
   );
 
 // A defect in a handler's effect fails only its own request. RpcServer's default

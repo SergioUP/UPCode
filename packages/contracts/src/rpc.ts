@@ -28,11 +28,16 @@ import * as RpcMiddleware from "effect/rpc/RpcMiddleware";
 import {
   AzureDevOpsAzCliStatus,
   AzureDevOpsBranch,
+  AzureDevOpsIdentity,
   AzureDevOpsIssueLabels,
   AzureDevOpsProject,
   AzureDevOpsPullRequest,
   AzureDevOpsPullRequestDetail,
+  AzureDevOpsPullRequestExtras,
+  AzureDevOpsPullRequestExtrasInput,
   AzureDevOpsRepository,
+  AzureDevOpsReviewerCandidatesInput,
+  AzureDevOpsUpdatePullRequestExtrasInput,
   AzureDevOpsWorkItem,
   AzureDevOpsWorkItemLink,
   AzureDevOpsWorkItemStateOption,
@@ -520,6 +525,9 @@ export const WS_METHODS = {
   azureDevOpsUpdateWorkItem: "azureDevOps.updateWorkItem",
   azureDevOpsThreadLinks: "azureDevOps.threadLinks",
   azureDevOpsLinkThread: "azureDevOps.linkThread",
+  azureDevOpsReviewerCandidates: "azureDevOps.reviewerCandidates",
+  azureDevOpsPullRequestExtras: "azureDevOps.pullRequestExtras",
+  azureDevOpsUpdatePullRequestExtras: "azureDevOps.updatePullRequestExtras",
   incidentsList: "incidents.list",
   incidentsMutate: "incidents.mutate",
   serverSearchAcpRegistry: "server.searchAcpRegistry",
@@ -941,6 +949,24 @@ const WsAzureDevOpsLinkThreadRpc = Rpc.make(WS_METHODS.azureDevOpsLinkThread, {
   success: Schema.Record(Schema.String, AzureDevOpsWorkItemLink),
   error: azureReadError,
 });
+const WsAzureDevOpsReviewerCandidatesRpc = Rpc.make(WS_METHODS.azureDevOpsReviewerCandidates, {
+  payload: AzureDevOpsReviewerCandidatesInput,
+  success: Schema.Array(AzureDevOpsIdentity),
+  error: azureReadError,
+});
+const WsAzureDevOpsPullRequestExtrasRpc = Rpc.make(WS_METHODS.azureDevOpsPullRequestExtras, {
+  payload: AzureDevOpsPullRequestExtrasInput,
+  success: AzureDevOpsPullRequestExtras,
+  error: azureReadError,
+});
+const WsAzureDevOpsUpdatePullRequestExtrasRpc = Rpc.make(
+  WS_METHODS.azureDevOpsUpdatePullRequestExtras,
+  {
+    payload: AzureDevOpsUpdatePullRequestExtrasInput,
+    success: AzureDevOpsPullRequestExtras,
+    error: azureReadError,
+  },
+);
 
 const incidentsError = IncidentStoreError;
 const IncidentEvidencePayload = Schema.Struct({
@@ -2072,7 +2098,15 @@ export class RpcScopeAuthorization extends RpcMiddleware.Service<RpcScopeAuthori
   { error: EnvironmentAuthorizationError },
 ) {}
 
-export const WsRpcGroup = RpcGroup.make(
+/**
+ * The group every client, relay and test talks to. It is built from two halves
+ * because one literal is past what the type checker can instantiate in a single
+ * step: the server implements each half in its own `toLayer` call (see
+ * `apps/server/src/ws.ts`) and merges the resulting handler layers. Adding a
+ * method to either half keeps working; putting everything back in one `make`
+ * brings back `TS2589` on the handler object.
+ */
+export const WsRpcGroupCore = RpcGroup.make(
   WsServerProbeRpc,
   WsServerGetConfigRpc,
   WsServerRefreshProvidersRpc,
@@ -2102,23 +2136,6 @@ export const WsRpcGroup = RpcGroup.make(
   WsServerGetSettingsRpc,
   WsServerUpdateSettingsRpc,
   WsServerDiscoverSourceControlRpc,
-  WsAzureDevOpsConfigRpc,
-  WsAzureDevOpsListProjectsRpc,
-  WsAzureDevOpsListWorkItemsRpc,
-  WsAzureDevOpsListWorkItemStatesRpc,
-  WsAzureDevOpsMyWorkItemsRpc,
-  WsAzureDevOpsAzCliStatusRpc,
-  WsAzureDevOpsAzCliOpenRpc,
-  WsAzureDevOpsGetWorkItemRpc,
-  WsAzureDevOpsListRepositoriesRpc,
-  WsAzureDevOpsListBranchesRpc,
-  WsAzureDevOpsListPullRequestsRpc,
-  WsAzureDevOpsGetPullRequestDetailRpc,
-  WsAzureDevOpsUpdateWorkItemRpc,
-  WsAzureDevOpsThreadLinksRpc,
-  WsAzureDevOpsLinkThreadRpc,
-  WsIncidentsListRpc,
-  WsIncidentsMutateRpc,
   WsServerSearchAcpRegistryRpc,
   WsServerPrepareAcpRegistryAgentRpc,
   WsServerUninstallAcpRegistryManagedBinaryRpc,
@@ -2283,4 +2300,34 @@ export const WsRpcGroup = RpcGroup.make(
   WsOrchestrationV2SubscribeArchivedShellRpc,
   WsOrchestrationV2SubscribeShellRpc,
   WsOrchestrationV2SubscribeThreadRpc,
-).middleware(RpcScopeAuthorization);
+);
+
+/**
+ * The UPANGO-facing half of the group: Azure DevOps and incidents. Nothing here
+ * is T3 Code upstream, which is why they are the ones split off.
+ */
+export const WsRpcGroupUpango = RpcGroup.make(
+  WsAzureDevOpsConfigRpc,
+  WsAzureDevOpsListProjectsRpc,
+  WsAzureDevOpsListWorkItemsRpc,
+  WsAzureDevOpsListWorkItemStatesRpc,
+  WsAzureDevOpsMyWorkItemsRpc,
+  WsAzureDevOpsAzCliStatusRpc,
+  WsAzureDevOpsAzCliOpenRpc,
+  WsAzureDevOpsGetWorkItemRpc,
+  WsAzureDevOpsListRepositoriesRpc,
+  WsAzureDevOpsListBranchesRpc,
+  WsAzureDevOpsListPullRequestsRpc,
+  WsAzureDevOpsGetPullRequestDetailRpc,
+  WsAzureDevOpsUpdateWorkItemRpc,
+  WsAzureDevOpsThreadLinksRpc,
+  WsAzureDevOpsLinkThreadRpc,
+  WsAzureDevOpsReviewerCandidatesRpc,
+  WsAzureDevOpsPullRequestExtrasRpc,
+  WsAzureDevOpsUpdatePullRequestExtrasRpc,
+  WsIncidentsListRpc,
+  WsIncidentsMutateRpc,
+);
+
+/** Every RPC the server answers, in one group for clients, relay and tests. */
+export const WsRpcGroup = WsRpcGroupCore.merge(WsRpcGroupUpango).middleware(RpcScopeAuthorization);
