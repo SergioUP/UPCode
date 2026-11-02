@@ -1,109 +1,96 @@
 /**
  * The look of the vault brain.
  *
- * Colour means **what a node is**, not where it lives: every file category has
- * its own vivid hue (notes, images, PDFs, office files, canvases, everything
- * else) and folders walk a hue ramp by depth, so structure and content never
- * look the same. Folders are also drawn bigger and ringed, which is what makes
- * them read as hubs at a glance.
+ * Colour says **what a file is**: every extension gets its own hue (and an
+ * unknown one still gets one, derived from the name, so nothing is grey by
+ * accident). Folders are structure, not content, so they stay small and muted —
+ * the map, not the map's legend.
  *
  * @module brain/graphTheme
  */
 
 import type { VaultGraphNode } from "@t3tools/contracts";
 
-export const BRAIN_BACKGROUND = "#05070d";
+/** Pure black: the nodes are the light, not the backdrop. */
+export const BRAIN_BACKGROUND = "#000000";
 
-export type FileCategory = "note" | "image" | "pdf" | "office" | "canvas" | "other";
+/**
+ * Hues picked to be told apart from each other on black. Keys are lowercase
+ * extensions without the dot; anything else falls back to a hash colour.
+ */
+const EXTENSION_COLORS: Record<string, string> = {
+  md: "hsl(205 95% 62%)",
+  pdf: "hsl(4 90% 62%)",
+  png: "hsl(330 90% 66%)",
+  jpg: "hsl(345 88% 64%)",
+  jpeg: "hsl(350 88% 64%)",
+  gif: "hsl(310 85% 66%)",
+  webp: "hsl(320 85% 64%)",
+  svg: "hsl(180 80% 58%)",
+  canvas: "hsl(272 85% 70%)",
+  json: "hsl(48 95% 60%)",
+  yaml: "hsl(38 90% 58%)",
+  yml: "hsl(42 90% 58%)",
+  csv: "hsl(160 75% 56%)",
+  xlsx: "hsl(140 80% 55%)",
+  xls: "hsl(145 80% 55%)",
+  docx: "hsl(220 85% 66%)",
+  doc: "hsl(225 85% 66%)",
+  pptx: "hsl(20 90% 60%)",
+  ppt: "hsl(15 90% 60%)",
+  txt: "hsl(210 30% 70%)",
+  zip: "hsl(30 45% 58%)",
+  exe: "hsl(0 20% 60%)",
+};
 
-interface CategoryStyle {
-  readonly label: string;
-  /** Saturated on purpose: this is meant to glow, not to be subtle. */
-  readonly color: string;
-  /** Dimmed variant, for a node the current filter turned off. */
-  readonly dimColor: string;
+/** Distinct hues for unknown extensions, spread around the wheel. */
+function hashHue(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) % 360;
 }
 
 /**
- * One hue per category, far apart on the wheel so a glance is enough.
- * `note` is the most common kind, so it gets the brightest blue.
+ * A file's colour. Unknown extensions still get a stable hue of their own, so
+ * a vault full of formats never collapses into one grey mass.
  */
-export const FILE_CATEGORY_STYLES: Record<FileCategory, CategoryStyle> = {
-  note: { label: "notas", color: "hsl(205 100% 64%)", dimColor: "hsl(205 60% 26%)" },
-  image: { label: "imágenes", color: "hsl(330 100% 68%)", dimColor: "hsl(330 55% 28%)" },
-  pdf: { label: "pdf", color: "hsl(22 100% 60%)", dimColor: "hsl(22 65% 26%)" },
-  office: { label: "office", color: "hsl(145 85% 56%)", dimColor: "hsl(145 55% 24%)" },
-  canvas: { label: "canvas", color: "hsl(272 95% 72%)", dimColor: "hsl(272 55% 30%)" },
-  other: { label: "otros", color: "hsl(210 22% 66%)", dimColor: "hsl(210 18% 26%)" },
-};
-
-const CATEGORY_BY_EXTENSION: Record<string, FileCategory> = {
-  md: "note",
-  markdown: "note",
-  mdx: "note",
-  txt: "note",
-  png: "image",
-  jpg: "image",
-  jpeg: "image",
-  gif: "image",
-  webp: "image",
-  avif: "image",
-  bmp: "image",
-  svg: "image",
-  heic: "image",
-  pdf: "pdf",
-  doc: "office",
-  docx: "office",
-  xls: "office",
-  xlsx: "office",
-  ppt: "office",
-  pptx: "office",
-  csv: "office",
-  canvas: "canvas",
-  excalidraw: "canvas",
-};
-
-/** Which family a file belongs to. Unknown extensions are `other`, never a guess. */
-export function fileCategory(extension: string | undefined): FileCategory {
-  if (extension === undefined) return "other";
-  return CATEGORY_BY_EXTENSION[extension.toLowerCase()] ?? "other";
+export function fileExtensionColor(extension: string | undefined): string {
+  const key = (extension ?? "").toLowerCase();
+  const known = EXTENSION_COLORS[key];
+  if (known !== undefined) return known;
+  return `hsl(${hashHue(key || "sin-extension")} 78% 64%)`;
 }
 
-export function categoryColor(category: FileCategory, seen = true): string {
-  const style = FILE_CATEGORY_STYLES[category];
-  return seen ? style.color : style.dimColor;
-}
-
-/**
- * Folders walk a hue ramp by depth: the top level is warm and bright, each
- * level turns, so the hierarchy is readable without reading a single name.
- */
+/** Structure stays quiet: one hue, low saturation, dimmed by depth. */
 export function folderColor(depth: number, seen: boolean): string {
-  if (!seen) return "hsl(210 25% 24%)";
-  const hue = (48 + (depth - 1) * 66) % 360;
-  const lightness = Math.max(46, 70 - depth * 4);
-  return `hsl(${hue} 100% ${lightness}%)`;
+  if (!seen) return "hsl(215 18% 22%)";
+  const lightness = Math.max(34, 52 - depth * 3);
+  return `hsl(214 22% ${lightness}%)`;
 }
 
 /** The only entry point the scene and the legend share. */
 export function nodeColorCss(node: VaultGraphNode, seen: boolean): string {
   if (node.kind === "folder") return folderColor(node.depth, seen);
-  return categoryColor(fileCategory(node.extension), seen);
+  if (!seen) return "hsl(210 20% 24%)";
+  return fileExtensionColor(node.extension);
 }
 
 /**
- * Folders are the map, so they are much bigger; files stay small even when
- * something links them, or the hubs would drown.
+ * Files are the dots; folders are only a skeleton, so they grow slowly with
+ * their contents instead of towering over them.
  */
 export function nodeRadius(node: VaultGraphNode): number {
   if (node.kind === "folder") {
-    return 7 + Math.min(7, Math.sqrt(Math.max(0, node.degree)) * 1.1);
+    return 2 + Math.min(1.8, Math.sqrt(Math.max(0, node.degree)) * 0.35);
   }
-  return 1.9 + Math.min(3.2, Math.sqrt(Math.max(0, node.degree)) * 0.8);
+  return 1.15 + Math.min(1.1, Math.sqrt(Math.max(0, node.degree)) * 0.3);
 }
 
 /**
- * Folders are always labelled — they are the map. Files only in a detailed
+ * Folders are labelled because they are the map. Files only in a detailed
  * graph, and only when a relation joins them, or the text turns into fog.
  */
 export function wantsLabel(node: VaultGraphNode, detailed: boolean): boolean {
@@ -111,10 +98,7 @@ export function wantsLabel(node: VaultGraphNode, detailed: boolean): boolean {
   return detailed && node.degree >= 2;
 }
 
-/**
- * A soft round sprite drawn once into a canvas: the halo behind every node.
- * Additive and unfocused, which is far cheaper than a real light.
- */
+/** A soft round sprite drawn once into a canvas: a low, wide glow behind a node. */
 export function createGlowTexture(size = 64): HTMLCanvasElement | null {
   if (typeof document === "undefined") return null;
   const canvas = document.createElement("canvas");
@@ -131,8 +115,8 @@ export function createGlowTexture(size = 64): HTMLCanvasElement | null {
     size / 2,
   );
   gradient.addColorStop(0, "rgba(255,255,255,1)");
-  gradient.addColorStop(0.28, "rgba(255,255,255,0.7)");
-  gradient.addColorStop(0.62, "rgba(255,255,255,0.12)");
+  gradient.addColorStop(0.35, "rgba(255,255,255,0.55)");
+  gradient.addColorStop(0.7, "rgba(255,255,255,0.08)");
   gradient.addColorStop(1, "rgba(255,255,255,0)");
   context.fillStyle = gradient;
   context.fillRect(0, 0, size, size);
@@ -164,7 +148,7 @@ export function createLabelTexture(text: string, color: string): HTMLCanvasEleme
   context.textAlign = "center";
   context.textBaseline = "middle";
   // A dark plate behind the text keeps it readable over the bright nodes.
-  context.fillStyle = "rgba(5,7,13,0.65)";
+  context.fillStyle = "rgba(0,0,0,0.7)";
   context.fillRect(0, 0, width, height);
   context.fillStyle = color;
   context.fillText(text, width / 2, height / 2);

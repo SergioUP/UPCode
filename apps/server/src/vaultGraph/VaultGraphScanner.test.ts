@@ -37,9 +37,9 @@ describe("VaultGraphScanner", () => {
     Effect.gen(function* () {
       const root = yield* writeVault({
         "INDICE.md": "# portada",
-        "PROYECTOS/ELSA/INDEX.md": "nota",
-        "PROYECTOS/ELSA/diagrama.png": "png",
-        "PROYECTOS/HUB/INDEX.md": "nota",
+        "docs/guias/INICIO.md": "nota",
+        "docs/guias/diagrama.png": "png",
+        "docs/api/INICIO.md": "nota",
         // Hidden folders and non-file entries are not part of the picture.
         ".obsidian/workspace.json": "{}",
       });
@@ -53,24 +53,24 @@ describe("VaultGraphScanner", () => {
       const ids = snapshot.nodes.map((node) => node.id).sort();
       expect(ids).toEqual([
         "INDICE.md",
-        "PROYECTOS",
-        "PROYECTOS/ELSA",
-        "PROYECTOS/ELSA/INDEX.md",
-        "PROYECTOS/ELSA/diagrama.png",
-        "PROYECTOS/HUB",
-        "PROYECTOS/HUB/INDEX.md",
+        "docs",
+        "docs/api",
+        "docs/api/INICIO.md",
+        "docs/guias",
+        "docs/guias/INICIO.md",
+        "docs/guias/diagrama.png",
       ]);
 
       const png = snapshot.nodes.find((node) => node.id.endsWith("diagrama.png"));
       expect(png?.kind).toBe("file");
       expect(png?.extension).toBe("png");
-      expect(png?.folder).toBe("PROYECTOS/ELSA");
+      expect(png?.folder).toBe("docs/guias");
       expect(png?.depth).toBe(3);
       expect(png?.bytes).toBeGreaterThan(0);
 
-      const elsa = snapshot.nodes.find((node) => node.id === "PROYECTOS/ELSA");
-      expect(elsa?.kind).toBe("folder");
-      expect(elsa?.extension).toBeUndefined();
+      const guias = snapshot.nodes.find((node) => node.id === "docs/guias");
+      expect(guias?.kind).toBe("folder");
+      expect(guias?.extension).toBeUndefined();
     }).pipe(Effect.provide(TestLayer)),
   );
 

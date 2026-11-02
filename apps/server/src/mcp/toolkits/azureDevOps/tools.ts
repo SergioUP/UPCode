@@ -26,7 +26,7 @@ const WorkItemTarget = Schema.Struct({
   project: Schema.optional(
     TrimmedNonEmptyString.annotate({
       description:
-        "Azure DevOps project name, for example 'UPANGO PROYECTOS INTERNOS'. Omit when the item is one of the caller's own assignments: it is looked up from them. Pass it when the item is not assigned to this user.",
+        "Azure DevOps project name, for example 'My Project'. Omit when the item is one of the caller's own assignments: it is looked up from them. Pass it when the item is not assigned to this user.",
     }),
   ),
 });
