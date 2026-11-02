@@ -96,6 +96,9 @@ az extension add --name azure-devops
 az login
 ```
 
+Work items can also be read and linked from an agent thread; see
+[Azure DevOps work items for agents](azure-devops-work-items.md).
+
 ### GitCafe
 
 Install the GitCafe CLI and sign in:

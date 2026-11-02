@@ -1,3 +1,5 @@
+// @effect-diagnostics nodeBuiltinImport:off
+import { existsSync } from "node:fs";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { converter } from "culori/fn";
 import { BUILT_IN_THEMES } from "@t3tools/shared/themePalettes";
@@ -33,6 +35,7 @@ import {
   GROVE_THEME,
   IRIS_THEME,
   OCEAN_THEME,
+  REDI_THEME,
   updateCustomTheme,
   updateThemeColorFamily,
   CUSTOM_THEMES_STORAGE_KEY,
@@ -523,7 +526,14 @@ describe("theme files", () => {
   });
 
   it("includes the dual-mode maintainer themes", () => {
-    for (const theme of [T3_CHAT_THEME, GROVE_THEME, OCEAN_THEME, EMBER_THEME, IRIS_THEME]) {
+    for (const theme of [
+      T3_CHAT_THEME,
+      GROVE_THEME,
+      OCEAN_THEME,
+      EMBER_THEME,
+      IRIS_THEME,
+      REDI_THEME,
+    ]) {
       expect(getThemeDefinition(theme.id)).toBe(theme);
       expect(getThemeModes(theme)).toEqual(["light", "dark"]);
       expect(theme.sidebarArtwork).toBe(true);
@@ -1167,5 +1177,28 @@ describe("singleAppearanceOf", () => {
     const { variants: _pair, ...base } = T3_CHAT_THEME;
     expect(singleAppearanceOf({ ...base, id: "x", appearance: "dark" })).toBe("dark");
     expect(singleAppearanceOf(T3_CHAT_THEME)).toBe(null);
+  });
+});
+
+describe("redi theme", () => {
+  it("claims light as its base and carries a dark half", () => {
+    const theme = BUILT_IN_THEMES.find((candidate) => candidate.id === "redi");
+
+    expect(theme?.label).toBe("Redi");
+    expect(theme?.appearance).toBe("light");
+    expect(theme?.variants?.dark).toBeDefined();
+
+    // The light half has to be the light one: same red, paper backdrop.
+    const redi = getThemeDefinition("redi")!;
+    const dark = getThemeColorsForMode(redi, "dark")!;
+    const light = getThemeColorsForMode(redi, "light")!;
+    expect(dark.canvas).not.toBe(light.canvas);
+    expect(dark.searchMatchBackground).not.toBe(light.searchMatchBackground);
+  });
+
+  it("ships the two typefaces it references, so it renders offline", () => {
+    for (const file of ["anton.woff2", "geist-variable.woff2"]) {
+      expect(existsSync(new URL(`../public/fonts/${file}`, import.meta.url))).toBe(true);
+    }
   });
 });

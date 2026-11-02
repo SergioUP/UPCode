@@ -1,10 +1,11 @@
 /**
  * The look of the vault brain.
  *
- * The graph is structure only — folders and files — so the palette carries the
- * meaning: one hue per top-level folder so clusters read at a glance, folders
- * dimmer than the files they hold, and a separate colour for the files that
- * share a name across folders.
+ * Colour means **what a node is**, not where it lives: every file category has
+ * its own vivid hue (notes, images, PDFs, office files, canvases, everything
+ * else) and folders walk a hue ramp by depth, so structure and content never
+ * look the same. Folders are also drawn bigger and ringed, which is what makes
+ * them read as hubs at a glance.
  *
  * @module brain/graphTheme
  */
@@ -13,56 +14,97 @@ import type { VaultGraphNode } from "@t3tools/contracts";
 
 export const BRAIN_BACKGROUND = "#05070d";
 
-/** Hues chosen to stay distinguishable on a near-black background. */
-const FOLDER_HUES = [188, 210, 268, 322, 12, 42, 96, 148, 172, 240];
+export type FileCategory = "note" | "image" | "pdf" | "office" | "canvas" | "other";
 
-function hashText(text: string): number {
-  let hash = 2166136261;
-  for (let index = 0; index < text.length; index += 1) {
-    hash ^= text.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-/** The top-level folder is the cluster; deeper paths only refine the label. */
-export function folderClusterKey(folder: string): string {
-  const [first] = folder.split("/");
-  return first !== undefined && first.length > 0 ? first : "(raíz)";
-}
-
-const clusterHueCache = new Map<string, number>();
-
-export function clusterHue(cluster: string): number {
-  const cached = clusterHueCache.get(cluster);
-  if (cached !== undefined) return cached;
-  const hue = FOLDER_HUES[hashText(cluster) % FOLDER_HUES.length] ?? 210;
-  clusterHueCache.set(cluster, hue);
-  return hue;
+interface CategoryStyle {
+  readonly label: string;
+  /** Saturated on purpose: this is meant to glow, not to be subtle. */
+  readonly color: string;
+  /** Dimmed variant, for a node the current filter turned off. */
+  readonly dimColor: string;
 }
 
 /**
- * A folder wears the hue of the cluster it belongs to, dimmer than its files;
- * a file wears the hue of its own folder. Both are drawn from the path alone,
- * so a vault this code has never seen still gets a coherent palette.
+ * One hue per category, far apart on the wheel so a glance is enough.
+ * `note` is the most common kind, so it gets the brightest blue.
  */
-export function nodeColorCss(node: VaultGraphNode, seen: boolean): string {
-  const cluster = folderClusterKey(node.kind === "folder" ? node.id : node.folder);
-  const hue = clusterHue(cluster);
-  if (node.kind === "folder") return `hsl(${hue} ${seen ? 42 : 14}% ${seen ? 50 : 20}%)`;
-  return `hsl(${hue} ${seen ? 80 : 16}% ${seen ? 64 : 22}%)`;
+export const FILE_CATEGORY_STYLES: Record<FileCategory, CategoryStyle> = {
+  note: { label: "notas", color: "hsl(205 100% 64%)", dimColor: "hsl(205 60% 26%)" },
+  image: { label: "imágenes", color: "hsl(330 100% 68%)", dimColor: "hsl(330 55% 28%)" },
+  pdf: { label: "pdf", color: "hsl(22 100% 60%)", dimColor: "hsl(22 65% 26%)" },
+  office: { label: "office", color: "hsl(145 85% 56%)", dimColor: "hsl(145 55% 24%)" },
+  canvas: { label: "canvas", color: "hsl(272 95% 72%)", dimColor: "hsl(272 55% 30%)" },
+  other: { label: "otros", color: "hsl(210 22% 66%)", dimColor: "hsl(210 18% 26%)" },
+};
+
+const CATEGORY_BY_EXTENSION: Record<string, FileCategory> = {
+  md: "note",
+  markdown: "note",
+  mdx: "note",
+  txt: "note",
+  png: "image",
+  jpg: "image",
+  jpeg: "image",
+  gif: "image",
+  webp: "image",
+  avif: "image",
+  bmp: "image",
+  svg: "image",
+  heic: "image",
+  pdf: "pdf",
+  doc: "office",
+  docx: "office",
+  xls: "office",
+  xlsx: "office",
+  ppt: "office",
+  pptx: "office",
+  csv: "office",
+  canvas: "canvas",
+  excalidraw: "canvas",
+};
+
+/** Which family a file belongs to. Unknown extensions are `other`, never a guess. */
+export function fileCategory(extension: string | undefined): FileCategory {
+  if (extension === undefined) return "other";
+  return CATEGORY_BY_EXTENSION[extension.toLowerCase()] ?? "other";
 }
 
-/** Folders read as structure, files as content, and degree decides how big. */
-export function nodeRadius(node: VaultGraphNode): number {
-  const base = node.kind === "folder" ? 3.4 : 1.7;
-  return base + Math.min(6, Math.sqrt(Math.max(0, node.degree)) * 0.9);
+export function categoryColor(category: FileCategory, seen = true): string {
+  const style = FILE_CATEGORY_STYLES[category];
+  return seen ? style.color : style.dimColor;
 }
 
 /**
- * Folders are always labelled: they are the map. Files get a label only when
- * something joins them (`sameName`), and only while the graph is small enough
- * for text to be readable — a thousand sprites turn the brain into fog.
+ * Folders walk a hue ramp by depth: the top level is warm and bright, each
+ * level turns, so the hierarchy is readable without reading a single name.
+ */
+export function folderColor(depth: number, seen: boolean): string {
+  if (!seen) return "hsl(210 25% 24%)";
+  const hue = (48 + (depth - 1) * 66) % 360;
+  const lightness = Math.max(46, 70 - depth * 4);
+  return `hsl(${hue} 100% ${lightness}%)`;
+}
+
+/** The only entry point the scene and the legend share. */
+export function nodeColorCss(node: VaultGraphNode, seen: boolean): string {
+  if (node.kind === "folder") return folderColor(node.depth, seen);
+  return categoryColor(fileCategory(node.extension), seen);
+}
+
+/**
+ * Folders are the map, so they are much bigger; files stay small even when
+ * something links them, or the hubs would drown.
+ */
+export function nodeRadius(node: VaultGraphNode): number {
+  if (node.kind === "folder") {
+    return 7 + Math.min(7, Math.sqrt(Math.max(0, node.degree)) * 1.1);
+  }
+  return 1.9 + Math.min(3.2, Math.sqrt(Math.max(0, node.degree)) * 0.8);
+}
+
+/**
+ * Folders are always labelled — they are the map. Files only in a detailed
+ * graph, and only when a relation joins them, or the text turns into fog.
  */
 export function wantsLabel(node: VaultGraphNode, detailed: boolean): boolean {
   if (node.kind === "folder") return true;
