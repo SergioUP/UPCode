@@ -18,6 +18,7 @@ const ALL_MCP_CAPABILITIES = [
   "device",
   "pull-requests",
   "incident",
+  "azure-devops",
 ] as const;
 export type McpCapability = (typeof ALL_MCP_CAPABILITIES)[number];
 
