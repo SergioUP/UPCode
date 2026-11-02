@@ -38,6 +38,7 @@ import * as ThreadManagementService from "../../../orchestration-v2/ThreadManage
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
 import * as OrchestratorMcpService from "../../OrchestratorMcpService.ts";
 import * as ThreadMetadataMcpService from "../../ThreadMetadataMcpService.ts";
+import { SubagentListTool, SubagentRunTool } from "./subagentTools.ts";
 
 const dependencies = [
   McpInvocationContext.McpInvocationContext,
@@ -290,4 +291,6 @@ export const OrchestratorToolkit = Toolkit.make(
   ThreadSendTool,
   ThreadWaitTool,
   ThreadInterruptTool,
+  SubagentListTool,
+  SubagentRunTool,
 );

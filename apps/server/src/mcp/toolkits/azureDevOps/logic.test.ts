@@ -6,14 +6,14 @@ import { findProjectForWorkItem, isActiveState, plainText, summarizeWorkItem } f
 function item(overrides: Partial<AzureDevOpsWorkItem> = {}): AzureDevOpsWorkItem {
   return {
     id: 7766,
-    project: "UPANGO PROYECTOS INTERNOS",
-    title: "Cerebro del vault",
-    type: "upangoAgile.SubTarea",
+    project: "Proyecto Demo",
+    title: "Revisar el pipeline",
+    type: "Agile.Task",
     state: "Active",
     assignedTo: "Sergio Moreno",
     iteration: "12.10-23.10-26",
     description: null,
-    url: "https://dev.azure.com/upango/_workitems/edit/7766",
+    url: "https://dev.azure.com/organizacion/_workitems/edit/7766",
     changedAt: "2026-11-02T09:00:00Z",
     ...overrides,
   };
@@ -30,20 +30,18 @@ describe("azure devops toolkit logic", () => {
   });
 
   it("summarises without dragging the whole card along", () => {
-    const summary = summarizeWorkItem(
-      item({ area: "UPANGO CONSULTING SL\\DESARROLLOS", comments: [], fields: [] }),
-    );
+    const summary = summarizeWorkItem(item({ area: "Area\\Subarea", comments: [], fields: [] }));
 
     expect(summary).toEqual({
       id: 7766,
-      project: "UPANGO PROYECTOS INTERNOS",
-      title: "Cerebro del vault",
-      type: "upangoAgile.SubTarea",
+      project: "Proyecto Demo",
+      title: "Revisar el pipeline",
+      type: "Agile.Task",
       state: "Active",
       assignedTo: "Sergio Moreno",
       iteration: "12.10-23.10-26",
-      area: "UPANGO CONSULTING SL\\DESARROLLOS",
-      url: "https://dev.azure.com/upango/_workitems/edit/7766",
+      area: "Area\\Subarea",
+      url: "https://dev.azure.com/organizacion/_workitems/edit/7766",
       changedAt: "2026-11-02T09:00:00Z",
     });
     // The description and the comments are not part of the summary.
@@ -62,7 +60,7 @@ describe("azure devops toolkit logic", () => {
   it("resolves a project only from the caller's own assignments", () => {
     const items = [item(), item({ id: 7800, project: "Shopify" })];
 
-    expect(findProjectForWorkItem(items, 7766)).toBe("UPANGO PROYECTOS INTERNOS");
+    expect(findProjectForWorkItem(items, 7766)).toBe("Proyecto Demo");
     expect(findProjectForWorkItem(items, 7800)).toBe("Shopify");
     // An id nobody assigned is not guessed: the agent has to ask for the project.
     expect(findProjectForWorkItem(items, 9999)).toBeNull();

@@ -10,10 +10,10 @@ import { observeResize } from "~/lib/observeResize";
 
 import {
   BRAIN_BACKGROUND,
-  categoryColor,
   createGlowTexture,
   createLabelTexture,
-  fileCategory,
+  fileExtensionColor,
+  folderColor,
   nodeColorCss,
   nodeRadius,
   wantsLabel,
@@ -24,6 +24,9 @@ export interface BrainGraphNode extends VaultGraphNode {
   x?: number;
   y?: number;
   z?: number;
+  vx?: number;
+  vy?: number;
+  vz?: number;
 }
 
 export interface BrainLink {
@@ -49,6 +52,13 @@ export interface BrainSceneProps {
 }
 
 type GraphHandle = ForceGraphMethods<NodeObject<BrainGraphNode>, BrainLink>;
+
+/**
+ * The volume every dot is pulled onto: wide across, deeper front-to-back and a
+ * little flatter than tall, which is the silhouette that reads as a brain
+ * rather than as a ball. Units are the simulation's, not pixels.
+ */
+const BRAIN_SHELL = { x: 74, y: 52, z: 62 } as const;
 
 /**
  * The brain.
@@ -91,21 +101,20 @@ export function BrainScene({
     const isFolder = node.kind === "folder";
 
     const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(radius, isFolder ? 24 : 14, isFolder ? 24 : 14),
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.96 }),
+      new THREE.SphereGeometry(radius, isFolder ? 18 : 10, isFolder ? 18 : 10),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1 }),
     );
     group.add(sphere);
 
-    // A ring is what makes a folder read as a hub from across the room, and it
-    // is one cheap torus, not a whole sprite.
+    // A thin ring keeps a folder readable as a hub without turning it into a
+    // lamp: the folders are the skeleton, the files are the light.
     if (isFolder) {
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(radius * 1.55, radius * 0.09, 8, 48),
+        new THREE.TorusGeometry(radius * 1.5, radius * 0.055, 6, 40),
         new THREE.MeshBasicMaterial({
           color,
           transparent: true,
-          opacity: 0.55,
-          blending: THREE.AdditiveBlending,
+          opacity: 0.38,
           depthWrite: false,
         }),
       );
@@ -119,12 +128,13 @@ export function BrainScene({
           map: glowTexture,
           color,
           transparent: true,
-          opacity: isFolder ? 0.75 : 0.45,
+          // Dim on purpose: a bright halo per node washes the black out.
+          opacity: isFolder ? 0.16 : 0.3,
           blending: THREE.AdditiveBlending,
           depthWrite: false,
         }),
       );
-      halo.scale.setScalar(radius * (isFolder ? 6 : 7.5));
+      halo.scale.setScalar(radius * (isFolder ? 4.5 : 6));
       group.add(halo);
     }
 
@@ -171,13 +181,13 @@ export function BrainScene({
       object.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           (child.material as THREE.MeshBasicMaterial).color.copy(color);
-          (child.material as THREE.MeshBasicMaterial).opacity = lit ? 0.96 : isFolder ? 0.4 : 0.3;
+          (child.material as THREE.MeshBasicMaterial).opacity = lit ? 1 : isFolder ? 0.35 : 0.22;
         }
         if (child instanceof THREE.Sprite && child.material.map !== null) {
           if (child.material.map === glowTexture) {
             (child.material as THREE.SpriteMaterial).color.copy(color);
           }
-          (child.material as THREE.SpriteMaterial).opacity = lit ? 0.9 : 0.2;
+          (child.material as THREE.SpriteMaterial).opacity = lit ? 0.55 : 0.12;
         }
       });
       object.scale.setScalar(selected ? 1.55 : 1);
@@ -202,13 +212,48 @@ export function BrainScene({
     const graph = graphRef.current;
     if (graph === undefined) return;
     const composer = graph.postProcessingComposer();
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1024, 1024), 0.85, 0.7, 0.05);
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1024, 1024), 0.28, 0.55, 0.55);
     composer.addPass(bloom);
     return () => {
       composer.removePass(bloom);
       bloom.dispose();
     };
   }, []);
+
+  /**
+   * The shape. A spring layout alone spreads a vault into a flat cloud; this
+   * shell pulls every node onto the surface of a wide ellipsoid, which is what
+   * makes it read as a brain: deeper than tall, rounder at the sides, and with
+   * the folders trapped in the same volume as their files.
+   *
+   * The repulsion is weakened at the same time: the shell does the shaping and
+   * charge only keeps dots from stacking.
+   */
+  useEffect(() => {
+    const graph = graphRef.current;
+    if (graph === undefined) return;
+    const charge = graph.d3Force("charge") as { strength?: (value: number) => unknown } | undefined;
+    charge?.strength?.(-16);
+
+    const shell = (alpha: number) => {
+      const strength = 0.32 * alpha;
+      for (const node of graphData.nodes) {
+        const nx = (node.x ?? 0) / BRAIN_SHELL.x;
+        const ny = (node.y ?? 0) / BRAIN_SHELL.y;
+        const nz = (node.z ?? 0) / BRAIN_SHELL.z;
+        const distance = Math.hypot(nx, ny, nz);
+        if (distance < 1e-6) continue;
+        // Positive inside the shell, negative outside it: the surface is a
+        // fixed point, so a node neither collapses to the middle nor escapes.
+        const push = (1 - distance) * strength;
+        node.vx = (node.vx ?? 0) + (nx / distance) * push;
+        node.vy = (node.vy ?? 0) + (ny / distance) * push;
+        node.vz = (node.vz ?? 0) + (nz / distance) * push;
+      }
+    };
+    graph.d3Force("brain-shell", shell as never);
+    graph.d3ReheatSimulation();
+  }, [graphData]);
 
   // Orbit controls come from three-render-objects; the auto-rotation and the
   // damping are the only two knobs worth touching here.
@@ -222,7 +267,7 @@ export function BrainScene({
       dampingFactor?: boolean | number;
     };
     controls.autoRotate = autoRotate;
-    controls.autoRotateSpeed = 0.35;
+    controls.autoRotateSpeed = 0.28;
     controls.enableDamping = true;
   }, [autoRotate]);
 
@@ -256,16 +301,19 @@ export function BrainScene({
         nodeResolution={detailed ? 12 : 8}
         linkColor={(link) => {
           // A cross-folder name link keeps its own colour; a containment link
-          // borrows the colour of the file it hangs from.
-          if (link.kind === "sameName") return "hsl(316 100% 74%)";
+          // borrows the colour of the file it hangs from, so an edge reads as
+          // part of its dot's cluster.
+          if (link.kind === "sameName") return "hsl(316 90% 70%)";
           const source = link.source;
           if (typeof source === "object" && source !== null && "kind" in source) {
-            const file = source as BrainGraphNode;
-            return categoryColor(fileCategory(file.extension));
+            const node = source as BrainGraphNode;
+            return node.kind === "file"
+              ? fileExtensionColor(node.extension)
+              : folderColor(node.depth, true);
           }
-          return "hsl(210 45% 55%)";
+          return "hsl(210 20% 40%)";
         }}
-        linkOpacity={0.22}
+        linkOpacity={0.12}
         linkWidth={(link) => (link.kind === "sameName" ? 0.7 : 0.35)}
         linkDirectionalParticles={(link) => (detailed && link.kind === "sameName" ? 2 : 0)}
         linkDirectionalParticleWidth={1.4}

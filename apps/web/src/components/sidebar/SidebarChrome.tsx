@@ -1,9 +1,16 @@
-import { ArrowLeftIcon, BrainIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  BrainIcon,
+  ChartNoAxesColumnIcon,
+  SettingsIcon,
+  UsersIcon,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 
 import { useEnvironmentIdentificationMode } from "../../hooks/useSettings";
+import { useServerConfigs } from "../../state/entities";
 import { cn } from "../../lib/utils";
 import { usePullRequestsSupported } from "../../state/environments";
 import { UpMark } from "../UpMark";
@@ -148,17 +155,25 @@ function SidebarUtilityItem({
   icon,
   label,
   onClick,
+  color,
 }: {
   icon: ReactNode;
   label: string;
   onClick: () => void;
+  /** Each section owns a hue, so the row reads as a palette instead of grey glyphs. */
+  color?: string;
 }) {
   return (
     <SidebarMenuItem className="shrink-0">
       <Tooltip>
         <TooltipTrigger
           render={
-            <SidebarMenuButton aria-label={label} onClick={onClick} size="icon">
+            <SidebarMenuButton
+              aria-label={label}
+              onClick={onClick}
+              size="icon"
+              style={color === undefined ? undefined : { color }}
+            >
               {icon}
             </SidebarMenuButton>
           }
@@ -169,10 +184,45 @@ function SidebarUtilityItem({
   );
 }
 
+/** The row's palette: one hue per section, tuned to stay readable on both themes. */
+const UTILITY_COLORS = {
+  settings: "hsl(220 12% 62%)",
+  devops: "#4c9aff",
+  brain: "hsl(272 85% 70%)",
+  pullRequests: "hsl(152 70% 52%)",
+  agents: "hsl(190 85% 58%)",
+  usage: "hsl(40 95% 58%)",
+} as const;
+
 export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
   const navigate = useNavigate();
   const navigateToMainApp = useNavigateToMainApp();
   const { isMobile, setOpenMobile } = useSidebar();
+  const serverConfigs = useServerConfigs();
+
+  /**
+   * The provider's own allowance, the same figure the composer shows: the
+   * five-hour window when the provider reports one. Subscription drivers
+   * (Claude Code, Codex) publish it; API-key drivers never do, and then there is
+   * no badge at all rather than a fake zero.
+   */
+  const allowance = (() => {
+    for (const config of serverConfigs.values()) {
+      for (const provider of config.providers) {
+        const window = provider.usageLimits?.windows.find(
+          (entry) => entry.windowDurationMins === 300 || entry.id === "five_hour",
+        );
+        if (window === undefined) continue;
+        return {
+          remaining: Math.max(0, Math.round(100 - window.usedPercent)),
+          label: window.label,
+          provider: provider.displayName ?? provider.driver,
+          resetsAt: window.resetsAt,
+        };
+      }
+    }
+    return null;
+  })();
   const isOnUtilityPage = useLocation({
     select: (location) => isSidebarUtilityPage(location.pathname),
   });
@@ -203,6 +253,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigate({ to: "/brain" });
   }, [closeMobileSidebar, navigate]);
 
+  const handleAgentsClick = useCallback(() => {
+    closeMobileSidebar();
+    void navigate({ to: "/agents" });
+  }, [closeMobileSidebar, navigate]);
+
   const handleUsageClick = useCallback(() => {
     if (isMobile) {
       setOpenMobile(false);
@@ -230,28 +285,61 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             icon={<SettingsIcon />}
             label="Settings"
             onClick={handleSettingsClick}
+            color={UTILITY_COLORS.settings}
           />
           <SidebarUtilityItem
             icon={<AzureDevOpsIcon className="size-4" />}
             label="DevOps"
             onClick={handleDevOpsClick}
+            color={UTILITY_COLORS.devops}
           />
           <SidebarUtilityItem
             icon={<BrainIcon className="size-4" />}
             label="Cerebro"
             onClick={handleBrainClick}
+            color={UTILITY_COLORS.brain}
+          />
+          <SidebarUtilityItem
+            icon={<UsersIcon className="size-4" />}
+            label="Subagentes"
+            onClick={handleAgentsClick}
+            color={UTILITY_COLORS.agents}
           />
           {pullRequestsSupported ? (
             <SidebarUtilityItem
               icon={<PullRequestGlyph.pullRequest />}
               label="Pull Requests"
               onClick={handlePullRequestsClick}
+              color={UTILITY_COLORS.pullRequests}
             />
           ) : null}
           <SidebarUtilityItem
-            icon={<ChartNoAxesColumnIcon />}
-            label="Usage"
+            icon={
+              <span className="relative flex items-center justify-center">
+                <ChartNoAxesColumnIcon />
+                {allowance === null ? null : (
+                  <span
+                    className={cn(
+                      "absolute -top-1 -right-1.5 rounded-full px-1 text-5xs font-semibold tabular-nums",
+                      allowance.remaining <= 15
+                        ? "bg-error text-white"
+                        : allowance.remaining <= 35
+                          ? "bg-warning text-black"
+                          : "bg-success text-black",
+                    )}
+                  >
+                    {allowance.remaining}
+                  </span>
+                )}
+              </span>
+            }
+            label={
+              allowance === null
+                ? "Usage"
+                : `Usage: ${allowance.remaining}% restante de ${allowance.provider} (${allowance.label})`
+            }
             onClick={handleUsageClick}
+            color={UTILITY_COLORS.usage}
           />
         </>
       )}

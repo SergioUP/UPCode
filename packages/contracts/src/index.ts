@@ -69,3 +69,4 @@ export * from "./secretRequest.ts";
 export * from "./clientRpcPermissions.ts";
 export * from "./incident.ts";
 export * from "./vaultGraph.ts";
+export * from "./subagents.ts";

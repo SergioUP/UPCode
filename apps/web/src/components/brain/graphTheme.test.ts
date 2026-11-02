@@ -2,9 +2,8 @@ import type { VaultGraphNode } from "@t3tools/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
-  categoryColor,
-  fileCategory,
-  FILE_CATEGORY_STYLES,
+  BRAIN_BACKGROUND,
+  fileExtensionColor,
   folderColor,
   nodeColorCss,
   nodeRadius,
@@ -13,10 +12,10 @@ import {
 
 function node(overrides: Partial<VaultGraphNode> = {}): VaultGraphNode {
   return {
-    id: "PROYECTOS/ELSA/INDEX.md",
+    id: "docs/guias/INICIO.md",
     label: "INDEX.md",
     kind: "file",
-    folder: "PROYECTOS/ELSA",
+    folder: "docs/guias",
     extension: "md",
     degree: 1,
     bytes: 100,
@@ -27,46 +26,44 @@ function node(overrides: Partial<VaultGraphNode> = {}): VaultGraphNode {
 }
 
 describe("graphTheme", () => {
-  it("maps extensions to the categories the legend shows", () => {
-    expect(fileCategory("md")).toBe("note");
-    expect(fileCategory("PNG")).toBe("image");
-    expect(fileCategory("pdf")).toBe("pdf");
-    expect(fileCategory("xlsx")).toBe("office");
-    expect(fileCategory("canvas")).toBe("canvas");
-    expect(fileCategory("7z")).toBe("other");
-    // No extension is "other", never a guess.
-    expect(fileCategory(undefined)).toBe("other");
+  it("draws on pure black so the nodes carry the light", () => {
+    expect(BRAIN_BACKGROUND).toBe("#000000");
   });
 
-  it("gives every category its own vivid colour", () => {
-    const colors = Object.keys(FILE_CATEGORY_STYLES).map((category) =>
-      categoryColor(category as keyof typeof FILE_CATEGORY_STYLES),
+  it("gives every extension its own colour, known or not", () => {
+    const known = ["md", "pdf", "png", "json", "canvas", "xlsx"].map((extension) =>
+      fileExtensionColor(extension),
     );
-    expect(new Set(colors).size).toBe(colors.length);
-    // Dimming keeps the hue and loses the light.
-    expect(categoryColor("note", false)).not.toBe(categoryColor("note", true));
+    expect(new Set(known).size).toBe(known.length);
+
+    // An extension nobody mapped still gets a stable hue instead of grey.
+    const unknown = fileExtensionColor("customext");
+    expect(unknown).toMatch(/^hsl\(/);
+    expect(fileExtensionColor("customext")).toBe(unknown);
+    expect(unknown).not.toBe(fileExtensionColor("otraext"));
   });
 
-  it("paints by what a node is, not by where it lives", () => {
+  it("colours files by extension and folders as quiet structure", () => {
     const note = nodeColorCss(node(), true);
     const image = nodeColorCss(node({ extension: "png" }), true);
-    const folder = nodeColorCss(node({ kind: "folder", id: "PROYECTOS/ELSA" }), true);
+    const folder = nodeColorCss(node({ kind: "folder", id: "docs/guias" }), true);
 
     expect(note).not.toBe(image);
     expect(folder).not.toBe(note);
-    // Two notes in different folders are the same kind of thing: same colour.
-    expect(nodeColorCss(node({ id: "OTRA/nota.md", folder: "OTRA" }), true)).toBe(note);
-    // The depth ramp separates levels instead.
-    expect(folderColor(1, true)).not.toBe(folderColor(4, true));
+    // Folders are one family: only the depth makes them differ.
+    expect(folderColor(1, true)).not.toBe(folderColor(5, true));
+    // Two notes in different folders are the same kind of thing.
+    expect(nodeColorCss(node({ id: "otra/nota.md", folder: "OTRA" }), true)).toBe(note);
   });
 
-  it("draws folders much bigger than files", () => {
-    expect(nodeRadius(node({ kind: "file", degree: 0 }))).toBeLessThan(
-      nodeRadius(node({ kind: "folder", degree: 0 })),
-    );
-    expect(nodeRadius(node({ kind: "file", degree: 100 }))).toBeLessThan(
-      nodeRadius(node({ kind: "folder", degree: 0 })),
-    );
+  it("keeps folders small enough to be a skeleton, not the picture", () => {
+    const folder = nodeRadius(node({ kind: "folder", degree: 40 }));
+    const foldedFolder = nodeRadius(node({ kind: "folder", degree: 0 }));
+    const file = nodeRadius(node({ kind: "file", degree: 0 }));
+
+    expect(foldedFolder).toBeGreaterThan(file);
+    // Even a huge folder stays close to a leaf dot.
+    expect(folder).toBeLessThan(file * 3.5);
   });
 
   it("labels every folder, and only connected files in a detailed graph", () => {

@@ -407,6 +407,8 @@ export function applyServerSettingsPatch(
     projectSettingsOverrides: projectSettingsOverridesPatch,
     // Arrays replace whole: deepMerge would keep old prompt entries.
     projectPrompts: projectPromptsPatch,
+    // Roles are replaced whole: a merge would resurrect a deleted one.
+    subagents: subagentsPatch,
     // Already translated into `projectSettingsOverrides` above; the legacy
     // maps are derived views and must never be merged directly.
     projectAgentBrowserAccessOverrides: _legacyBrowserAccess,
@@ -502,6 +504,7 @@ export function applyServerSettingsPatch(
       ? {}
       : { azureDevOpsThreadLinks: azureDevOpsThreadLinksPatch }),
     ...(projectPromptsPatch === undefined ? {} : { projectPrompts: projectPromptsPatch }),
+    ...(subagentsPatch === undefined ? {} : { subagents: subagentsPatch }),
     favorites,
     providerModelPreferences: nextModelPreferences,
     ...(worktreeCleanupPatch === undefined

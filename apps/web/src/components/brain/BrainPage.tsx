@@ -23,14 +23,7 @@ import { Input } from "../ui/input";
 import { SidebarInset } from "../ui/sidebar";
 import { Spinner } from "../ui/spinner";
 import { BrainScene, type BrainGraphNode, type BrainLink } from "./BrainScene";
-import {
-  FILE_CATEGORY_STYLES,
-  categoryColor,
-  fileCategory,
-  folderColor,
-  nodeColorCss,
-  type FileCategory,
-} from "./graphTheme";
+import { fileExtensionColor, folderColor, nodeColorCss } from "./graphTheme";
 import { VaultPicker, type VaultRootKind } from "./VaultPicker";
 
 const VAULT_STORAGE_KEY = "upcode:brain:vault";
@@ -117,7 +110,7 @@ export function BrainPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<FileCategory | null>(null);
+  const [extensionFilter, setExtensionFilter] = useState<string | null>(null);
   const [autoRotate, setAutoRotate] = useState(true);
   const [following, setFollowing] = useState(true);
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
@@ -173,7 +166,7 @@ export function BrainPage() {
         // would draw one vault's shape with another vault's notes.
         setNodes([]);
         setSelectedId(null);
-        setTypeFilter(null);
+        setExtensionFilter(null);
       }
       current.current = graphSnapshot;
       setSnapshot(graphSnapshot);
@@ -277,10 +270,10 @@ export function BrainPage() {
   // Null means "no filter": every node keeps its colour.
   const highlightedIds = useMemo<ReadonlySet<string> | null>(() => {
     const needle = query.trim().toLowerCase();
-    if (needle.length === 0 && typeFilter === null) return null;
+    if (needle.length === 0 && extensionFilter === null) return null;
     const matches = new Set<string>();
     for (const node of nodes) {
-      if (typeFilter !== null && fileCategory(node.extension) !== typeFilter) continue;
+      if (extensionFilter !== null && (node.extension ?? "") !== extensionFilter) continue;
       if (
         needle.length > 0 &&
         !node.label.toLowerCase().includes(needle) &&
@@ -291,21 +284,25 @@ export function BrainPage() {
       matches.add(node.id);
     }
     return matches;
-  }, [nodes, query, typeFilter]);
+  }, [nodes, query, extensionFilter]);
 
-  /** The legend: how much of each kind the vault has, in the hue it is drawn. */
-  const categories = useMemo(() => {
+  /**
+   * The legend: the extensions the vault actually has, biggest first, each in
+   * the colour its dots are drawn in. An unknown extension is its own colour,
+   * so it is its own legend entry too.
+   */
+  const extensions = useMemo(() => {
     if (snapshot === null) return [];
-    const counts = new Map<FileCategory, number>();
+    const counts = new Map<string, number>();
     for (const node of snapshot.nodes) {
       if (node.kind !== "file") continue;
-      const category = fileCategory(node.extension);
-      counts.set(category, (counts.get(category) ?? 0) + 1);
+      const key = node.extension ?? "";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
     }
-    return (Object.keys(FILE_CATEGORY_STYLES) as FileCategory[])
-      .map((category) => ({ category, count: counts.get(category) ?? 0 }))
-      .filter((entry) => entry.count > 0)
-      .sort((left, right) => right.count - left.count);
+    return [...counts.entries()]
+      .map(([extension, count]) => ({ extension, count }))
+      .sort((left, right) => right.count - left.count)
+      .slice(0, 10);
   }, [snapshot]);
 
   const selectedNode = selectedId === null ? null : (nodeById.get(selectedId) ?? null);
@@ -486,26 +483,20 @@ export function BrainPage() {
             ) : null}
           </div>
           <div className="pointer-events-auto flex flex-wrap gap-1">
-            {categories.map((entry) => {
-              const active = typeFilter === entry.category;
+            {extensions.map((entry) => {
+              const active = extensionFilter === entry.extension;
+              const color = fileExtensionColor(entry.extension);
               return (
                 <button
-                  key={entry.category}
+                  key={entry.extension || "(sin extensión)"}
                   type="button"
-                  onClick={() => setTypeFilter(active ? null : entry.category)}
+                  onClick={() => setExtensionFilter(active ? null : entry.extension)}
                   className="flex items-center gap-1.5 rounded-full border border-white/10 px-2 py-0.5 hover:border-white/40"
-                  style={{ opacity: typeFilter === null || active ? 1 : 0.4 }}
+                  style={{ opacity: extensionFilter === null || active ? 1 : 0.4 }}
                 >
-                  <span
-                    aria-hidden
-                    className="size-2 rounded-full"
-                    style={{
-                      background: categoryColor(entry.category),
-                      boxShadow: `0 0 8px ${categoryColor(entry.category)}`,
-                    }}
-                  />
-                  <span className="max-w-32 truncate">
-                    {FILE_CATEGORY_STYLES[entry.category].label}
+                  <span aria-hidden className="size-2 rounded-full" style={{ background: color }} />
+                  <span className="max-w-32 truncate font-mono">
+                    {entry.extension.length === 0 ? "sin ext." : `.${entry.extension}`}
                   </span>
                   <span className="text-white/35">{entry.count}</span>
                 </button>

@@ -36,6 +36,7 @@ import { Route as ChatPullRequestsRouteImport } from './routes/_chat.pull-reques
 import { Route as ChatNewRouteImport } from './routes/_chat.new'
 import { Route as ChatIssuesRouteImport } from './routes/_chat.issues'
 import { Route as ChatBrainRouteImport } from './routes/_chat.brain'
+import { Route as ChatAgentsRouteImport } from './routes/_chat.agents'
 import { Route as ChatDraftDraftIdRouteImport } from './routes/_chat.draft.$draftId'
 import { Route as ChatEnvironmentIdThreadIdRouteImport } from './routes/_chat.$environmentId.$threadId'
 
@@ -174,6 +175,11 @@ const ChatBrainRoute = ChatBrainRouteImport.update({
   path: '/brain',
   getParentRoute: () => ChatRoute,
 } as any)
+const ChatAgentsRoute = ChatAgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
+  getParentRoute: () => ChatRoute,
+} as any)
 const ChatDraftDraftIdRoute = ChatDraftDraftIdRouteImport.update({
   id: '/draft/$draftId',
   path: '/draft/$draftId',
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
+  '/agents': typeof ChatAgentsRoute
   '/brain': typeof ChatBrainRoute
   '/issues': typeof ChatIssuesRoute
   '/new': typeof ChatNewRoute
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
+  '/agents': typeof ChatAgentsRoute
   '/brain': typeof ChatBrainRoute
   '/issues': typeof ChatIssuesRoute
   '/new': typeof ChatNewRoute
@@ -255,6 +263,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
+  '/_chat/agents': typeof ChatAgentsRoute
   '/_chat/brain': typeof ChatBrainRoute
   '/_chat/issues': typeof ChatIssuesRoute
   '/_chat/new': typeof ChatNewRoute
@@ -288,6 +297,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/usage'
     | '/welcome'
+    | '/agents'
     | '/brain'
     | '/issues'
     | '/new'
@@ -317,6 +327,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/usage'
     | '/welcome'
+    | '/agents'
     | '/brain'
     | '/issues'
     | '/new'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/usage'
     | '/welcome'
+    | '/_chat/agents'
     | '/_chat/brain'
     | '/_chat/issues'
     | '/_chat/new'
@@ -574,6 +586,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatBrainRouteImport
       parentRoute: typeof ChatRoute
     }
+    '/_chat/agents': {
+      id: '/_chat/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof ChatAgentsRouteImport
+      parentRoute: typeof ChatRoute
+    }
     '/_chat/draft/$draftId': {
       id: '/_chat/draft/$draftId'
       path: '/draft/$draftId'
@@ -592,6 +611,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface ChatRouteChildren {
+  ChatAgentsRoute: typeof ChatAgentsRoute
   ChatBrainRoute: typeof ChatBrainRoute
   ChatIssuesRoute: typeof ChatIssuesRoute
   ChatNewRoute: typeof ChatNewRoute
@@ -602,6 +622,7 @@ interface ChatRouteChildren {
 }
 
 const ChatRouteChildren: ChatRouteChildren = {
+  ChatAgentsRoute: ChatAgentsRoute,
   ChatBrainRoute: ChatBrainRoute,
   ChatIssuesRoute: ChatIssuesRoute,
   ChatNewRoute: ChatNewRoute,
