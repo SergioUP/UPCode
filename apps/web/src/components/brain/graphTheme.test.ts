@@ -1,7 +1,15 @@
 import type { VaultGraphNode } from "@t3tools/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
-import { clusterHue, folderClusterKey, nodeColorCss, nodeRadius, wantsLabel } from "./graphTheme";
+import {
+  categoryColor,
+  fileCategory,
+  FILE_CATEGORY_STYLES,
+  folderColor,
+  nodeColorCss,
+  nodeRadius,
+  wantsLabel,
+} from "./graphTheme";
 
 function node(overrides: Partial<VaultGraphNode> = {}): VaultGraphNode {
   return {
@@ -19,30 +27,44 @@ function node(overrides: Partial<VaultGraphNode> = {}): VaultGraphNode {
 }
 
 describe("graphTheme", () => {
-  it("clusters by the top-level folder, with a name for the vault root", () => {
-    expect(folderClusterKey("PROYECTOS/ELSA/DOCU")).toBe("PROYECTOS");
-    expect(folderClusterKey("")).toBe("(raíz)");
+  it("maps extensions to the categories the legend shows", () => {
+    expect(fileCategory("md")).toBe("note");
+    expect(fileCategory("PNG")).toBe("image");
+    expect(fileCategory("pdf")).toBe("pdf");
+    expect(fileCategory("xlsx")).toBe("office");
+    expect(fileCategory("canvas")).toBe("canvas");
+    expect(fileCategory("7z")).toBe("other");
+    // No extension is "other", never a guess.
+    expect(fileCategory(undefined)).toBe("other");
   });
 
-  it("gives a cluster the same hue every time it is asked", () => {
-    expect(clusterHue("PROYECTOS")).toBe(clusterHue("PROYECTOS"));
-    // Two clusters of the same vault are meant to be told apart.
-    expect(clusterHue("PROYECTOS")).not.toBe(clusterHue("CLIENTES"));
+  it("gives every category its own vivid colour", () => {
+    const colors = Object.keys(FILE_CATEGORY_STYLES).map((category) =>
+      categoryColor(category as keyof typeof FILE_CATEGORY_STYLES),
+    );
+    expect(new Set(colors).size).toBe(colors.length);
+    // Dimming keeps the hue and loses the light.
+    expect(categoryColor("note", false)).not.toBe(categoryColor("note", true));
   });
 
-  it("paints folders and files differently, and dims what does not match", () => {
-    const file = nodeColorCss(node(), true);
+  it("paints by what a node is, not by where it lives", () => {
+    const note = nodeColorCss(node(), true);
+    const image = nodeColorCss(node({ extension: "png" }), true);
     const folder = nodeColorCss(node({ kind: "folder", id: "PROYECTOS/ELSA" }), true);
 
-    expect(file).not.toBe(folder);
-    expect(nodeColorCss(node(), false)).not.toBe(file);
-    // Files in the same cluster share a hue, whatever their name.
-    expect(nodeColorCss(node({ id: "PROYECTOS/ELSA/otra.md" }), true)).toBe(file);
+    expect(note).not.toBe(image);
+    expect(folder).not.toBe(note);
+    // Two notes in different folders are the same kind of thing: same colour.
+    expect(nodeColorCss(node({ id: "OTRA/nota.md", folder: "OTRA" }), true)).toBe(note);
+    // The depth ramp separates levels instead.
+    expect(folderColor(1, true)).not.toBe(folderColor(4, true));
   });
 
-  it("sizes a node by its degree, with folders above files", () => {
-    expect(nodeRadius(node({ degree: 1 }))).toBeLessThan(nodeRadius(node({ degree: 40 })));
+  it("draws folders much bigger than files", () => {
     expect(nodeRadius(node({ kind: "file", degree: 0 }))).toBeLessThan(
+      nodeRadius(node({ kind: "folder", degree: 0 })),
+    );
+    expect(nodeRadius(node({ kind: "file", degree: 100 }))).toBeLessThan(
       nodeRadius(node({ kind: "folder", degree: 0 })),
     );
   });
@@ -52,7 +74,6 @@ describe("graphTheme", () => {
     expect(wantsLabel(node({ kind: "folder", degree: 0 }), false)).toBe(true);
     expect(wantsLabel(node({ degree: 1 }), true)).toBe(false);
     expect(wantsLabel(node({ degree: 3 }), true)).toBe(true);
-    // A big vault keeps folder labels and drops the file ones.
     expect(wantsLabel(node({ degree: 3 }), false)).toBe(false);
   });
 });

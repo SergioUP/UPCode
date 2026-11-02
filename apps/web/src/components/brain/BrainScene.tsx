@@ -10,10 +10,10 @@ import { observeResize } from "~/lib/observeResize";
 
 import {
   BRAIN_BACKGROUND,
-  clusterHue,
+  categoryColor,
   createGlowTexture,
   createLabelTexture,
-  folderClusterKey,
+  fileCategory,
   nodeColorCss,
   nodeRadius,
   wantsLabel,
@@ -88,12 +88,30 @@ export function BrainScene({
     const radius = nodeRadius(node);
     const color = nodeColorCss(node, true);
     const group = new THREE.Group();
+    const isFolder = node.kind === "folder";
 
     const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(radius, 16, 16),
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 }),
+      new THREE.SphereGeometry(radius, isFolder ? 24 : 14, isFolder ? 24 : 14),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.96 }),
     );
     group.add(sphere);
+
+    // A ring is what makes a folder read as a hub from across the room, and it
+    // is one cheap torus, not a whole sprite.
+    if (isFolder) {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(radius * 1.55, radius * 0.09, 8, 48),
+        new THREE.MeshBasicMaterial({
+          color,
+          transparent: true,
+          opacity: 0.55,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        }),
+      );
+      ring.rotation.x = Math.PI / 2.4;
+      group.add(ring);
+    }
 
     if (glowTexture !== null) {
       const halo = new THREE.Sprite(
@@ -101,17 +119,17 @@ export function BrainScene({
           map: glowTexture,
           color,
           transparent: true,
-          opacity: node.kind === "file" ? 0.4 : 0.6,
+          opacity: isFolder ? 0.75 : 0.45,
           blending: THREE.AdditiveBlending,
           depthWrite: false,
         }),
       );
-      halo.scale.setScalar(radius * 7);
+      halo.scale.setScalar(radius * (isFolder ? 6 : 7.5));
       group.add(halo);
     }
 
     if (wantsLabel(node, detailed)) {
-      const canvas = createLabelTexture(node.label, "rgba(255,255,255,0.92)");
+      const canvas = createLabelTexture(node.label, "rgba(255,255,255,0.94)");
       if (canvas !== null) {
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
@@ -119,9 +137,9 @@ export function BrainScene({
           new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }),
         );
         const aspect = canvas.width / canvas.height;
-        const height = node.kind === "file" ? 5 : 6.5;
+        const height = isFolder ? 8 : 5;
         sprite.scale.set(height * aspect, height, 1);
-        sprite.position.set(0, radius + height * 0.75, 0);
+        sprite.position.set(0, radius + height * 0.7, 0);
         group.add(sprite);
       }
     }
@@ -141,25 +159,28 @@ export function BrainScene({
   // Node colour carries the search: a match keeps its cluster hue, everything
   // else fades, which is what makes a query readable in a 3D cloud.
   useEffect(() => {
+    const byId = new Map(nodes.map((node) => [node.id, node]));
     for (const [id, object] of nodeObjects.current) {
-      const node = nodes.find((candidate) => candidate.id === id);
+      const node = byId.get(id);
       if (node === undefined) continue;
       const seen = highlightedIds === null || highlightedIds.has(id);
       const selected = selectedId === id;
-      const color = new THREE.Color(nodeColorCss(node, seen || selected));
+      const lit = seen || selected;
+      const color = new THREE.Color(nodeColorCss(node, lit));
+      const isFolder = node.kind === "folder";
       object.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           (child.material as THREE.MeshBasicMaterial).color.copy(color);
-          (child.material as THREE.MeshBasicMaterial).opacity = seen || selected ? 0.95 : 0.35;
+          (child.material as THREE.MeshBasicMaterial).opacity = lit ? 0.96 : isFolder ? 0.4 : 0.3;
         }
         if (child instanceof THREE.Sprite && child.material.map !== null) {
           if (child.material.map === glowTexture) {
             (child.material as THREE.SpriteMaterial).color.copy(color);
           }
-          (child.material as THREE.SpriteMaterial).opacity = seen || selected ? 0.9 : 0.25;
+          (child.material as THREE.SpriteMaterial).opacity = lit ? 0.9 : 0.2;
         }
       });
-      object.scale.setScalar(selected ? 1.6 : 1);
+      object.scale.setScalar(selected ? 1.55 : 1);
     }
   }, [nodes, highlightedIds, selectedId, glowTexture]);
 
@@ -234,17 +255,17 @@ export function BrainScene({
         nodeLabel={() => ""}
         nodeResolution={detailed ? 12 : 8}
         linkColor={(link) => {
-          if (link.kind === "sameName") return "hsl(316 85% 68%)";
-          // After the first tick the simulation replaces the endpoint ids with
-          // the node objects themselves, which is where the folder lives.
+          // A cross-folder name link keeps its own colour; a containment link
+          // borrows the colour of the file it hangs from.
+          if (link.kind === "sameName") return "hsl(316 100% 74%)";
           const source = link.source;
-          if (typeof source === "object" && source !== null && "folder" in source) {
-            const folder = String((source as BrainGraphNode).folder);
-            return `hsl(${clusterHue(folderClusterKey(folder))} 65% 58%)`;
+          if (typeof source === "object" && source !== null && "kind" in source) {
+            const file = source as BrainGraphNode;
+            return categoryColor(fileCategory(file.extension));
           }
-          return "hsl(210 55% 55%)";
+          return "hsl(210 45% 55%)";
         }}
-        linkOpacity={0.2}
+        linkOpacity={0.22}
         linkWidth={(link) => (link.kind === "sameName" ? 0.7 : 0.35)}
         linkDirectionalParticles={(link) => (detailed && link.kind === "sameName" ? 2 : 0)}
         linkDirectionalParticleWidth={1.4}
