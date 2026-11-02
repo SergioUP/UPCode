@@ -44,6 +44,7 @@ import {
   IncidentStatus,
   IncidentStoreError,
 } from "./incident.ts";
+import { VaultGraphError, VaultGraphScanInput, VaultGraphSnapshot } from "./vaultGraph.ts";
 import { NonNegativeInt, TrimmedNonEmptyString } from "./baseSchemas.ts";
 import {
   CodexAuthCallbackInput,
@@ -522,6 +523,7 @@ export const WS_METHODS = {
   azureDevOpsLinkThread: "azureDevOps.linkThread",
   incidentsList: "incidents.list",
   incidentsMutate: "incidents.mutate",
+  vaultGraphScan: "vaultGraph.scan",
   serverSearchAcpRegistry: "server.searchAcpRegistry",
   serverPrepareAcpRegistryAgent: "server.prepareAcpRegistryAgent",
   serverUninstallAcpRegistryManagedBinary: "server.uninstallAcpRegistryManagedBinary",
@@ -977,6 +979,12 @@ const WsIncidentsMutateRpc = Rpc.make(WS_METHODS.incidentsMutate, {
   payload: IncidentMutateInput,
   success: Schema.Array(Incident),
   error: incidentsError,
+});
+
+const WsVaultGraphScanRpc = Rpc.make(WS_METHODS.vaultGraphScan, {
+  payload: VaultGraphScanInput,
+  success: VaultGraphSnapshot,
+  error: Schema.Union([VaultGraphError, EnvironmentAuthorizationError]),
 });
 
 const WsServerSearchAcpRegistryRpc = Rpc.make(WS_METHODS.serverSearchAcpRegistry, {
@@ -2072,7 +2080,15 @@ export class RpcScopeAuthorization extends RpcMiddleware.Service<RpcScopeAuthori
   { error: EnvironmentAuthorizationError },
 ) {}
 
-export const WsRpcGroup = RpcGroup.make(
+/**
+ * The group every client, relay and test talks to. It is built from two halves
+ * because one literal is past what the type checker can instantiate in a single
+ * step: the server implements each half in its own `toLayer` call (see
+ * `apps/server/src/ws.ts`) and merges the resulting handler layers. Adding a
+ * method to either half keeps working; putting everything back in one `make`
+ * brings back `TS2589` on the handler object.
+ */
+export const WsRpcGroupCore = RpcGroup.make(
   WsServerProbeRpc,
   WsServerGetConfigRpc,
   WsServerRefreshProvidersRpc,
@@ -2102,23 +2118,6 @@ export const WsRpcGroup = RpcGroup.make(
   WsServerGetSettingsRpc,
   WsServerUpdateSettingsRpc,
   WsServerDiscoverSourceControlRpc,
-  WsAzureDevOpsConfigRpc,
-  WsAzureDevOpsListProjectsRpc,
-  WsAzureDevOpsListWorkItemsRpc,
-  WsAzureDevOpsListWorkItemStatesRpc,
-  WsAzureDevOpsMyWorkItemsRpc,
-  WsAzureDevOpsAzCliStatusRpc,
-  WsAzureDevOpsAzCliOpenRpc,
-  WsAzureDevOpsGetWorkItemRpc,
-  WsAzureDevOpsListRepositoriesRpc,
-  WsAzureDevOpsListBranchesRpc,
-  WsAzureDevOpsListPullRequestsRpc,
-  WsAzureDevOpsGetPullRequestDetailRpc,
-  WsAzureDevOpsUpdateWorkItemRpc,
-  WsAzureDevOpsThreadLinksRpc,
-  WsAzureDevOpsLinkThreadRpc,
-  WsIncidentsListRpc,
-  WsIncidentsMutateRpc,
   WsServerSearchAcpRegistryRpc,
   WsServerPrepareAcpRegistryAgentRpc,
   WsServerUninstallAcpRegistryManagedBinaryRpc,
@@ -2283,4 +2282,32 @@ export const WsRpcGroup = RpcGroup.make(
   WsOrchestrationV2SubscribeArchivedShellRpc,
   WsOrchestrationV2SubscribeShellRpc,
   WsOrchestrationV2SubscribeThreadRpc,
-).middleware(RpcScopeAuthorization);
+);
+
+/**
+ * The UPANGO-facing half of the group: Azure DevOps and incidents. Nothing here
+ * is T3 Code upstream, which is why they are the ones split off.
+ */
+export const WsRpcGroupUpango = RpcGroup.make(
+  WsAzureDevOpsConfigRpc,
+  WsAzureDevOpsListProjectsRpc,
+  WsAzureDevOpsListWorkItemsRpc,
+  WsAzureDevOpsListWorkItemStatesRpc,
+  WsAzureDevOpsMyWorkItemsRpc,
+  WsAzureDevOpsAzCliStatusRpc,
+  WsAzureDevOpsAzCliOpenRpc,
+  WsAzureDevOpsGetWorkItemRpc,
+  WsAzureDevOpsListRepositoriesRpc,
+  WsAzureDevOpsListBranchesRpc,
+  WsAzureDevOpsListPullRequestsRpc,
+  WsAzureDevOpsGetPullRequestDetailRpc,
+  WsAzureDevOpsUpdateWorkItemRpc,
+  WsAzureDevOpsThreadLinksRpc,
+  WsAzureDevOpsLinkThreadRpc,
+  WsIncidentsListRpc,
+  WsIncidentsMutateRpc,
+  WsVaultGraphScanRpc,
+);
+
+/** Every RPC the server answers, in one group for clients, relay and tests. */
+export const WsRpcGroup = WsRpcGroupCore.merge(WsRpcGroupUpango).middleware(RpcScopeAuthorization);

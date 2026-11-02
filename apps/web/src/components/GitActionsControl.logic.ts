@@ -380,6 +380,19 @@ export function resolveQuickAction(
   };
 }
 
+/**
+ * Target the create-change-request dialog opens with. The status' own comparison
+ * base is the same branch the server would resolve on its own, so a picker nobody
+ * touches keeps the behaviour it had before there was a picker.
+ */
+export function resolvePullRequestBaseBranchDefault(
+  gitStatus: VcsStatusResult | null,
+): string | null {
+  const baseRef = gitStatus?.branchChanges?.baseRef ?? gitStatus?.pr?.baseRef ?? null;
+  const trimmed = baseRef?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 export function requiresDefaultBranchConfirmation(
   action: GitStackedAction,
   isDefaultRef: boolean,

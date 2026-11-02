@@ -190,6 +190,15 @@
       }
     },
     {
+      "license": "MIT",
+      "name": "react-force-graph-3d",
+      "sourceUrl": "https://github.com/vasturiano/react-force-graph",
+      "generatedNotice": {
+        "licenseId": "MIT",
+        "copyrights": ["Copyright (c) 2018 Vasco Asturiano"]
+      }
+    },
+    {
       "name": "glob-to-regexp",
       "generatedNotice": {
         "licenseId": "BSD-2-Clause",
