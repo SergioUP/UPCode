@@ -12,6 +12,7 @@ export function isSidebarUtilityPage(pathname: string) {
     pathname === "/usage" ||
     pathname === "/pull-requests" ||
     pathname === "/brain" ||
+    pathname === "/agents" ||
     pathname === "/issues"
   );
 }

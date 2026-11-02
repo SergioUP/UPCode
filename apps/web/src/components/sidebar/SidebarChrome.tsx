@@ -1,4 +1,10 @@
-import { ArrowLeftIcon, BrainIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  BrainIcon,
+  ChartNoAxesColumnIcon,
+  SettingsIcon,
+  UsersIcon,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
@@ -203,6 +209,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigate({ to: "/brain" });
   }, [closeMobileSidebar, navigate]);
 
+  const handleAgentsClick = useCallback(() => {
+    closeMobileSidebar();
+    void navigate({ to: "/agents" });
+  }, [closeMobileSidebar, navigate]);
+
   const handleUsageClick = useCallback(() => {
     if (isMobile) {
       setOpenMobile(false);
@@ -240,6 +251,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             icon={<BrainIcon className="size-4" />}
             label="Cerebro"
             onClick={handleBrainClick}
+          />
+          <SidebarUtilityItem
+            icon={<UsersIcon className="size-4" />}
+            label="Subagentes"
+            onClick={handleAgentsClick}
           />
           {pullRequestsSupported ? (
             <SidebarUtilityItem

@@ -1,5 +1,6 @@
 import { SshDeviceHostConfigs } from "./device.ts";
 import { AzureDevOpsIssueLabels, AzureDevOpsWorkItemLink } from "./azureDevOps.ts";
+import { SubagentList } from "./subagents.ts";
 import {
   AuthOrchestrationOperateScope,
   AuthSettingsWriteScope,
@@ -1379,6 +1380,11 @@ export const ServerSettings = Schema.Struct({
   azureDevOpsIssueLabels: AzureDevOpsIssueLabels.pipe(
     Schema.withDecodingDefault(Effect.succeed({})),
   ),
+  /**
+   * Named roles every thread can hand work to. Global to the environment: they
+   * belong to the person, not to a project.
+   */
+  subagents: SubagentList.pipe(Schema.withDecodingDefault(Effect.succeed([]))),
   /** Saved composer prompts, keyed by project id. Local to this environment. */
   projectPrompts: ProjectPrompts.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   // Keyed by a user-chosen id so a source keeps its rows across edits. Entries
@@ -1684,6 +1690,8 @@ export const ServerSettingsPatch = Schema.Struct({
   azureDevOpsThreadLinks: Schema.optionalKey(Schema.Record(Schema.String, AzureDevOpsWorkItemLink)),
   /** Whole-map replacement, like the thread links: the map is small and conflicts are rare. */
   azureDevOpsIssueLabels: Schema.optionalKey(AzureDevOpsIssueLabels),
+  /** Whole-list replacement: the roles are edited as one screen, not merged. */
+  subagents: Schema.optionalKey(SubagentList),
   /** Saved composer prompts keyed by project id; patching replaces the whole map. */
   projectPrompts: Schema.optionalKey(ProjectPrompts),
   // Whole-map replacement for the new instance config. Patching individual

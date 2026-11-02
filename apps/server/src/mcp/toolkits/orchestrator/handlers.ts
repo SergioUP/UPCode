@@ -6,7 +6,12 @@ import { readCaller } from "../../threadAccess.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
 import * as McpToolAccess from "../../McpToolAccess.ts";
 import * as OrchestratorMcpService from "../../OrchestratorMcpService.ts";
+import * as ServerSettings from "../../../serverSettings.ts";
+import { composeSubagentTask, findSubagent } from "./subagentLogic.ts";
 import * as ThreadMetadataMcpService from "../../ThreadMetadataMcpService.ts";
+
+const settingsFailure = (error: { readonly message: string }) =>
+  new OrchestratorMcpFailure({ code: "orchestration_error", message: error.message });
 
 const handlers = {
   orchestrator_capabilities: McpToolAccess.reads(() =>
@@ -152,6 +157,53 @@ const handlers = {
         const service = yield* OrchestratorMcpService.OrchestratorMcpService;
         return yield* service.interruptThread(scope, input);
       }),
+  ),
+  subagent_list: McpToolAccess.reads(() =>
+    Effect.gen(function* () {
+      const settings = yield* ServerSettings.ServerSettingsService.pipe(
+        Effect.flatMap((service) => service.getSettings),
+      );
+      return {
+        subagents: [...settings.subagents]
+          .sort((left, right) => left.name.localeCompare(right.name))
+          .map((subagent) => ({
+            id: subagent.id,
+            name: subagent.name,
+            prompt: subagent.prompt,
+            tools: [...(subagent.tools ?? [])],
+          })),
+      };
+    }).pipe(Effect.mapError(settingsFailure)),
+  ),
+  subagent_run: McpToolAccess.actsAsCaller((input) =>
+    Effect.gen(function* () {
+      const scope = yield* McpInvocationContext.McpInvocationContext;
+      const settings = yield* ServerSettings.ServerSettingsService.pipe(
+        Effect.flatMap((service) => service.getSettings),
+      );
+      const subagent = findSubagent(settings.subagents, input.subagent);
+      if (subagent === undefined) {
+        const known = settings.subagents.map((candidate) => candidate.name).join(", ");
+        return yield* new OrchestratorMcpFailure({
+          code: "invalid_request",
+          message:
+            known.length === 0
+              ? "No subagents are defined in UPCode. Ask the user to create one."
+              : `No subagent is called "${input.subagent}". Defined: ${known}.`,
+        });
+      }
+      const service = yield* OrchestratorMcpService.OrchestratorMcpService;
+      const result = yield* service.delegateTask(scope, {
+        task: composeSubagentTask(subagent, input.task),
+        title: subagent.name,
+        ...(input.mode === undefined ? {} : { mode: input.mode }),
+      });
+      return {
+        subagentId: subagent.id,
+        subagentName: subagent.name,
+        taskId: result.taskId,
+      };
+    }).pipe(Effect.mapError(settingsFailure)),
   ),
 } satisfies McpToolAccess.Handlers<typeof OrchestratorToolkit.tools>;
 
