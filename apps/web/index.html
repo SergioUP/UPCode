@@ -121,6 +121,20 @@
               chrome: "oklch(0.225975 0.031062 293.741)",
             },
           },
+          redi: {
+            light: {
+              background: "oklch(0.974034 0.011422 84.578)",
+              foreground: "oklch(0.191763 0.016093 290.525)",
+              accent: "oklch(0.638496 0.218847 25.504)",
+              chrome: "oklch(0.974034 0.011422 84.578)",
+            },
+            dark: {
+              background: "oklch(0.168459 0.014556 291.301)",
+              foreground: "oklch(0.947775 0.016002 82.792)",
+              accent: "oklch(0.638496 0.218847 25.504)",
+              chrome: "oklch(0.168459 0.014556 291.301)",
+            },
+          },
         };
         // Keep the built-in mode list in sync with the runtime so the selected
         // T3 Chat palette is visible before React has mounted.
@@ -139,11 +153,13 @@
           "ocean",
           "ember",
           "iris",
+          "redi",
           "t3-chat-dark",
           "t3-grove",
           "t3-ocean",
           "t3-ember",
           "t3-iris",
+          "t3-redi",
         ];
         // Update every theme-color meta so any element another layer added
         // carries the resolved color too.

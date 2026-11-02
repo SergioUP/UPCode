@@ -35,6 +35,7 @@ import {
   GROVE_THEME,
   IRIS_THEME,
   OCEAN_THEME,
+  REDI_THEME,
   updateCustomTheme,
   updateThemeColorFamily,
   CUSTOM_THEMES_STORAGE_KEY,
@@ -525,7 +526,14 @@ describe("theme files", () => {
   });
 
   it("includes the dual-mode maintainer themes", () => {
-    for (const theme of [T3_CHAT_THEME, GROVE_THEME, OCEAN_THEME, EMBER_THEME, IRIS_THEME]) {
+    for (const theme of [
+      T3_CHAT_THEME,
+      GROVE_THEME,
+      OCEAN_THEME,
+      EMBER_THEME,
+      IRIS_THEME,
+      REDI_THEME,
+    ]) {
       expect(getThemeDefinition(theme.id)).toBe(theme);
       expect(getThemeModes(theme)).toEqual(["light", "dark"]);
       expect(theme.sidebarArtwork).toBe(true);
@@ -1173,12 +1181,12 @@ describe("singleAppearanceOf", () => {
 });
 
 describe("redi theme", () => {
-  it("claims dark as its base and carries a light half", () => {
+  it("claims light as its base and carries a dark half", () => {
     const theme = BUILT_IN_THEMES.find((candidate) => candidate.id === "redi");
 
     expect(theme?.label).toBe("Redi");
-    expect(theme?.appearance).toBe("dark");
-    expect(theme?.variants?.light).toBeDefined();
+    expect(theme?.appearance).toBe("light");
+    expect(theme?.variants?.dark).toBeDefined();
 
     // The light half has to be the light one: same red, paper backdrop.
     const redi = getThemeDefinition("redi")!;
