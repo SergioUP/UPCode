@@ -55,12 +55,14 @@ import {
   resolveGitActionProgressPresentation,
   resolveGitActionResultToastTiming,
   resolveLiveThreadBranchUpdate,
+  resolvePullRequestBaseBranchDefault,
   resolveThreadBranchMetadataPatch,
   resolveQuickAction,
   resolveThreadBranchUpdate,
 } from "./GitActionsControl.logic";
 import { WizardPopup, WizardHeader, WizardSteps, WizardPanel, WizardFooter } from "./ui/wizard";
 import { StartTruncatedPath } from "./StartTruncatedPath";
+import { PullRequestBaseBranchPicker } from "./PullRequestBaseBranchPicker";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import {
@@ -142,6 +144,8 @@ interface PendingDefaultBranchAction {
   commitMessage?: string;
   onConfirmed?: () => void;
   filePaths?: string[];
+  /** Survives the default-branch confirmation: the picker was answered earlier. */
+  baseBranch?: string;
 }
 
 type GitActionToastId = ReturnType<typeof toastManager.add>;
@@ -154,6 +158,13 @@ interface RunGitActionWithToastInput {
   statusOverride?: VcsStatusResult | null;
   featureBranch?: boolean;
   filePaths?: string[];
+  /** Target branch for a change request; the server resolves one when absent. */
+  baseBranch?: string;
+}
+
+/** The create dialog collects a target branch before the action runs. */
+interface PendingPullRequestAction {
+  action: Extract<GitStackedAction, "create_pr" | "commit_push_pr">;
 }
 
 interface InlineGitActionSuccess {
@@ -1048,6 +1059,9 @@ export default function GitActionsControl({
   const [inlineSuccess, setInlineSuccess] = useState<InlineGitActionSuccess | null>(null);
   const [pendingDefaultBranchAction, setPendingDefaultBranchAction] =
     useState<PendingDefaultBranchAction | null>(null);
+  const [pendingPullRequestAction, setPendingPullRequestAction] =
+    useState<PendingPullRequestAction | null>(null);
+  const [pullRequestBaseBranch, setPullRequestBaseBranch] = useState<string | null>(null);
   const sourceControlScope = useMemo(
     () => ({ environmentId: activeEnvironmentId, cwd: gitCwd }),
     [activeEnvironmentId, gitCwd],
@@ -1249,6 +1263,15 @@ export default function GitActionsControl({
     };
   }, [activeEnvironmentId, gitCwd, refreshVcsStatus]);
 
+  /** Opens with the branch the server would have picked, so today's flow still works. */
+  const openPullRequestDialog = useCallback(
+    (action: PendingPullRequestAction["action"]) => {
+      setPullRequestBaseBranch(resolvePullRequestBaseBranchDefault(gitStatusForActions));
+      setPendingPullRequestAction({ action });
+    },
+    [gitStatusForActions],
+  );
+
   // React 19.2 leaves useEffectEvent stale inside the memoized details panel.
   // Bind each render's actions to its checkout and thread, including retained toast actions.
   const runGitActionWithToast = useCallback(
@@ -1260,6 +1283,7 @@ export default function GitActionsControl({
       statusOverride,
       featureBranch = false,
       filePaths,
+      baseBranch,
     }: RunGitActionWithToastInput) {
       if (
         activeEnvironmentId === null ||
@@ -1297,6 +1321,7 @@ export default function GitActionsControl({
           ...(commitMessage ? { commitMessage } : {}),
           ...(onConfirmed ? { onConfirmed } : {}),
           ...(filePaths ? { filePaths } : {}),
+          ...(baseBranch ? { baseBranch } : {}),
         });
         return;
       }
@@ -1312,6 +1337,7 @@ export default function GitActionsControl({
         ...(commitMessage ? { commitMessage } : {}),
         ...(featureBranch ? { featureBranch } : {}),
         ...(filePaths ? { filePaths } : {}),
+        ...(baseBranch ? { baseBranch } : {}),
         // A pull request the action opens is linked to the thread it ran beside. Drafts
         // have no server thread yet, so there is nothing to link to.
         ...(activeServerThread ? { threadId: activeServerThread.id } : {}),
@@ -1364,8 +1390,15 @@ export default function GitActionsControl({
           children: toastCta.label,
           onClick: () => {
             closeResultToast();
+            const nextAction = toastCta.action.kind;
+            // Opening a change request asks where it should land, so it goes
+            // through the dialog instead of straight to the action.
+            if (nextAction === "create_pr" || nextAction === "commit_push_pr") {
+              openPullRequestDialog(nextAction);
+              return;
+            }
             void runGitActionWithToast({
-              action: toastCta.action.kind,
+              action: nextAction,
             });
           },
         };
@@ -1417,6 +1450,7 @@ export default function GitActionsControl({
       isLocalDraftThread,
       isPanel,
       openPrLink,
+      openPullRequestDialog,
       runImmediateGitAction,
       successScopeKey,
       syncThreadBranchAfterGitAction,
@@ -1426,26 +1460,30 @@ export default function GitActionsControl({
 
   const continuePendingDefaultBranchAction = () => {
     if (!pendingDefaultBranchAction) return;
-    const { action, commitMessage, onConfirmed, filePaths } = pendingDefaultBranchAction;
+    const { action, commitMessage, onConfirmed, filePaths, baseBranch } =
+      pendingDefaultBranchAction;
     setPendingDefaultBranchAction(null);
     void runGitActionWithToast({
       action,
       ...(commitMessage ? { commitMessage } : {}),
       ...(onConfirmed ? { onConfirmed } : {}),
       ...(filePaths ? { filePaths } : {}),
+      ...(baseBranch ? { baseBranch } : {}),
       skipDefaultBranchPrompt: true,
     });
   };
 
   const checkoutFeatureBranchAndContinuePendingAction = () => {
     if (!canChangeThreadBranch || !pendingDefaultBranchAction) return;
-    const { action, commitMessage, onConfirmed, filePaths } = pendingDefaultBranchAction;
+    const { action, commitMessage, onConfirmed, filePaths, baseBranch } =
+      pendingDefaultBranchAction;
     setPendingDefaultBranchAction(null);
     void runGitActionWithToast({
       action,
       ...(commitMessage ? { commitMessage } : {}),
       ...(onConfirmed ? { onConfirmed } : {}),
       ...(filePaths ? { filePaths } : {}),
+      ...(baseBranch ? { baseBranch } : {}),
       featureBranch: true,
       skipDefaultBranchPrompt: true,
     });
@@ -1532,8 +1570,28 @@ export default function GitActionsControl({
       return;
     }
     if (quickAction.action) {
+      if (quickAction.action === "create_pr" || quickAction.action === "commit_push_pr") {
+        openPullRequestDialog(quickAction.action);
+        return;
+      }
       void runGitActionWithToast({ action: quickAction.action });
     }
+  };
+
+  const closePullRequestDialog = () => {
+    setPendingPullRequestAction(null);
+    setPullRequestBaseBranch(null);
+  };
+
+  const confirmPullRequestAction = () => {
+    const pending = pendingPullRequestAction;
+    if (!pending) return;
+    const baseBranch = pullRequestBaseBranch?.trim() ?? "";
+    closePullRequestDialog();
+    void runGitActionWithToast({
+      action: pending.action,
+      ...(baseBranch ? { baseBranch } : {}),
+    });
   };
 
   const openDialogForMenuItem = (item: GitActionMenuItem) => {
@@ -1543,7 +1601,7 @@ export default function GitActionsControl({
       return;
     }
     if (item.dialogAction === "create_pr") {
-      void runGitActionWithToast({ action: "create_pr" });
+      openPullRequestDialog("create_pr");
       return;
     }
     setExcludedFiles(new Set());
@@ -2109,6 +2167,63 @@ export default function GitActionsControl({
         threadRef={activeThreadRef}
         gitCwd={gitCwd}
       />
+
+      <Dialog
+        open={pendingPullRequestAction !== null}
+        onOpenChange={(open) => {
+          if (!open) closePullRequestDialog();
+        }}
+      >
+        <DialogPopup className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Create {changeRequestTerminology.singular}</DialogTitle>
+            <DialogDescription>
+              {pendingPullRequestAction?.action === "commit_push_pr"
+                ? `Commit, push, then open a ${changeRequestTerminology.singular} into the branch you pick.`
+                : `Open a ${changeRequestTerminology.singular} from this checkout's branch into the branch you pick.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogPanel>
+            <div className="space-y-3">
+              <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-1 text-sm">
+                <span className="text-muted-foreground">From</span>
+                <span className="truncate font-mono font-medium">
+                  {gitStatusForActions?.refName ?? "(detached HEAD)"}
+                </span>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Into</p>
+                {activeEnvironmentId !== null ? (
+                  <PullRequestBaseBranchPicker
+                    environmentId={activeEnvironmentId}
+                    cwd={gitCwd}
+                    value={pullRequestBaseBranch}
+                    onValueChange={setPullRequestBaseBranch}
+                    excludeBranch={gitStatusForActions?.refName ?? null}
+                    disabled={!canWriteSourceControl}
+                  />
+                ) : null}
+                <p className="text-xs text-muted-foreground">
+                  Search any local or remote branch. It becomes the base of the{" "}
+                  {changeRequestTerminology.singular}.
+                </p>
+              </div>
+            </div>
+          </DialogPanel>
+          <DialogFooter variant="bare">
+            <Button variant="outline" size="sm" onClick={closePullRequestDialog}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={!canWriteSourceControl || !pullRequestBaseBranch}
+              onClick={confirmPullRequestAction}
+            >
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogPopup>
+      </Dialog>
 
       <Dialog
         open={pendingDefaultBranchAction !== null}
