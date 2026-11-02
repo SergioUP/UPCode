@@ -28,16 +28,11 @@ import * as RpcMiddleware from "effect/rpc/RpcMiddleware";
 import {
   AzureDevOpsAzCliStatus,
   AzureDevOpsBranch,
-  AzureDevOpsIdentity,
   AzureDevOpsIssueLabels,
   AzureDevOpsProject,
   AzureDevOpsPullRequest,
   AzureDevOpsPullRequestDetail,
-  AzureDevOpsPullRequestExtras,
-  AzureDevOpsPullRequestExtrasInput,
   AzureDevOpsRepository,
-  AzureDevOpsReviewerCandidatesInput,
-  AzureDevOpsUpdatePullRequestExtrasInput,
   AzureDevOpsWorkItem,
   AzureDevOpsWorkItemLink,
   AzureDevOpsWorkItemStateOption,
@@ -49,6 +44,7 @@ import {
   IncidentStatus,
   IncidentStoreError,
 } from "./incident.ts";
+import { VaultGraphError, VaultGraphScanInput, VaultGraphSnapshot } from "./vaultGraph.ts";
 import { NonNegativeInt, TrimmedNonEmptyString } from "./baseSchemas.ts";
 import {
   CodexAuthCallbackInput,
@@ -525,11 +521,9 @@ export const WS_METHODS = {
   azureDevOpsUpdateWorkItem: "azureDevOps.updateWorkItem",
   azureDevOpsThreadLinks: "azureDevOps.threadLinks",
   azureDevOpsLinkThread: "azureDevOps.linkThread",
-  azureDevOpsReviewerCandidates: "azureDevOps.reviewerCandidates",
-  azureDevOpsPullRequestExtras: "azureDevOps.pullRequestExtras",
-  azureDevOpsUpdatePullRequestExtras: "azureDevOps.updatePullRequestExtras",
   incidentsList: "incidents.list",
   incidentsMutate: "incidents.mutate",
+  vaultGraphScan: "vaultGraph.scan",
   serverSearchAcpRegistry: "server.searchAcpRegistry",
   serverPrepareAcpRegistryAgent: "server.prepareAcpRegistryAgent",
   serverUninstallAcpRegistryManagedBinary: "server.uninstallAcpRegistryManagedBinary",
@@ -949,24 +943,6 @@ const WsAzureDevOpsLinkThreadRpc = Rpc.make(WS_METHODS.azureDevOpsLinkThread, {
   success: Schema.Record(Schema.String, AzureDevOpsWorkItemLink),
   error: azureReadError,
 });
-const WsAzureDevOpsReviewerCandidatesRpc = Rpc.make(WS_METHODS.azureDevOpsReviewerCandidates, {
-  payload: AzureDevOpsReviewerCandidatesInput,
-  success: Schema.Array(AzureDevOpsIdentity),
-  error: azureReadError,
-});
-const WsAzureDevOpsPullRequestExtrasRpc = Rpc.make(WS_METHODS.azureDevOpsPullRequestExtras, {
-  payload: AzureDevOpsPullRequestExtrasInput,
-  success: AzureDevOpsPullRequestExtras,
-  error: azureReadError,
-});
-const WsAzureDevOpsUpdatePullRequestExtrasRpc = Rpc.make(
-  WS_METHODS.azureDevOpsUpdatePullRequestExtras,
-  {
-    payload: AzureDevOpsUpdatePullRequestExtrasInput,
-    success: AzureDevOpsPullRequestExtras,
-    error: azureReadError,
-  },
-);
 
 const incidentsError = IncidentStoreError;
 const IncidentEvidencePayload = Schema.Struct({
@@ -1003,6 +979,12 @@ const WsIncidentsMutateRpc = Rpc.make(WS_METHODS.incidentsMutate, {
   payload: IncidentMutateInput,
   success: Schema.Array(Incident),
   error: incidentsError,
+});
+
+const WsVaultGraphScanRpc = Rpc.make(WS_METHODS.vaultGraphScan, {
+  payload: VaultGraphScanInput,
+  success: VaultGraphSnapshot,
+  error: Schema.Union([VaultGraphError, EnvironmentAuthorizationError]),
 });
 
 const WsServerSearchAcpRegistryRpc = Rpc.make(WS_METHODS.serverSearchAcpRegistry, {
@@ -2322,11 +2304,9 @@ export const WsRpcGroupUpango = RpcGroup.make(
   WsAzureDevOpsUpdateWorkItemRpc,
   WsAzureDevOpsThreadLinksRpc,
   WsAzureDevOpsLinkThreadRpc,
-  WsAzureDevOpsReviewerCandidatesRpc,
-  WsAzureDevOpsPullRequestExtrasRpc,
-  WsAzureDevOpsUpdatePullRequestExtrasRpc,
   WsIncidentsListRpc,
   WsIncidentsMutateRpc,
+  WsVaultGraphScanRpc,
 );
 
 /** Every RPC the server answers, in one group for clients, relay and tests. */

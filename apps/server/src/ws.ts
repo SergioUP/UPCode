@@ -239,6 +239,7 @@ import * as SourceControlDiscovery from "./sourceControl/SourceControlDiscovery.
 import * as AzureDevOpsWorkspace from "./azureDevOpsWorkspace.ts";
 import * as AzureDevOpsAzCli from "./azureDevOpsAzCli.ts";
 import * as IncidentStore from "./incidents/incidentStore.ts";
+import * as VaultGraphScanner from "./vaultGraph/VaultGraphScanner.ts";
 import * as OtlpEndpointCheck from "./observability/OtlpEndpointCheck.ts";
 import * as SourceControlRepositoryService from "./sourceControl/SourceControlRepositoryService.ts";
 import * as SourceControlBuiltInDrivers from "./sourceControl/builtInDrivers.ts";
@@ -3173,8 +3174,10 @@ const layerWsRpcUpango = () =>
       const azureDevOpsWorkspace = yield* AzureDevOpsWorkspace.make;
       const azureDevOpsAzCli = yield* AzureDevOpsAzCli.make;
       const incidentStore = yield* IncidentStore.make;
+      const vaultGraphScanner = yield* VaultGraphScanner.make;
       yield* incidentStore.list().pipe(Effect.ignore);
       return ServerWsRpcGroupUpango.of({
+        [WS_METHODS.vaultGraphScan]: (input) => vaultGraphScanner.scan(input),
         [WS_METHODS.azureDevOpsConfig]: () => azureDevOpsWorkspace.config,
         [WS_METHODS.azureDevOpsListProjects]: () => azureDevOpsWorkspace.listProjects,
         [WS_METHODS.azureDevOpsListWorkItems]: (input) =>
@@ -3217,12 +3220,6 @@ const layerWsRpcUpango = () =>
             const updated = yield* serverSettings.updateSettings({ azureDevOpsThreadLinks: links });
             return updated.azureDevOpsThreadLinks;
           }),
-        [WS_METHODS.azureDevOpsReviewerCandidates]: ({ query }) =>
-          azureDevOpsWorkspace.reviewerCandidates(query),
-        [WS_METHODS.azureDevOpsPullRequestExtras]: ({ pullRequestUrl }) =>
-          azureDevOpsWorkspace.pullRequestExtras(pullRequestUrl),
-        [WS_METHODS.azureDevOpsUpdatePullRequestExtras]: (input) =>
-          azureDevOpsWorkspace.updatePullRequestExtras(input),
       });
     }),
   );

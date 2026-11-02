@@ -95,6 +95,9 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.azureDevOpsAzCliOpen]: AuthOrchestrationOperateScope,
   [WS_METHODS.incidentsList]: AuthOrchestrationReadScope,
   [WS_METHODS.incidentsMutate]: AuthOrchestrationOperateScope,
+  // Reading a vault is reading the filesystem, so it wears that scope rather
+  // than the orchestration one: a client allowed to browse folders may scan one.
+  [WS_METHODS.vaultGraphScan]: AuthFilesystemReadScope,
   [WS_METHODS.azureDevOpsGetWorkItem]: AuthOrchestrationReadScope,
   [WS_METHODS.azureDevOpsListRepositories]: AuthOrchestrationReadScope,
   [WS_METHODS.azureDevOpsListBranches]: AuthOrchestrationReadScope,
