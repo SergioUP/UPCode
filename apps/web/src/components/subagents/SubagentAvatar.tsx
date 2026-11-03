@@ -1,9 +1,11 @@
-﻿import { resolveSubagentIcon, subagentColor } from "./subagentIcons";
+﻿import { createElement } from "react";
+
+import { resolveSubagentIcon, subagentColor } from "./subagentIcons";
 
 const SIZES = {
-  sm: { box: "size-6", glyph: "size-3.5", text: "text-3xs" },
-  md: { box: "size-9", glyph: "size-4", text: "text-2xs" },
-  lg: { box: "size-12", glyph: "size-6", text: "text-sm" },
+  sm: { box: "size-6", glyph: "size-3.5" },
+  md: { box: "size-9", glyph: "size-4" },
+  lg: { box: "size-12", glyph: "size-6" },
 } as const;
 
 /**
@@ -37,7 +39,8 @@ export function SubagentAvatar({
     );
   }
 
-  const Icon = resolveSubagentIcon(icon);
+  // `createElement` instead of `<Icon />`: binding a component to a variable
+  // during render makes React treat it as a new component type on every pass.
   return (
     <span
       role="img"
@@ -49,7 +52,10 @@ export function SubagentAvatar({
         borderColor: `color-mix(in srgb, ${subagentColor(hue)} 35%, transparent)`,
       }}
     >
-      <Icon className={dimensions.glyph} />
+      {createElement(resolveSubagentIcon(icon), {
+        className: dimensions.glyph,
+        "aria-hidden": true,
+      })}
     </span>
   );
 }
