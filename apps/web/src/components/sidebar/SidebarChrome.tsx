@@ -1,10 +1,4 @@
-import {
-  ArrowLeftIcon,
-  BrainIcon,
-  ChartNoAxesColumnIcon,
-  SettingsIcon,
-  UsersIcon,
-} from "lucide-react";
+﻿import { ArrowLeftIcon, BrainIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
@@ -190,7 +184,6 @@ const UTILITY_COLORS = {
   devops: "#4c9aff",
   brain: "hsl(272 85% 70%)",
   pullRequests: "hsl(152 70% 52%)",
-  agents: "hsl(190 85% 58%)",
   usage: "hsl(40 95% 58%)",
 } as const;
 
@@ -253,11 +246,6 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigate({ to: "/brain" });
   }, [closeMobileSidebar, navigate]);
 
-  const handleAgentsClick = useCallback(() => {
-    closeMobileSidebar();
-    void navigate({ to: "/agents" });
-  }, [closeMobileSidebar, navigate]);
-
   const handleUsageClick = useCallback(() => {
     if (isMobile) {
       setOpenMobile(false);
@@ -298,12 +286,6 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             label="Cerebro"
             onClick={handleBrainClick}
             color={UTILITY_COLORS.brain}
-          />
-          <SidebarUtilityItem
-            icon={<UsersIcon className="size-4" />}
-            label="Subagentes"
-            onClick={handleAgentsClick}
-            color={UTILITY_COLORS.agents}
           />
           {pullRequestsSupported ? (
             <SidebarUtilityItem
