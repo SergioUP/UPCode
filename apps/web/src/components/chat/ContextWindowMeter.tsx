@@ -1,10 +1,7 @@
 import { Button } from "../ui/button";
 import { type ContextWindowSnapshot, formatContextWindowTokens } from "~/lib/contextWindow";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
-import {
-  formatContextWindowCompactionMessage,
-  formatContextWindowCost,
-} from "./ContextWindowMeter.logic";
+import { formatContextWindowCompactionMessage } from "./ContextWindowMeter.logic";
 import { Minimize2Icon } from "lucide-react";
 import { composerFloatingLayerProps } from "./composerEventScope";
 
@@ -18,6 +15,21 @@ function formatPercentage(value: number | null): string | null {
   return `${Math.round(value)}%`;
 }
 
+/** `148k/1m`: the meters of context used against the model's own limit. */
+export function contextWindowLabel(usage: ContextWindowSnapshot): string {
+  const used = formatContextWindowTokens(usage.usedTokens ?? 0);
+  const limit =
+    usage.maxTokens === null || usage.maxTokens === undefined
+      ? "—"
+      : formatContextWindowTokens(usage.maxTokens);
+  return `${used}/${limit}`;
+}
+
+/**
+ * The thread's context, next to the usage limit: a ring that fills as the
+ * context grows, the used/limit pair in tokens, and the provider's own numbers
+ * on hover. The limit is the provider's, never an invented budget.
+ */
 export function ContextWindowMeter(props: {
   usage: ContextWindowSnapshot;
   modelDisplayName?: string | null;
@@ -28,11 +40,10 @@ export function ContextWindowMeter(props: {
   const { usage, modelDisplayName, onCompact, compactDisabled, compactDisabledReason } = props;
   const usedPercentage = formatPercentage(usage.usedPercentage);
   const normalizedPercentage = Math.max(0, Math.min(100, usage.usedPercentage ?? 0));
+  const label = contextWindowLabel(usage);
   const radius = 9.75;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - normalizedPercentage / 100);
-  const totalProcessedTokens = usage.totalProcessedTokens ?? null;
-  const showTotalProcessed = totalProcessedTokens !== null && totalProcessedTokens > 0;
   const isOverloaded = normalizedPercentage > 90;
   const usageColor = isOverloaded
     ? "var(--color-error)"
@@ -45,17 +56,16 @@ export function ContextWindowMeter(props: {
         delay={150}
         closeDelay={onCompact ? 150 : 0}
         render={
-          <Button
-            size="icon-sm"
-            variant="ghost-muted"
-            className="size-7"
+          <button
+            type="button"
+            className="flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-1 text-2xs text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             aria-label={
-              usage.maxTokens !== null && usedPercentage
-                ? `Context window ${usedPercentage} used`
-                : `Context window ${formatContextWindowTokens(usage.usedTokens)} tokens used`
+              usage.maxTokens !== null && usage.maxTokens !== undefined
+                ? `Contexto: ${useful(usage.usedTokens ?? 0)} de ${useful(usage.maxTokens)} tokens (${usedPercentage ?? "sin datos"})`
+                : `Contexto: ${useful(usage.usedTokens ?? 0)} tokens`
             }
           >
-            <span className="relative flex size-5 items-center justify-center">
+            <span className="relative flex size-5 shrink-0 items-center justify-center">
               <svg
                 viewBox="0 0 24 24"
                 className="-rotate-90 absolute inset-0 size-full transform-gpu mx-0!"
@@ -83,7 +93,8 @@ export function ContextWindowMeter(props: {
                 />
               </svg>
             </span>
-          </Button>
+            <span className="text-2xs tabular-nums text-muted-foreground">{label}</span>
+          </button>
         }
       />
       <PopoverPopup
@@ -97,21 +108,24 @@ export function ContextWindowMeter(props: {
       >
         <div className="flex flex-col gap-2 p-(--floating-content-inset)">
           <div className="flex items-center justify-between gap-3">
-            <div className="font-medium text-muted-foreground text-xs">Context Window</div>
+            <div className="font-medium text-muted-foreground text-xs">Contexto del hilo</div>
             {usage.maxTokens !== null && usedPercentage ? (
               <div className="text-secondary-label text-2xs tabular-nums">
                 <span>{usedPercentage}</span>
-                <span className="mx-1">·</span>
-                <span>
-                  {formatContextWindowTokens(usage.usedTokens)}/
-                  {formatContextWindowTokens(usage.maxTokens ?? null)}
-                </span>
               </div>
-            ) : (
-              <div className="text-secondary-label text-2xs tabular-nums">
-                {formatContextWindowTokens(usage.usedTokens)}
-              </div>
-            )}
+            ) : null}
+          </div>
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-sm font-semibold tabular-nums">
+              {formatContextWindowTokens(usage.usedTokens ?? 0)}
+            </span>
+            <span className="text-secondary-label text-2xs tabular-nums">
+              /{" "}
+              {usage.maxTokens === null || usage.maxTokens === undefined
+                ? "—"
+                : formatContextWindowTokens(usage.maxTokens)}{" "}
+              tokens
+            </span>
           </div>
           {usage.maxTokens !== null ? (
             <div
@@ -128,24 +142,8 @@ export function ContextWindowMeter(props: {
               />
             </div>
           ) : null}
-          {showTotalProcessed ? (
-            <div className="flex items-center justify-between gap-3 text-2xs leading-4">
-              <span className="text-secondary-label">Total processed</span>
-              <span className="font-medium tabular-nums text-secondary-label">
-                {formatContextWindowTokens(totalProcessedTokens)}
-              </span>
-            </div>
-          ) : null}
-          {usage.cost != null ? (
-            <div className="flex items-center justify-between gap-3 text-2xs leading-4">
-              <span className="text-secondary-label">Cost</span>
-              <span className="font-medium tabular-nums text-secondary-label">
-                {formatContextWindowCost(usage.cost)}
-              </span>
-            </div>
-          ) : null}
           {usage.compactsAutomatically ? (
-            <div className="mt-1 text-pretty text-secondary-label text-2xs font-medium">
+            <div className="text-pretty text-secondary-label text-2xs font-medium">
               {formatContextWindowCompactionMessage(modelDisplayName, usage.autoCompactThreshold)}
             </div>
           ) : null}
@@ -174,7 +172,12 @@ export function ContextWindowMeter(props: {
   );
 }
 
+/** Exact token counts for the accessible label; the chip itself stays compact. */
+function useful(value: number): string {
+  return value.toLocaleString("es-ES");
+}
+
 /** Holds the meter's footprint while a thread's activities are still loading. */
 export function ContextWindowMeterPlaceholder() {
-  return <span aria-hidden="true" className="size-7 shrink-0" />;
+  return <span aria-hidden="true" className="h-6 w-16 shrink-0" />;
 }

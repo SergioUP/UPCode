@@ -652,18 +652,6 @@ describe("ClientSettings sidebar", () => {
   });
 });
 
-describe("ClientSettings context window meter", () => {
-  it("defaults off and preserves an explicit legacy opt-in", () => {
-    expect(decodeClientSettings({}).contextWindowMeterEnabled).toBe(false);
-    expect(
-      decodeClientSettings({ contextWindowMeterEnabled: true }).contextWindowMeterEnabled,
-    ).toBe(true);
-    expect(
-      decodeClientSettingsPatch({ contextWindowMeterEnabled: true }).contextWindowMeterEnabled,
-    ).toBe(true);
-  });
-});
-
 describe("ClientSettings send shortcut", () => {
   it("defaults to Enter and validates the supported choices", () => {
     expect(decodeClientSettings({}).sendShortcut).toBe("enter");

@@ -29,14 +29,6 @@ export function ComposerProviderLimit({
           />
         }
       >
-        <span className="h-1.5 w-8 overflow-hidden rounded-full bg-muted-foreground/20" aria-hidden>
-          {remaining !== null ? (
-            <span
-              className={`block h-full rounded-full ${remaining <= 15 ? "bg-destructive" : remaining <= 35 ? "bg-warning" : "bg-success"}`}
-              style={{ width: `${remaining}%` }}
-            />
-          ) : null}
-        </span>
         <span>{remaining === null ? "—" : `${remaining}%`}</span>
       </TooltipTrigger>
       <TooltipPopup>
