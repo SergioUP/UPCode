@@ -2,7 +2,15 @@
 
 import type { EnvironmentId, Subagent } from "@t3tools/contracts";
 import { SUBAGENT_NAME_MAX_LENGTH, SUBAGENT_PROMPT_MAX_LENGTH } from "@t3tools/contracts";
-import { ArrowLeftIcon, CheckIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  CameraIcon,
+  CheckIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
+  XIcon,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useEnvironmentSettings } from "../../hooks/useSettings";
@@ -22,13 +30,9 @@ import { Input } from "../ui/input";
 import { SidebarInset } from "../ui/sidebar";
 import { Textarea } from "../ui/textarea";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
-import {
-  SUBAGENT_HUES,
-  SUBAGENT_ICONS,
-  nextSubagentLook,
-  resolveSubagentIcon,
-  subagentColor,
-} from "./subagentIcons";
+import { SUBAGENT_HUES, SUBAGENT_ICONS, nextSubagentLook, subagentColor } from "./subagentIcons";
+import { SubagentAvatar } from "./SubagentAvatar";
+import { readSubagentAvatar } from "./avatarImage";
 
 interface Draft {
   readonly id: string;
@@ -36,6 +40,8 @@ interface Draft {
   prompt: string;
   icon: string;
   hue: number;
+  /** Undefined means the glyph is used instead. */
+  avatar: string | undefined;
   tools: string;
 }
 
@@ -45,7 +51,15 @@ function newId(): string {
 
 function toDraft(subagent: Subagent | null): Draft {
   if (subagent === null) {
-    return { id: newId(), name: "", prompt: "", icon: "bot", hue: 214, tools: "" };
+    return {
+      id: newId(),
+      name: "",
+      prompt: "",
+      icon: "bot",
+      hue: 214,
+      avatar: undefined,
+      tools: "",
+    };
   }
   return {
     id: subagent.id,
@@ -53,6 +67,7 @@ function toDraft(subagent: Subagent | null): Draft {
     prompt: subagent.prompt,
     icon: subagent.icon ?? "bot",
     hue: subagent.hue ?? 214,
+    avatar: subagent.avatar,
     tools: (subagent.tools ?? []).join(", "),
   };
 }
@@ -109,6 +124,7 @@ export function SubagentsPage({ environmentId }: { readonly environmentId: Envir
       prompt: draft.prompt,
       icon: draft.icon,
       hue: draft.hue,
+      ...(draft.avatar === undefined ? {} : { avatar: draft.avatar }),
       tools: draft.tools
         .split(",")
         .map((tool) => tool.trim())
@@ -175,22 +191,18 @@ export function SubagentsPage({ environmentId }: { readonly environmentId: Envir
             </div>
           ) : (
             sorted.map((subagent) => {
-              const Icon = resolveSubagentIcon(subagent.icon);
               return (
                 <div
                   key={subagent.id}
                   className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/60 px-3 py-2.5"
                 >
-                  <span
-                    className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/60"
-                    style={{
-                      color: subagentColor(subagent.hue),
-                      background: `color-mix(in srgb, ${subagentColor(subagent.hue)} 14%, transparent)`,
-                      borderColor: `color-mix(in srgb, ${subagentColor(subagent.hue)} 35%, transparent)`,
-                    }}
-                  >
-                    <Icon className="size-4" aria-hidden />
-                  </span>
+                  <SubagentAvatar
+                    avatar={subagent.avatar}
+                    icon={subagent.icon}
+                    hue={subagent.hue}
+                    name={subagent.name}
+                    size="md"
+                  />
                   <div className="flex min-w-0 flex-col">
                     <span className="truncate text-sm font-medium">{subagent.name}</span>
                     <span className="truncate text-xs text-muted-foreground">
@@ -241,19 +253,55 @@ export function SubagentsPage({ environmentId }: { readonly environmentId: Envir
             {draft === null ? null : (
               <div className="flex flex-col gap-3">
                 <div className="flex items-start gap-3">
-                  <span
-                    className="flex size-12 shrink-0 items-center justify-center rounded-full border"
-                    style={{
-                      color: subagentColor(draft.hue),
-                      background: `color-mix(in srgb, ${subagentColor(draft.hue)} 16%, transparent)`,
-                      borderColor: `color-mix(in srgb, ${subagentColor(draft.hue)} 40%, transparent)`,
-                    }}
-                  >
-                    {(() => {
-                      const Icon = resolveSubagentIcon(draft.icon);
-                      return <Icon className="size-6" aria-hidden />;
-                    })()}
-                  </span>
+                  <div className="relative shrink-0">
+                    <SubagentAvatar
+                      avatar={draft.avatar}
+                      icon={draft.icon}
+                      hue={draft.hue}
+                      name={draft.name}
+                      size="lg"
+                    />
+                    <label
+                      className="absolute -right-1 -bottom-1 flex size-5 cursor-pointer items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-foreground"
+                      aria-label="Subir avatar"
+                    >
+                      <CameraIcon className="size-3" aria-hidden />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={(event) => {
+                          const file = event.currentTarget.files?.[0];
+                          event.currentTarget.value = "";
+                          if (file === undefined) return;
+                          void readSubagentAvatar(file).then(
+                            (avatar) => {
+                              setError(null);
+                              setDraft((current) =>
+                                current === null ? current : { ...current, avatar },
+                              );
+                            },
+                            (failure: unknown) =>
+                              setError(
+                                failure instanceof Error
+                                  ? failure.message
+                                  : "No se pudo leer la imagen.",
+                              ),
+                          );
+                        }}
+                      />
+                    </label>
+                    {draft.avatar === undefined ? null : (
+                      <button
+                        type="button"
+                        aria-label="Quitar avatar"
+                        className="absolute -top-1 -left-1 flex size-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-destructive"
+                        onClick={() => setDraft({ ...draft, avatar: undefined })}
+                      >
+                        <XIcon className="size-3" aria-hidden />
+                      </button>
+                    )}
+                  </div>
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <span className="text-xs font-medium text-muted-foreground">Nombre</span>
                     <Input
