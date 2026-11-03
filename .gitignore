@@ -17,6 +17,7 @@ release/
 release-mock/
 .t3
 .upcode/
+.upcode-dev/
 .gradle/
 .idea/
 apps/web/.playwright
