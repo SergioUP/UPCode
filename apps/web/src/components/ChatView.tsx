@@ -4617,6 +4617,21 @@ export default function ChatView(props: ChatViewProps) {
       focusComposer();
     });
   }, [focusComposer]);
+  /**
+   * Writes text at the end of the composer and puts the caret there. Used by the
+   * panels that produce usable wording (subagents, templates) so the click ends
+   * with something typed instead of a silent clipboard write.
+   */
+  const insertComposerText = useCallback(
+    (text: string): boolean => {
+      const composer = composerRef.current;
+      if (!composer) return false;
+      if (!composer.insertTextAtEnd(text, { ensureLeadingBoundary: true })) return false;
+      scheduleComposerFocus();
+      return true;
+    },
+    [composerRef, scheduleComposerFocus],
+  );
   const useArtifactTemplate = useCallback(
     (template: CodexArtifactTemplate) => {
       const composer = composerRef.current;
@@ -11321,6 +11336,7 @@ export default function ChatView(props: ChatViewProps) {
       ? { onCheckoutPullRequestRequest: openPullRequestDialog }
       : {}),
     onComposerFocusRequest: scheduleComposerFocus,
+    onInsertComposerText: insertComposerText,
     ...(isServerThread && isGitRepo ? { onOpenChanges: openChangesFromThreadPanel } : {}),
     onRunProjectScript: runProjectScript,
     onAddProjectScript: saveProjectScript,
