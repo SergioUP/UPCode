@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { EnvironmentId, Subagent } from "@t3tools/contracts";
 import { SUBAGENT_NAME_MAX_LENGTH, SUBAGENT_PROMPT_MAX_LENGTH } from "@t3tools/contracts";
@@ -239,10 +239,10 @@ export function SubagentsPage({ environmentId }: { readonly environmentId: Envir
           </DialogHeader>
           <DialogPanel>
             {draft === null ? null : (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 <div className="flex items-start gap-3">
                   <span
-                    className="flex size-14 shrink-0 items-center justify-center rounded-full border"
+                    className="flex size-12 shrink-0 items-center justify-center rounded-full border"
                     style={{
                       color: subagentColor(draft.hue),
                       background: `color-mix(in srgb, ${subagentColor(draft.hue)} 16%, transparent)`,
@@ -275,7 +275,7 @@ export function SubagentsPage({ environmentId }: { readonly environmentId: Envir
                   <Textarea
                     value={draft.prompt}
                     maxLength={SUBAGENT_PROMPT_MAX_LENGTH}
-                    rows={7}
+                    rows={4}
                     placeholder="Rol, tono, flujo de trabajo y reglas. Por ejemplo: «Revisas cambios de C# buscando fugas de recursos; respondes con una lista de hallazgos ordenados por gravedad y nunca propones cambios sin un motivo»."
                     aria-label="Instrucciones del subagente"
                     onChange={(event) => setDraft({ ...draft, prompt: event.currentTarget.value })}
@@ -313,7 +313,7 @@ export function SubagentsPage({ environmentId }: { readonly environmentId: Envir
                           aria-label={name}
                           aria-pressed={active}
                           onClick={() => setDraft({ ...draft, icon: name })}
-                          className="flex size-8 items-center justify-center rounded-md border border-border/60 hover:bg-accent/60"
+                          className="flex size-7 items-center justify-center rounded-md border border-border/60 hover:bg-accent/60"
                           style={
                             active
                               ? {
@@ -342,7 +342,7 @@ export function SubagentsPage({ environmentId }: { readonly environmentId: Envir
                           aria-label={`Color ${hue}`}
                           aria-pressed={active}
                           onClick={() => setDraft({ ...draft, hue })}
-                          className="flex size-7 items-center justify-center rounded-full border border-border/60"
+                          className="flex size-6 items-center justify-center rounded-full border border-border/60"
                           style={{ background: subagentColor(hue) }}
                         >
                           {active ? (
