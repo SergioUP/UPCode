@@ -1,10 +1,4 @@
-import {
-  ArrowLeftIcon,
-  BrainIcon,
-  ChartNoAxesColumnIcon,
-  SettingsIcon,
-  UsersIcon,
-} from "lucide-react";
+﻿import { ArrowLeftIcon, BrainIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
@@ -190,7 +184,6 @@ const UTILITY_COLORS = {
   devops: "#4c9aff",
   brain: "hsl(272 85% 70%)",
   pullRequests: "hsl(152 70% 52%)",
-  agents: "hsl(190 85% 58%)",
   usage: "hsl(40 95% 58%)",
 } as const;
 
@@ -253,11 +246,6 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigate({ to: "/brain" });
   }, [closeMobileSidebar, navigate]);
 
-  const handleAgentsClick = useCallback(() => {
-    closeMobileSidebar();
-    void navigate({ to: "/agents" });
-  }, [closeMobileSidebar, navigate]);
-
   const handleUsageClick = useCallback(() => {
     if (isMobile) {
       setOpenMobile(false);
@@ -282,7 +270,7 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
       ) : (
         <>
           <SidebarUtilityItem
-            icon={<SettingsIcon />}
+            icon={<SettingsIcon className="text-current" />}
             label="Settings"
             onClick={handleSettingsClick}
             color={UTILITY_COLORS.settings}
@@ -294,20 +282,14 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             color={UTILITY_COLORS.devops}
           />
           <SidebarUtilityItem
-            icon={<BrainIcon className="size-4" />}
+            icon={<BrainIcon className="size-4 text-current" />}
             label="Cerebro"
             onClick={handleBrainClick}
             color={UTILITY_COLORS.brain}
           />
-          <SidebarUtilityItem
-            icon={<UsersIcon className="size-4" />}
-            label="Subagentes"
-            onClick={handleAgentsClick}
-            color={UTILITY_COLORS.agents}
-          />
           {pullRequestsSupported ? (
             <SidebarUtilityItem
-              icon={<PullRequestGlyph.pullRequest />}
+              icon={<PullRequestGlyph.pullRequest className="text-current" />}
               label="Pull Requests"
               onClick={handlePullRequestsClick}
               color={UTILITY_COLORS.pullRequests}
@@ -316,7 +298,7 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
           <SidebarUtilityItem
             icon={
               <span className="relative flex items-center justify-center">
-                <ChartNoAxesColumnIcon />
+                <ChartNoAxesColumnIcon className="text-current" />
                 {allowance === null ? null : (
                   <span
                     className={cn(
