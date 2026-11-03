@@ -17,6 +17,11 @@ export const SUBAGENT_PROMPT_MAX_LENGTH = 8000;
 export const SUBAGENT_MAX_COUNT = 200;
 /** How many tool names a role may pin; empty means "the harness decides". */
 export const SUBAGENT_TOOLS_MAX = 40;
+/**
+ * A 128×128 avatar as a data URL lands around 20-40 KB; the cap only exists so
+ * a mistake cannot bloat the settings file.
+ */
+export const SUBAGENT_AVATAR_MAX_LENGTH = 200_000;
 
 export const SubagentId = TrimmedNonEmptyString.check(Schema.isMaxLength(64));
 
@@ -32,6 +37,12 @@ export const Subagent = Schema.Struct({
   icon: Schema.optionalKey(TrimmedNonEmptyString.check(Schema.isMaxLength(64))),
   /** Hue 0-359. The card and the icon are drawn in it. */
   hue: Schema.optionalKey(NonNegativeInt.check(Schema.isLessThanOrEqualTo(359))),
+  /**
+   * A picture instead of the glyph, as a small data URL the client already
+   * downscaled to 128×128. It rides in the settings JSON, so it is capped: a
+   * role is a name and a few rules, not an asset library.
+   */
+  avatar: Schema.optionalKey(Schema.String.check(Schema.isMaxLength(SUBAGENT_AVATAR_MAX_LENGTH))),
   /** The role: tone, workflow, rules. This is what the agent receives. */
   prompt: Schema.String.check(Schema.isMaxLength(SUBAGENT_PROMPT_MAX_LENGTH)),
   /**

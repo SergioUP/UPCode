@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import type { EnvironmentId } from "@t3tools/contracts";
 import { PlusIcon } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 
 import { useEnvironmentSettings } from "../../hooks/useSettings";
-import { resolveSubagentIcon, subagentColor } from "../subagents/subagentIcons";
+import { SubagentAvatar } from "../subagents/SubagentAvatar";
 import { Button } from "../ui/button";
 
 /**
@@ -52,7 +52,6 @@ export function ThreadSubagentsControl({
         </button>
       ) : (
         sorted.map((subagent) => {
-          const Icon = resolveSubagentIcon(subagent.icon);
           return (
             <button
               key={subagent.id}
@@ -64,16 +63,13 @@ export function ThreadSubagentsControl({
                   .catch(() => undefined)
               }
             >
-              <span
-                className="flex size-6 shrink-0 items-center justify-center rounded-md border"
-                style={{
-                  color: subagentColor(subagent.hue),
-                  background: `color-mix(in srgb, ${subagentColor(subagent.hue)} 14%, transparent)`,
-                  borderColor: `color-mix(in srgb, ${subagentColor(subagent.hue)} 35%, transparent)`,
-                }}
-              >
-                <Icon className="size-3.5" aria-hidden />
-              </span>
+              <SubagentAvatar
+                avatar={subagent.avatar}
+                icon={subagent.icon}
+                hue={subagent.hue}
+                name={subagent.name}
+                size="sm"
+              />
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-xs font-medium">{subagent.name}</span>
                 <span className="truncate text-3xs text-muted-foreground">
