@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { isElectron } from "../../env";
 import { useEnvironmentSettings } from "../../hooks/useSettings";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { serverEnvironment } from "../../state/server";
@@ -144,9 +145,16 @@ export function SubagentsPage({ environmentId }: { readonly environmentId: Envir
     await persist(subagents.filter((candidate) => candidate.id !== subagent.id));
   };
 
+  /** A new role starts with a look (icon + hue) nobody is using yet. */
+  const startCreate = () => {
+    const look = nextSubagentLook(subagents);
+    setError(null);
+    setDraft({ ...toDraft(null), ...look });
+  };
+
   return (
     <SidebarInset className="min-w-0">
-      <WorkspacePageHeader>
+      <WorkspacePageHeader electron={isElectron}>
         <Button variant="ghost" size="sm" onClick={navigateToMainApp}>
           <ArrowLeftIcon className="size-3.5" />
           Volver
@@ -157,23 +165,23 @@ export function SubagentsPage({ environmentId }: { readonly environmentId: Envir
             ? "roles globales, disponibles en cualquier proyecto"
             : `${subagents.length} rol${subagents.length === 1 ? "" : "es"} · globales para todos los proyectos`}
         </span>
-        <div className="min-w-0 flex-1" />
-        <Button
-          size="sm"
-          onClick={() => {
-            const look = nextSubagentLook(subagents);
-            setError(null);
-            setDraft(toDraft(null));
-            setDraft((current) => (current === null ? current : { ...current, ...look }));
-          }}
-        >
-          <PlusIcon />
-          Subagente
-        </Button>
       </WorkspacePageHeader>
 
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-gutter-both p-5">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
+          {/*
+            The create action lives in the content column, not in the header: the
+            header's right edge is where the desktop window draws minimise/close,
+            so a button there is both cramped and unclickable on a narrow window.
+            Here it sits inside the centred column, clear of the native controls.
+          */}
+          <div className="flex items-center justify-end">
+            <Button size="sm" onClick={startCreate}>
+              <PlusIcon />
+              Nuevo subagente
+            </Button>
+          </div>
+
           {error === null ? null : (
             <p className="rounded-lg border border-error/40 bg-error-surface px-3 py-2 text-xs text-error">
               {error}

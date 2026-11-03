@@ -1,3 +1,4 @@
+import { isElectron } from "../../env";
 import { usePrimaryEnvironmentId } from "../../state/environments";
 import { SidebarInset } from "../ui/sidebar";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
@@ -10,7 +11,7 @@ export function SubagentsRoute() {
   if (environmentId === null) {
     return (
       <SidebarInset className="min-w-0">
-        <WorkspacePageHeader>
+        <WorkspacePageHeader electron={isElectron}>
           <h1 className="text-base font-semibold">Subagentes</h1>
         </WorkspacePageHeader>
         <main className="p-5">
