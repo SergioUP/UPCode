@@ -1,6 +1,6 @@
 ﻿import { ArrowLeftIcon, BrainIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
-import type { ReactNode } from "react";
-import { memo, useCallback } from "react";
+import type { CSSProperties, ReactElement, ReactNode } from "react";
+import { cloneElement, isValidElement, memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 
 import { useEnvironmentIdentificationMode } from "../../hooks/useSettings";
@@ -145,6 +145,16 @@ function SidebarBrandMark({ onBackdrop }: { onBackdrop: boolean }) {
   );
 }
 
+/**
+ * Colour has to be set on the glyph itself: `SidebarMenuButton` paints every
+ * direct `svg` with `[&>svg]:text-[var(--sidebar-icon-color)]`, which outranks
+ * any class or inherited colour. An inline style on the element, however, wins.
+ */
+function colorIcon(icon: ReactNode, color: string | undefined): ReactNode {
+  if (color === undefined || !isValidElement(icon)) return icon;
+  return cloneElement(icon as ReactElement<{ style?: CSSProperties }>, { style: { color } });
+}
+
 function SidebarUtilityItem({
   icon,
   label,
@@ -168,7 +178,7 @@ function SidebarUtilityItem({
               size="icon"
               style={color === undefined ? undefined : { color }}
             >
-              {icon}
+              {colorIcon(icon, color)}
             </SidebarMenuButton>
           }
         />
