@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { VaultGraphLink, VaultGraphNode } from "@t3tools/contracts";
 import { useEffect, useMemo, useRef } from "react";
@@ -12,7 +12,7 @@ import {
   BRAIN_BACKGROUND,
   createGlowTexture,
   createLabelTexture,
-  fileExtensionColor,
+  fileColor,
   folderColor,
   nodeColorCss,
   nodeRadius,
@@ -129,7 +129,7 @@ export function BrainScene({
           color,
           transparent: true,
           // Dim on purpose: a bright halo per node washes the black out.
-          opacity: isFolder ? 0.16 : 0.3,
+          opacity: isFolder ? 0.1 : 0.22,
           blending: THREE.AdditiveBlending,
           depthWrite: false,
         }),
@@ -212,7 +212,7 @@ export function BrainScene({
     const graph = graphRef.current;
     if (graph === undefined) return;
     const composer = graph.postProcessingComposer();
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1024, 1024), 0.28, 0.55, 0.55);
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1024, 1024), 0.2, 0.45, 0.78);
     composer.addPass(bloom);
     return () => {
       composer.removePass(bloom);
@@ -303,15 +303,15 @@ export function BrainScene({
           // A cross-folder name link keeps its own colour; a containment link
           // borrows the colour of the file it hangs from, so an edge reads as
           // part of its dot's cluster.
-          if (link.kind === "sameName") return "hsl(316 90% 70%)";
+          if (link.kind === "sameName") return "#e879f9";
           const source = link.source;
           if (typeof source === "object" && source !== null && "kind" in source) {
             const node = source as BrainGraphNode;
             return node.kind === "file"
-              ? fileExtensionColor(node.extension)
+              ? fileColor(node.folder, node.extension)
               : folderColor(node.depth, true);
           }
-          return "hsl(210 20% 40%)";
+          return "#3f3f46";
         }}
         linkOpacity={0.12}
         linkWidth={(link) => (link.kind === "sameName" ? 0.7 : 0.35)}
