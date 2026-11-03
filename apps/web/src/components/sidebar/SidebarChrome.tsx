@@ -270,7 +270,7 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
       ) : (
         <>
           <SidebarUtilityItem
-            icon={<SettingsIcon />}
+            icon={<SettingsIcon className="text-current" />}
             label="Settings"
             onClick={handleSettingsClick}
             color={UTILITY_COLORS.settings}
@@ -282,14 +282,14 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             color={UTILITY_COLORS.devops}
           />
           <SidebarUtilityItem
-            icon={<BrainIcon className="size-4" />}
+            icon={<BrainIcon className="size-4 text-current" />}
             label="Cerebro"
             onClick={handleBrainClick}
             color={UTILITY_COLORS.brain}
           />
           {pullRequestsSupported ? (
             <SidebarUtilityItem
-              icon={<PullRequestGlyph.pullRequest />}
+              icon={<PullRequestGlyph.pullRequest className="text-current" />}
               label="Pull Requests"
               onClick={handlePullRequestsClick}
               color={UTILITY_COLORS.pullRequests}
@@ -298,7 +298,7 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
           <SidebarUtilityItem
             icon={
               <span className="relative flex items-center justify-center">
-                <ChartNoAxesColumnIcon />
+                <ChartNoAxesColumnIcon className="text-current" />
                 {allowance === null ? null : (
                   <span
                     className={cn(
