@@ -1,10 +1,14 @@
 /**
  * The look of the vault brain.
  *
- * Colour says **what a file is**: every extension gets its own hue (and an
- * unknown one still gets one, derived from the name, so nothing is grey by
- * accident). Folders are structure, not content, so they stay small and muted —
- * the map, not the map's legend.
+ * Colour means **which part of the vault a node belongs to**: every top-level
+ * folder gets its own hue, so a vault of markdown (almost every vault) still
+ * reads as a dozen colours instead of one. The file type modulates brightness
+ * and saturation inside that hue, so a PDF and a note from the same folder are
+ * still distinguishable.
+ *
+ * Colours are emitted as hex, not `hsl()`: three.js parses hex everywhere, and a
+ * colour it cannot parse silently falls back to white.
  *
  * @module brain/graphTheme
  */
@@ -14,68 +18,114 @@ import type { VaultGraphNode } from "@t3tools/contracts";
 /** Pure black: the nodes are the light, not the backdrop. */
 export const BRAIN_BACKGROUND = "#000000";
 
-/**
- * Hues picked to be told apart from each other on black. Keys are lowercase
- * extensions without the dot; anything else falls back to a hash colour.
- */
-const EXTENSION_COLORS: Record<string, string> = {
-  md: "hsl(205 95% 62%)",
-  pdf: "hsl(4 90% 62%)",
-  png: "hsl(330 90% 66%)",
-  jpg: "hsl(345 88% 64%)",
-  jpeg: "hsl(350 88% 64%)",
-  gif: "hsl(310 85% 66%)",
-  webp: "hsl(320 85% 64%)",
-  svg: "hsl(180 80% 58%)",
-  canvas: "hsl(272 85% 70%)",
-  json: "hsl(48 95% 60%)",
-  yaml: "hsl(38 90% 58%)",
-  yml: "hsl(42 90% 58%)",
-  csv: "hsl(160 75% 56%)",
-  xlsx: "hsl(140 80% 55%)",
-  xls: "hsl(145 80% 55%)",
-  docx: "hsl(220 85% 66%)",
-  doc: "hsl(225 85% 66%)",
-  pptx: "hsl(20 90% 60%)",
-  ppt: "hsl(15 90% 60%)",
-  txt: "hsl(210 30% 70%)",
-  zip: "hsl(30 45% 58%)",
-  exe: "hsl(0 20% 60%)",
-};
+/** Hues far enough apart that neighbouring clusters never look alike. */
+const CLUSTER_HUES = [205, 330, 152, 272, 22, 190, 48, 300, 96, 250, 350, 170];
 
-/** Distinct hues for unknown extensions, spread around the wheel. */
-function hashHue(value: string): number {
+function hashText(value: string): number {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) {
     hash ^= value.charCodeAt(index);
     hash = Math.imul(hash, 16777619);
   }
-  return (hash >>> 0) % 360;
+  return hash >>> 0;
+}
+
+/** The top-level folder is the cluster; deeper paths only refine the label. */
+export function folderClusterKey(folder: string): string {
+  const [first] = folder.split("/");
+  return first !== undefined && first.length > 0 ? first : "(raíz)";
+}
+
+const clusterHueCache = new Map<string, number>();
+
+export function clusterHue(cluster: string): number {
+  const cached = clusterHueCache.get(cluster);
+  if (cached !== undefined) return cached;
+  const hue = CLUSTER_HUES[hashText(cluster) % CLUSTER_HUES.length] ?? 205;
+  clusterHueCache.set(cluster, hue);
+  return hue;
+}
+
+/** hsl → `#rrggbb`. Everything that reaches three goes through here. */
+function hslToHex(hue: number, saturation: number, lightness: number): string {
+  const s = saturation / 100;
+  const l = lightness / 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const m = l - c / 2;
+  const sector = Math.floor((((hue % 360) + 360) % 360) / 60);
+  const [r, g, b] =
+    sector === 0
+      ? [c, x, 0]
+      : sector === 1
+        ? [x, c, 0]
+        : sector === 2
+          ? [0, c, x]
+          : sector === 3
+            ? [0, x, c]
+            : sector === 4
+              ? [x, 0, c]
+              : [c, 0, x];
+  const hex = (value: number) =>
+    Math.round((value + m) * 255)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${hex(r)}${hex(g)}${hex(b)}`;
 }
 
 /**
- * A file's colour. Unknown extensions still get a stable hue of their own, so
- * a vault full of formats never collapses into one grey mass.
+ * How a file type refracts its folder's hue: notes keep it clean, images burn
+ * brighter, documents go deeper. Unknown extensions stay in between.
  */
-export function fileExtensionColor(extension: string | undefined): string {
-  const key = (extension ?? "").toLowerCase();
-  const known = EXTENSION_COLORS[key];
-  if (known !== undefined) return known;
-  return `hsl(${hashHue(key || "sin-extension")} 78% 64%)`;
+function extensionTone(extension: string | undefined): { saturation: number; lightness: number } {
+  switch ((extension ?? "").toLowerCase()) {
+    case "md":
+    case "txt":
+      return { saturation: 92, lightness: 64 };
+    case "png":
+    case "jpg":
+    case "jpeg":
+    case "gif":
+    case "webp":
+    case "svg":
+    case "avif":
+    case "heic":
+      return { saturation: 100, lightness: 74 };
+    case "pdf":
+      return { saturation: 80, lightness: 54 };
+    case "doc":
+    case "docx":
+    case "xls":
+    case "xlsx":
+    case "csv":
+    case "pptx":
+    case "ppt":
+      return { saturation: 72, lightness: 58 };
+    case "canvas":
+    case "excalidraw":
+      return { saturation: 96, lightness: 72 };
+    default:
+      return { saturation: 70, lightness: 60 };
+  }
 }
 
-/** Structure stays quiet: one hue, low saturation, dimmed by depth. */
+/** A file wears its folder's hue, tinted by its type. */
+export function fileColor(folder: string, extension: string | undefined, seen = true): string {
+  if (!seen) return hslToHex(clusterHue(folderClusterKey(folder)), 18, 22);
+  const tone = extensionTone(extension);
+  return hslToHex(clusterHue(folderClusterKey(folder)), tone.saturation, tone.lightness);
+}
+
+/** Structure stays quiet: one cool hue, dimmed by depth. */
 export function folderColor(depth: number, seen: boolean): string {
-  if (!seen) return "hsl(215 18% 22%)";
-  const lightness = Math.max(34, 52 - depth * 3);
-  return `hsl(214 22% ${lightness}%)`;
+  if (!seen) return hslToHex(215, 16, 20);
+  return hslToHex(214, 24, Math.max(36, 54 - depth * 3));
 }
 
 /** The only entry point the scene and the legend share. */
 export function nodeColorCss(node: VaultGraphNode, seen: boolean): string {
   if (node.kind === "folder") return folderColor(node.depth, seen);
-  if (!seen) return "hsl(210 20% 24%)";
-  return fileExtensionColor(node.extension);
+  return fileColor(node.folder, node.extension, seen);
 }
 
 /**
@@ -115,8 +165,8 @@ export function createGlowTexture(size = 64): HTMLCanvasElement | null {
     size / 2,
   );
   gradient.addColorStop(0, "rgba(255,255,255,1)");
-  gradient.addColorStop(0.35, "rgba(255,255,255,0.55)");
-  gradient.addColorStop(0.7, "rgba(255,255,255,0.08)");
+  gradient.addColorStop(0.35, "rgba(255,255,255,0.45)");
+  gradient.addColorStop(0.7, "rgba(255,255,255,0.06)");
   gradient.addColorStop(1, "rgba(255,255,255,0)");
   context.fillStyle = gradient;
   context.fillRect(0, 0, size, size);

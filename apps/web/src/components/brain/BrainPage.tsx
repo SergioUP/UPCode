@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { VaultGraphSnapshot } from "@t3tools/contracts";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
@@ -23,7 +23,7 @@ import { Input } from "../ui/input";
 import { SidebarInset } from "../ui/sidebar";
 import { Spinner } from "../ui/spinner";
 import { BrainScene, type BrainGraphNode, type BrainLink } from "./BrainScene";
-import { fileExtensionColor, folderColor, nodeColorCss } from "./graphTheme";
+import { clusterHue, fileColor, folderColor, folderClusterKey, nodeColorCss } from "./graphTheme";
 import { VaultPicker, type VaultRootKind } from "./VaultPicker";
 
 const VAULT_STORAGE_KEY = "upcode:brain:vault";
@@ -110,7 +110,7 @@ export function BrainPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [extensionFilter, setExtensionFilter] = useState<string | null>(null);
+  const [clusterFilter, setClusterFilter] = useState<string | null>(null);
   const [autoRotate, setAutoRotate] = useState(true);
   const [following, setFollowing] = useState(true);
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
@@ -166,7 +166,7 @@ export function BrainPage() {
         // would draw one vault's shape with another vault's notes.
         setNodes([]);
         setSelectedId(null);
-        setExtensionFilter(null);
+        setClusterFilter(null);
       }
       current.current = graphSnapshot;
       setSnapshot(graphSnapshot);
@@ -270,10 +270,10 @@ export function BrainPage() {
   // Null means "no filter": every node keeps its colour.
   const highlightedIds = useMemo<ReadonlySet<string> | null>(() => {
     const needle = query.trim().toLowerCase();
-    if (needle.length === 0 && extensionFilter === null) return null;
+    if (needle.length === 0 && clusterFilter === null) return null;
     const matches = new Set<string>();
     for (const node of nodes) {
-      if (extensionFilter !== null && (node.extension ?? "") !== extensionFilter) continue;
+      if (clusterFilter !== null && folderClusterKey(node.folder) !== clusterFilter) continue;
       if (
         needle.length > 0 &&
         !node.label.toLowerCase().includes(needle) &&
@@ -284,23 +284,22 @@ export function BrainPage() {
       matches.add(node.id);
     }
     return matches;
-  }, [nodes, query, extensionFilter]);
+  }, [nodes, query, clusterFilter]);
 
   /**
-   * The legend: the extensions the vault actually has, biggest first, each in
-   * the colour its dots are drawn in. An unknown extension is its own colour,
-   * so it is its own legend entry too.
+   * The legend follows the colour: dots are painted by top-level folder, so the
+   * legend lists the folders that actually exist, biggest first.
    */
-  const extensions = useMemo(() => {
+  const clusters = useMemo(() => {
     if (snapshot === null) return [];
     const counts = new Map<string, number>();
     for (const node of snapshot.nodes) {
       if (node.kind !== "file") continue;
-      const key = node.extension ?? "";
+      const key = folderClusterKey(node.folder);
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     return [...counts.entries()]
-      .map(([extension, count]) => ({ extension, count }))
+      .map(([cluster, count]) => ({ cluster, count }))
       .sort((left, right) => right.count - left.count)
       .slice(0, 10);
   }, [snapshot]);
@@ -483,21 +482,22 @@ export function BrainPage() {
             ) : null}
           </div>
           <div className="pointer-events-auto flex flex-wrap gap-1">
-            {extensions.map((entry) => {
-              const active = extensionFilter === entry.extension;
-              const color = fileExtensionColor(entry.extension);
+            {clusters.map((entry) => {
+              const active = clusterFilter === entry.cluster;
               return (
                 <button
-                  key={entry.extension || "(sin extensión)"}
+                  key={entry.cluster}
                   type="button"
-                  onClick={() => setExtensionFilter(active ? null : entry.extension)}
+                  onClick={() => setClusterFilter(active ? null : entry.cluster)}
                   className="flex items-center gap-1.5 rounded-full border border-white/10 px-2 py-0.5 hover:border-white/40"
-                  style={{ opacity: extensionFilter === null || active ? 1 : 0.4 }}
+                  style={{ opacity: clusterFilter === null || active ? 1 : 0.4 }}
                 >
-                  <span aria-hidden className="size-2 rounded-full" style={{ background: color }} />
-                  <span className="max-w-32 truncate font-mono">
-                    {entry.extension.length === 0 ? "sin ext." : `.${entry.extension}`}
-                  </span>
+                  <span
+                    aria-hidden
+                    className="size-2 rounded-full"
+                    style={{ background: fileColor(entry.cluster, "md") }}
+                  />
+                  <span className="max-w-32 truncate">{entry.cluster}</span>
                   <span className="text-white/35">{entry.count}</span>
                 </button>
               );

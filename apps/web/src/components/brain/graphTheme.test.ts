@@ -3,7 +3,9 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   BRAIN_BACKGROUND,
-  fileExtensionColor,
+  clusterHue,
+  fileColor,
+  folderClusterKey,
   folderColor,
   nodeColorCss,
   nodeRadius,
@@ -13,7 +15,7 @@ import {
 function node(overrides: Partial<VaultGraphNode> = {}): VaultGraphNode {
   return {
     id: "docs/guias/INICIO.md",
-    label: "INDEX.md",
+    label: "INICIO.md",
     kind: "file",
     folder: "docs/guias",
     extension: "md",
@@ -26,34 +28,38 @@ function node(overrides: Partial<VaultGraphNode> = {}): VaultGraphNode {
 }
 
 describe("graphTheme", () => {
-  it("draws on pure black so the nodes carry the light", () => {
+  it("draws on pure black with hex colours three can always parse", () => {
     expect(BRAIN_BACKGROUND).toBe("#000000");
+    // a white fallback would be the symptom of an unparsable colour
+    expect(fileColor("docs/guias", "md")).toMatch(/^#[0-9a-f]{6}$/);
+    expect(folderColor(2, true)).toMatch(/^#[0-9a-f]{6}$/);
   });
 
-  it("gives every extension its own colour, known or not", () => {
-    const known = ["md", "pdf", "png", "json", "canvas", "xlsx"].map((extension) =>
-      fileExtensionColor(extension),
+  it("gives each top-level folder its own hue so a markdown vault is colourful", () => {
+    expect(folderClusterKey("docs/guias/2026")).toBe("docs");
+    expect(folderClusterKey("")).toBe("(raíz)");
+
+    const hues = ["docs", "clientes", "proyectos", "formacion", "mejoras"].map((folder) =>
+      clusterHue(folder),
     );
-    expect(new Set(known).size).toBe(known.length);
-
-    // An extension nobody mapped still gets a stable hue instead of grey.
-    const unknown = fileExtensionColor("customext");
-    expect(unknown).toMatch(/^hsl\(/);
-    expect(fileExtensionColor("customext")).toBe(unknown);
-    expect(unknown).not.toBe(fileExtensionColor("otraext"));
+    // Five different clusters must not collapse into one hue.
+    expect(new Set(hues).size).toBeGreaterThanOrEqual(4);
   });
 
-  it("colours files by extension and folders as quiet structure", () => {
-    const note = nodeColorCss(node(), true);
-    const image = nodeColorCss(node({ extension: "png" }), true);
-    const folder = nodeColorCss(node({ kind: "folder", id: "docs/guias" }), true);
+  it("keeps the same folder family even when the file type differs", () => {
+    const note = fileColor("docs", "md");
+    const image = fileColor("docs", "png");
+    const otherFolder = fileColor("clientes", "md");
 
+    // A type changes the tone, a folder changes the hue.
     expect(note).not.toBe(image);
-    expect(folder).not.toBe(note);
-    // Folders are one family: only the depth makes them differ.
-    expect(folderColor(1, true)).not.toBe(folderColor(5, true));
-    // Two notes in different folders are the same kind of thing.
-    expect(nodeColorCss(node({ id: "otra/nota.md", folder: "OTRA" }), true)).toBe(note);
+    expect(note).not.toBe(otherFolder);
+    expect(nodeColorCss(node(), true)).toBe(note);
+  });
+
+  it("dims what a filter turned off", () => {
+    expect(nodeColorCss(node(), false)).not.toBe(nodeColorCss(node(), true));
+    expect(fileColor("docs", "md", false)).not.toBe(fileColor("docs", "md", true));
   });
 
   it("keeps folders small enough to be a skeleton, not the picture", () => {
@@ -62,7 +68,6 @@ describe("graphTheme", () => {
     const file = nodeRadius(node({ kind: "file", degree: 0 }));
 
     expect(foldedFolder).toBeGreaterThan(file);
-    // Even a huge folder stays close to a leaf dot.
     expect(folder).toBeLessThan(file * 3.5);
   });
 
