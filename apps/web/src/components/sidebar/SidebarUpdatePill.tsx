@@ -216,6 +216,31 @@ function SidebarUpdateControl() {
     }
   }, [prefersReducedMotion, state?.status]);
 
+  /**
+   * A poll that finds a new version used to change nothing but a 16px icon in
+   * the corner, which is easy to miss entirely. Announce it once - but not the
+   * update that was already waiting when the app opened, or every launch would
+   * nag until it is installed.
+   */
+  const availableVersion = state?.status === "available" ? state.availableVersion : null;
+  const announcedVersionRef = useRef<string | null>(null);
+  const sawFirstStateRef = useRef(false);
+  useEffect(() => {
+    if (state === null) return;
+    if (!sawFirstStateRef.current) {
+      sawFirstStateRef.current = true;
+      announcedVersionRef.current = availableVersion;
+      return;
+    }
+    if (availableVersion === null || announcedVersionRef.current === availableVersion) return;
+    announcedVersionRef.current = availableVersion;
+    toastManager.add({
+      type: "info",
+      title: `UPCode ${availableVersion} is available`,
+      description: "Download it from the update button at the bottom of the sidebar.",
+    });
+  }, [availableVersion, state]);
+
   const action = state ? resolveDesktopUpdateButtonAction(state) : "none";
   const isDownloading = state?.status === "downloading";
   // Remote servers follow this app to the version it is about to install.
@@ -393,7 +418,8 @@ function SidebarUpdateControl() {
         isInteractionDisabled ? "cursor-not-allowed" : "cursor-pointer",
         showUpdateIconState
           ? cn(
-              "bg-sidebar-control-surface text-sidebar-foreground",
+              "bg-sidebar-control-surface",
+              iconStatus === "available" ? "text-primary" : "text-sidebar-foreground",
               !isInteractionDisabled && "hover:bg-sidebar-row-hover",
             )
           : cn(
