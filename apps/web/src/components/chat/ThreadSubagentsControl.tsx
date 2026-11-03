@@ -1,28 +1,66 @@
 ﻿"use client";
 
-import type { EnvironmentId } from "@t3tools/contracts";
+import type { EnvironmentId, Subagent } from "@t3tools/contracts";
 import { PlusIcon } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 
 import { useEnvironmentSettings } from "../../hooks/useSettings";
 import { SubagentAvatar } from "../subagents/SubagentAvatar";
 import { Button } from "../ui/button";
+import { toastManager } from "../ui/toast";
 
 /**
  * The thread's view of the global subagents.
  *
- * It lists the roles the user defined and hands the text to ask for one to the
- * clipboard, because the delegated run has to start from the conversation: this
- * panel can describe a role, but it cannot open a child thread on its own.
+ * Clicking a role writes the opening of the request into the thread's composer,
+ * because the delegated run has to start from the conversation: this panel can
+ * describe a role, but it cannot open a child thread on its own. Before, the
+ * click only wrote to the clipboard and said nothing, so it looked like a dud
+ * button.
  */
 export function ThreadSubagentsControl({
   environmentId,
+  onInsertComposerText,
 }: {
   readonly environmentId: EnvironmentId;
+  /** Returns false when there is no composer to write into. */
+  readonly onInsertComposerText?: ((text: string) => boolean) | undefined;
 }) {
   const navigate = useNavigate();
   const subagents = useEnvironmentSettings(environmentId, (settings) => settings.subagents);
   const sorted = [...subagents].sort((left, right) => left.name.localeCompare(right.name));
+
+  const askForRole = (subagent: Subagent) => {
+    const instruction = `Usa el subagente "${subagent.name}" para: `;
+
+    if (onInsertComposerText?.(instruction) === true) {
+      toastManager.add({
+        type: "info",
+        title: subagent.name,
+        description: "El encargo está en el mensaje: escribe la tarea y envíalo.",
+      });
+      return;
+    }
+
+    // No composer (another thread is open, or the panel is showing a draft):
+    // leave the text on the clipboard rather than doing nothing at all.
+    void navigator.clipboard.writeText(instruction).then(
+      () => {
+        toastManager.add({
+          type: "info",
+          title: subagent.name,
+          description: "Copiado: pégalo en el mensaje con Ctrl+V.",
+        });
+      },
+      () => {
+        toastManager.add({
+          type: "error",
+          title: "No se pudo copiar el encargo",
+          description: "El portapapeles no está disponible.",
+        });
+      },
+    );
+  };
 
   return (
     <div className="flex flex-col">
@@ -57,11 +95,7 @@ export function ThreadSubagentsControl({
               key={subagent.id}
               type="button"
               className="flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left hover:bg-accent/50"
-              onClick={() =>
-                void navigator.clipboard
-                  .writeText(`Usa el subagente "${subagent.name}" para: `)
-                  .catch(() => undefined)
-              }
+              onClick={() => askForRole(subagent)}
             >
               <SubagentAvatar
                 avatar={subagent.avatar}

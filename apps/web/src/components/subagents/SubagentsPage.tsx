@@ -204,22 +204,33 @@ export function SubagentsPage({ environmentId }: { readonly environmentId: Envir
                   key={subagent.id}
                   className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/60 px-3 py-2.5"
                 >
-                  <SubagentAvatar
-                    avatar={subagent.avatar}
-                    icon={subagent.icon}
-                    hue={subagent.hue}
-                    name={subagent.name}
-                    size="md"
-                  />
-                  <div className="flex min-w-0 flex-col">
-                    <span className="truncate text-sm font-medium">{subagent.name}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {subagent.prompt.trim().length === 0
-                        ? "Sin instrucciones"
-                        : subagent.prompt.trim().slice(0, 120)}
+                  {/* The whole row opens the editor; before, only the pencil did and
+                      clicking the card looked broken. */}
+                  <button
+                    type="button"
+                    aria-label={`Editar ${subagent.name}`}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    onClick={() => {
+                      setError(null);
+                      setDraft(toDraft(subagent));
+                    }}
+                  >
+                    <SubagentAvatar
+                      avatar={subagent.avatar}
+                      icon={subagent.icon}
+                      hue={subagent.hue}
+                      name={subagent.name}
+                      size="md"
+                    />
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate text-sm font-medium">{subagent.name}</span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {subagent.prompt.trim().length === 0
+                          ? "Sin instrucciones"
+                          : subagent.prompt.trim().slice(0, 120)}
+                      </span>
                     </span>
-                  </div>
-                  <div className="min-w-0 flex-1" />
+                  </button>
                   <Button
                     variant="ghost"
                     size="icon-sm"

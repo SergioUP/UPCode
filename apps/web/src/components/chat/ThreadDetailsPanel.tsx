@@ -59,6 +59,8 @@ export interface ThreadDetailsPanelProps extends Pick<
   onStartFromOriginChange: (startFromOrigin: boolean) => void;
   onCheckoutPullRequestRequest?: (reference: string) => void;
   onComposerFocusRequest: () => void;
+  /** Writes text into the composer; false when there is no composer to write into. */
+  onInsertComposerText?: (text: string) => boolean;
   onOpenChanges?: () => void;
   onRunProjectScript: (script: ProjectScript) => void;
   onAddProjectScript: (input: NewProjectScriptInput) => Promise<ProjectScriptActionResult>;
@@ -199,7 +201,10 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
               title="Subagentes"
               separated
             >
-              <ThreadSubagentsControl environmentId={props.environmentId} />
+              <ThreadSubagentsControl
+                environmentId={props.environmentId}
+                onInsertComposerText={props.onInsertComposerText}
+              />
             </ThreadDetailsSection>
           ) : null}
 
