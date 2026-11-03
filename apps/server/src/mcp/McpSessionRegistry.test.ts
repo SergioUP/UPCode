@@ -49,7 +49,7 @@ it.effect("stores only a token hash, resolves the bearer token, and revokes by t
     const resolved = yield* registry.resolve(token);
     expect(resolved?.thread.threadId).toBe(threadId);
     expect(resolved?.capabilities).toEqual(
-      new Set(["preview", "orchestration", "worktree", "pull-requests"]),
+      new Set(["preview", "orchestration", "worktree", "pull-requests", "ssh"]),
     );
 
     yield* registry.revokeThread(threadId);
@@ -86,17 +86,20 @@ it.effect("always grants pull-requests and gates browser and device access indep
       "orchestration",
       "preview",
       "pull-requests",
+      "ssh",
       "worktree",
     ]);
     expect(yield* capabilitiesOf(withoutPreview)).toEqual([
       "orchestration",
       "pull-requests",
+      "ssh",
       "worktree",
     ]);
     expect(yield* capabilitiesOf(withDevice)).toEqual([
       "device",
       "orchestration",
       "pull-requests",
+      "ssh",
       "worktree",
     ]);
   }),
@@ -152,7 +155,7 @@ it.effect("keeps a credential alive across turns that never touch an MCP tool", 
     const token = issued.config.authorizationHeader.replace(/^Bearer\s+/, "");
 
     // Well past the liveness window in total, but each turn reports in before
-    // it lapses — this is the long-session case that used to lose the toolkit.
+    // it lapses â€” this is the long-session case that used to lose the toolkit.
     for (let turn = 0; turn < 10; turn += 1) {
       timestamp += 99;
       yield* registry.touch(threadId);

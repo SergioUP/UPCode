@@ -1,4 +1,10 @@
-﻿import { ArrowLeftIcon, BrainIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
+﻿import {
+  ArrowLeftIcon,
+  BrainIcon,
+  ChartNoAxesColumnIcon,
+  SettingsIcon,
+  VaultIcon,
+} from "lucide-react";
 import type { CSSProperties, ReactElement, ReactNode } from "react";
 import { cloneElement, isValidElement, memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
@@ -193,6 +199,7 @@ const UTILITY_COLORS = {
   settings: "hsl(220 12% 62%)",
   devops: "#4c9aff",
   brain: "hsl(272 85% 70%)",
+  vault: "hsl(32 65% 60%)",
   pullRequests: "hsl(152 70% 52%)",
   usage: "hsl(40 95% 58%)",
 } as const;
@@ -256,6 +263,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigate({ to: "/brain" });
   }, [closeMobileSidebar, navigate]);
 
+  const handleVaultClick = useCallback(() => {
+    closeMobileSidebar();
+    void navigate({ to: "/vault" });
+  }, [closeMobileSidebar, navigate]);
+
   const handleUsageClick = useCallback(() => {
     if (isMobile) {
       setOpenMobile(false);
@@ -296,6 +308,12 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             label="Cerebro"
             onClick={handleBrainClick}
             color={UTILITY_COLORS.brain}
+          />
+          <SidebarUtilityItem
+            icon={<VaultIcon className="size-4 text-current" />}
+            label="Baúl"
+            onClick={handleVaultClick}
+            color={UTILITY_COLORS.vault}
           />
           {pullRequestsSupported ? (
             <SidebarUtilityItem

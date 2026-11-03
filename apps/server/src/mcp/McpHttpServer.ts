@@ -55,6 +55,9 @@ import { PullRequestsToolkit } from "./toolkits/pullRequests/tools.ts";
 import * as AzureDevOpsHandlers from "./toolkits/azureDevOps/handlers.ts";
 import { AzureDevOpsToolkit } from "./toolkits/azureDevOps/tools.ts";
 import * as AzureWorkItemMcpService from "./toolkits/azureDevOps/service.ts";
+import * as SshHandlers from "./toolkits/ssh/handlers.ts";
+import { SshToolkit } from "./toolkits/ssh/tools.ts";
+import * as SshServerService from "../ssh/SshServerService.ts";
 import * as DeviceHandlers from "./toolkits/device/handlers.ts";
 import {
   DeviceScreenshotTool,
@@ -855,6 +858,10 @@ export const layerAzureDevOpsToolkit = toolkitRegistration(
   AzureDevOpsHandlers.layer,
 ).pipe(Layer.provide(AzureWorkItemMcpService.layer));
 
+export const layerSshToolkit = toolkitRegistration(SshToolkit, SshHandlers.layer).pipe(
+  Layer.provide(SshServerService.layer),
+);
+
 const layerDeviceStandardToolkitRegistration = toolkitRegistration(
   DeviceStandardToolkit,
   DeviceHandlers.layerStandard,
@@ -890,6 +897,7 @@ export const layer = Layer.mergeAll(
   layerWorktreeToolkitRegistration,
   layerPullRequestsToolkit,
   layerAzureDevOpsToolkit,
+  layerSshToolkit,
   layerDeviceToolkit,
   layerHtmlToolkit,
 ).pipe(Layer.provideMerge(layerMcpTransport));

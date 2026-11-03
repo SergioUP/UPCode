@@ -45,6 +45,7 @@ import {
   IncidentStoreError,
 } from "./incident.ts";
 import { VaultGraphError, VaultGraphScanInput, VaultGraphSnapshot } from "./vaultGraph.ts";
+import { SshConnectionReport, SshError, SshServerTarget } from "./sshServers.ts";
 import { NonNegativeInt, TrimmedNonEmptyString } from "./baseSchemas.ts";
 import {
   CodexAuthCallbackInput,
@@ -524,6 +525,7 @@ export const WS_METHODS = {
   incidentsList: "incidents.list",
   incidentsMutate: "incidents.mutate",
   vaultGraphScan: "vaultGraph.scan",
+  sshTestServer: "ssh.testServer",
   serverSearchAcpRegistry: "server.searchAcpRegistry",
   serverPrepareAcpRegistryAgent: "server.prepareAcpRegistryAgent",
   serverUninstallAcpRegistryManagedBinary: "server.uninstallAcpRegistryManagedBinary",
@@ -985,6 +987,12 @@ const WsVaultGraphScanRpc = Rpc.make(WS_METHODS.vaultGraphScan, {
   payload: VaultGraphScanInput,
   success: VaultGraphSnapshot,
   error: Schema.Union([VaultGraphError, EnvironmentAuthorizationError]),
+});
+
+const WsSshTestServerRpc = Rpc.make(WS_METHODS.sshTestServer, {
+  payload: SshServerTarget,
+  success: SshConnectionReport,
+  error: Schema.Union([SshError, EnvironmentAuthorizationError]),
 });
 
 const WsServerSearchAcpRegistryRpc = Rpc.make(WS_METHODS.serverSearchAcpRegistry, {
@@ -2307,6 +2315,7 @@ export const WsRpcGroupUpango = RpcGroup.make(
   WsIncidentsListRpc,
   WsIncidentsMutateRpc,
   WsVaultGraphScanRpc,
+  WsSshTestServerRpc,
 );
 
 /** Every RPC the server answers, in one group for clients, relay and tests. */

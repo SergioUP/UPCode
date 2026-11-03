@@ -19,6 +19,7 @@ const ALL_MCP_CAPABILITIES = [
   "pull-requests",
   "incident",
   "azure-devops",
+  "ssh",
 ] as const;
 export type McpCapability = (typeof ALL_MCP_CAPABILITIES)[number];
 

@@ -240,6 +240,7 @@ import * as AzureDevOpsWorkspace from "./azureDevOpsWorkspace.ts";
 import * as AzureDevOpsAzCli from "./azureDevOpsAzCli.ts";
 import * as IncidentStore from "./incidents/incidentStore.ts";
 import * as VaultGraphScanner from "./vaultGraph/VaultGraphScanner.ts";
+import * as SshServerService from "./ssh/SshServerService.ts";
 import * as OtlpEndpointCheck from "./observability/OtlpEndpointCheck.ts";
 import * as SourceControlRepositoryService from "./sourceControl/SourceControlRepositoryService.ts";
 import * as SourceControlBuiltInDrivers from "./sourceControl/builtInDrivers.ts";
@@ -3175,9 +3176,11 @@ const layerWsRpcUpango = () =>
       const azureDevOpsAzCli = yield* AzureDevOpsAzCli.make;
       const incidentStore = yield* IncidentStore.make;
       const vaultGraphScanner = yield* VaultGraphScanner.make;
+      const sshServerService = yield* SshServerService.make;
       yield* incidentStore.list().pipe(Effect.ignore);
       return ServerWsRpcGroupUpango.of({
         [WS_METHODS.vaultGraphScan]: (input) => vaultGraphScanner.scan(input),
+        [WS_METHODS.sshTestServer]: (input) => sshServerService.test(input.server),
         [WS_METHODS.azureDevOpsConfig]: () => azureDevOpsWorkspace.config,
         [WS_METHODS.azureDevOpsListProjects]: () => azureDevOpsWorkspace.listProjects,
         [WS_METHODS.azureDevOpsListWorkItems]: (input) =>

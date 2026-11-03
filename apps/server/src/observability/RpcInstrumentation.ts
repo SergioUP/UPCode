@@ -138,6 +138,7 @@ const RPC_AGGREGATES = {
   [WS_METHODS.incidentsList]: "incidents",
   [WS_METHODS.incidentsMutate]: "incidents",
   [WS_METHODS.vaultGraphScan]: "vault-graph",
+  [WS_METHODS.sshTestServer]: "vault",
   [WS_METHODS.azureDevOpsGetWorkItem]: "azure-devops",
   [WS_METHODS.azureDevOpsListRepositories]: "azure-devops",
   [WS_METHODS.azureDevOpsListBranches]: "azure-devops",

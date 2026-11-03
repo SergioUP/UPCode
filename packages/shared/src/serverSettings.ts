@@ -409,6 +409,8 @@ export function applyServerSettingsPatch(
     projectPrompts: projectPromptsPatch,
     // Roles are replaced whole: a merge would resurrect a deleted one.
     subagents: subagentsPatch,
+    // Servers are replaced whole: a merge would resurrect a deleted one.
+    sshServers: sshServersPatch,
     // Already translated into `projectSettingsOverrides` above; the legacy
     // maps are derived views and must never be merged directly.
     projectAgentBrowserAccessOverrides: _legacyBrowserAccess,
@@ -505,6 +507,7 @@ export function applyServerSettingsPatch(
       : { azureDevOpsThreadLinks: azureDevOpsThreadLinksPatch }),
     ...(projectPromptsPatch === undefined ? {} : { projectPrompts: projectPromptsPatch }),
     ...(subagentsPatch === undefined ? {} : { subagents: subagentsPatch }),
+    ...(sshServersPatch === undefined ? {} : { sshServers: sshServersPatch }),
     favorites,
     providerModelPreferences: nextModelPreferences,
     ...(worktreeCleanupPatch === undefined

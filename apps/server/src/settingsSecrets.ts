@@ -3,6 +3,8 @@ import {
   ClaudeSettings,
   CodexSettings,
   type ServerSettings,
+  SETTINGS_SECRET_REDACTED,
+  SSH_SERVER_SECRET_FIELDS,
   UsageLimitSourceConfig,
   secretSettingsFields,
 } from "@t3tools/contracts";
@@ -18,8 +20,9 @@ import {
   sourceControlHostSecretName,
   writeSecretFieldValues,
 } from "./sourceControl/sourceControlHostSecrets.ts";
+import { sshServerSecretName } from "./ssh/sshServerSecrets.ts";
 
-export const SECRET_REDACTED = "\u2022\u2022\u2022\u2022\u2022\u2022";
+export const SECRET_REDACTED = SETTINGS_SECRET_REDACTED;
 
 const providerSecretFields = new Map([
   ["codex", secretSettingsFields(CodexSettings)],
@@ -146,5 +149,17 @@ export function mapSettingsSecrets(
     ]),
   ) as ServerSettings["usageLimitSources"];
 
-  return { ...settings, providerInstances, sourceControlHosts, usageLimitSources };
+  const sshServers = settings.sshServers.map((server) =>
+    mapFields(server, SSH_SERVER_SECRET_FIELDS, (field) =>
+      sshServerSecretName({ id: server.id, field }),
+    ),
+  );
+
+  return {
+    ...settings,
+    providerInstances,
+    sourceControlHosts,
+    usageLimitSources,
+    sshServers,
+  } as unknown as ServerSettings;
 }

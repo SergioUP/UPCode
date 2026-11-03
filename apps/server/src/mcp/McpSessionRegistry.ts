@@ -142,6 +142,8 @@ const makeWithOptions = Effect.fn("McpSessionRegistry.make")(function* (
           "orchestration",
           "worktree",
           "pull-requests",
+          // The Vault tools gate every call on the server's own `agentAccess`.
+          "ssh",
           ...(request.capabilities ?? (browserToolsAvailable ? (["preview"] as const) : [])),
           // Incident Center is opt-in per conversation: a normal T3 thread
           // never gets this capability, so the incident tools refuse every call.
