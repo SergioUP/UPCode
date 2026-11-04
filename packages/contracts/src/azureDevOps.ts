@@ -1,3 +1,4 @@
+import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 
 /** Azure DevOps work-item identity is stable across threads and repositories. */
@@ -13,6 +14,7 @@ export const AzureDevOpsProject = Schema.Struct({
   name: Schema.String,
   url: Schema.String,
 });
+export type AzureDevOpsProject = typeof AzureDevOpsProject.Type;
 export const AzureDevOpsWorkItemComment = Schema.Struct({
   id: Schema.Int,
   author: Schema.String,
@@ -74,6 +76,8 @@ export const AzureDevOpsWorkItem = Schema.Struct({
   fields: Schema.optionalKey(Schema.Array(AzureDevOpsWorkItemField)),
   /** Title of the parent task, so a list can show what the sub-task belongs to. */
   parentTitle: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  /** Tracker-native human key, such as a Jira `TAREA-96`. Azure items have none. */
+  key: Schema.optionalKey(Schema.NullOr(Schema.String)),
   /** Hours from `Microsoft.VSTS.Scheduling.*`: planned, spent and pending. */
   originalEstimate: Schema.optionalKey(Schema.NullOr(Schema.Number)),
   completedWork: Schema.optionalKey(Schema.NullOr(Schema.Number)),
@@ -130,6 +134,24 @@ export const AzureDevOpsAzCliStatus = Schema.Struct({
   account: Schema.NullOr(Schema.String),
 });
 export type AzureDevOpsAzCliStatus = typeof AzureDevOpsAzCliStatus.Type;
+
+/**
+ * Which tracker the tasks section talks to. Azure is the default so an
+ * environment that never opts in behaves exactly as before.
+ */
+export const TrackerProvider = Schema.Literals(["azure", "jira"]);
+export type TrackerProvider = typeof TrackerProvider.Type;
+
+/** The Jira Cloud connection: site, the account e-mail and its API token. */
+export const JiraSettings = Schema.Struct({
+  site: Schema.String.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
+  email: Schema.String.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
+  /** Stored in the server's secret store; clients only ever see the redaction marker. */
+  apiToken: Schema.String.annotateKey({ settingsSecret: true }).pipe(
+    Schema.withDecodingDefault(Effect.succeed("")),
+  ),
+});
+export type JiraSettings = typeof JiraSettings.Type;
 
 export class AzureDevOpsWorkspaceError extends Schema.TaggedError<AzureDevOpsWorkspaceError>()(
   "AzureDevOpsWorkspaceError",

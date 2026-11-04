@@ -819,6 +819,14 @@ export const SETTINGS_SEARCH_ITEMS = [
     scope: "environment-defaults",
   },
   {
+    id: "task-tracker",
+    title: "Proveedor de tareas",
+    to: "/settings/source-control",
+    searchTerms: ["tareas jira azure devops proveedor tracker atlassian proyectos tablero"],
+    environmentOnly: true,
+    scope: "environment-defaults",
+  },
+  {
     id: "worktree-branch-naming",
     title: "Worktree branch naming",
     to: "/settings/source-control",

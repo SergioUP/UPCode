@@ -236,7 +236,7 @@ import { pullRequestSyncKey } from "./pullRequest/pullRequestSyncKey.ts";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as PullRequestSyncReactor from "./orchestration-v2/PullRequestSyncReactor.ts";
 import * as SourceControlDiscovery from "./sourceControl/SourceControlDiscovery.ts";
-import * as AzureDevOpsWorkspace from "./azureDevOpsWorkspace.ts";
+import * as Tracker from "./tracker.ts";
 import * as AzureDevOpsAzCli from "./azureDevOpsAzCli.ts";
 import * as IncidentStore from "./incidents/incidentStore.ts";
 import * as VaultGraphScanner from "./vaultGraph/VaultGraphScanner.ts";
@@ -3172,7 +3172,7 @@ const layerWsRpcUpango = () =>
   ServerWsRpcGroupUpango.toLayer(
     Effect.gen(function* () {
       const serverSettings = yield* ServerSettings.ServerSettingsService;
-      const azureDevOpsWorkspace = yield* AzureDevOpsWorkspace.make;
+      const tracker = yield* Tracker.make;
       const azureDevOpsAzCli = yield* AzureDevOpsAzCli.make;
       const incidentStore = yield* IncidentStore.make;
       const vaultGraphScanner = yield* VaultGraphScanner.make;
@@ -3181,35 +3181,34 @@ const layerWsRpcUpango = () =>
       return ServerWsRpcGroupUpango.of({
         [WS_METHODS.vaultGraphScan]: (input) => vaultGraphScanner.scan(input),
         [WS_METHODS.sshTestServer]: (input) => sshServerService.test(input.server),
-        [WS_METHODS.azureDevOpsConfig]: () => azureDevOpsWorkspace.config,
-        [WS_METHODS.azureDevOpsListProjects]: () => azureDevOpsWorkspace.listProjects,
+        [WS_METHODS.azureDevOpsConfig]: () => tracker.config,
+        [WS_METHODS.azureDevOpsListProjects]: () => tracker.listProjects,
         [WS_METHODS.azureDevOpsListWorkItems]: (input) =>
-          azureDevOpsWorkspace.listWorkItems(
+          tracker.listWorkItems(
             input.project,
             input.assignedToMe,
             input.query,
             input.type,
             input.iteration,
           ),
-        [WS_METHODS.azureDevOpsMyWorkItems]: () => azureDevOpsWorkspace.listAssignedWorkItems(),
+        [WS_METHODS.azureDevOpsMyWorkItems]: () => tracker.listAssignedWorkItems(),
         [WS_METHODS.azureDevOpsListWorkItemStates]: (input) =>
-          azureDevOpsWorkspace.listWorkItemStates(input.projects, input.type),
+          tracker.listWorkItemStates(input.projects, input.type),
         [WS_METHODS.azureDevOpsAzCliStatus]: () => azureDevOpsAzCli.status(),
         [WS_METHODS.azureDevOpsAzCliOpen]: () => azureDevOpsAzCli.open(),
         [WS_METHODS.incidentsList]: () => incidentStore.list(),
         [WS_METHODS.incidentsMutate]: (input) => incidentStore.mutateAll(input),
         [WS_METHODS.azureDevOpsGetWorkItem]: (input) =>
-          azureDevOpsWorkspace.getWorkItem(input.project, input.id),
+          tracker.getWorkItem(input.project, input.id),
         [WS_METHODS.azureDevOpsListRepositories]: (input) =>
-          azureDevOpsWorkspace.listRepositories(input.project),
+          tracker.listRepositories(input.project),
         [WS_METHODS.azureDevOpsListBranches]: (input) =>
-          azureDevOpsWorkspace.listBranches(input.project, input.repositoryId),
+          tracker.listBranches(input.project, input.repositoryId),
         [WS_METHODS.azureDevOpsListPullRequests]: (input) =>
-          azureDevOpsWorkspace.listPullRequests(input.project, input.repositoryId),
+          tracker.listPullRequests(input.project, input.repositoryId),
         [WS_METHODS.azureDevOpsGetPullRequestDetail]: (input) =>
-          azureDevOpsWorkspace.getPullRequestDetail(input.project, input.repositoryId, input.id),
-        [WS_METHODS.azureDevOpsUpdateWorkItem]: (input) =>
-          azureDevOpsWorkspace.updateWorkItem(input),
+          tracker.getPullRequestDetail(input.project, input.repositoryId, input.id),
+        [WS_METHODS.azureDevOpsUpdateWorkItem]: (input) => tracker.updateWorkItem(input),
         [WS_METHODS.azureDevOpsThreadLinks]: () =>
           serverSettings.getSettings.pipe(
             Effect.map((settings) => settings.azureDevOpsThreadLinks),

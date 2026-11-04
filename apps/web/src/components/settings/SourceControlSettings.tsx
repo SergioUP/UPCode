@@ -48,6 +48,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { GitIcon, JujutsuIcon, type Icon } from "../Icons";
 import { SourceControlHostSettings } from "./SourceControlHostSettings";
 import { AzureCliSettings } from "./AzureCliSettings";
+import { TaskTrackerSettings } from "./TaskTrackerSettings";
 import { GitHubAccountSettings } from "./GitHubAccountSettings";
 import { GitHubTokenSettings } from "./GitHubTokenSettings";
 import { RedactedSensitiveText } from "./RedactedSensitiveText";
@@ -586,6 +587,7 @@ export function SourceControlSettingsPanel() {
           <AzureCliSettings environmentId={environmentId} />
         </SettingsSection>
       ) : null}
+      {environmentId !== null ? <TaskTrackerSettings /> : null}
       {environmentId === null ? (
         <SettingsSection id={searchableSetting("source-control").id} title="Server environment">
           <p className="px-4 py-3 text-sm text-muted-foreground">

@@ -2,6 +2,7 @@ import {
   AntigravitySettings,
   ClaudeSettings,
   CodexSettings,
+  JiraSettings,
   type ServerSettings,
   SETTINGS_SECRET_REDACTED,
   SSH_SERVER_SECRET_FIELDS,
@@ -34,6 +35,7 @@ const providerSecretFields = new Map([
   ),
 ]);
 const usageLimitSecretFields = secretSettingsFields(UsageLimitSourceConfig);
+const JIRA_SECRET_FIELDS = secretSettingsFields(JiraSettings);
 const encode = (value: string) => Buffer.from(value, "utf8").toString("base64url");
 
 export interface SettingsSecret {
@@ -155,11 +157,14 @@ export function mapSettingsSecrets(
     ),
   );
 
+  const jira = mapFields(settings.jira, JIRA_SECRET_FIELDS, () => "jira-api-token");
+
   return {
     ...settings,
     providerInstances,
     sourceControlHosts,
     usageLimitSources,
     sshServers,
+    jira,
   } as unknown as ServerSettings;
 }

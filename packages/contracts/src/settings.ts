@@ -1,6 +1,11 @@
 import { SshDeviceHostConfigs } from "./device.ts";
 import { SshServer, SshServers } from "./sshServers.ts";
-import { AzureDevOpsIssueLabels, AzureDevOpsWorkItemLink } from "./azureDevOps.ts";
+import {
+  AzureDevOpsIssueLabels,
+  AzureDevOpsWorkItemLink,
+  JiraSettings,
+  TrackerProvider,
+} from "./azureDevOps.ts";
 import { SubagentList } from "./subagents.ts";
 import {
   AuthOrchestrationOperateScope,
@@ -1390,6 +1395,9 @@ export const ServerSettings = Schema.Struct({
   azureDevOpsIssueLabels: AzureDevOpsIssueLabels.pipe(
     Schema.withDecodingDefault(Effect.succeed({})),
   ),
+  /** Azure keeps the tasks section unless the user switches it to Jira. */
+  trackerProvider: TrackerProvider.pipe(Schema.withDecodingDefault(Effect.succeed("azure"))),
+  jira: JiraSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   /**
    * Named roles every thread can hand work to. Global to the environment: they
    * belong to the person, not to a project.
@@ -1701,6 +1709,10 @@ export const ServerSettingsPatch = Schema.Struct({
   azureDevOpsThreadLinks: Schema.optionalKey(Schema.Record(Schema.String, AzureDevOpsWorkItemLink)),
   /** Whole-map replacement, like the thread links: the map is small and conflicts are rare. */
   azureDevOpsIssueLabels: Schema.optionalKey(AzureDevOpsIssueLabels),
+  /** The tasks section's tracker; patching switches the whole section. */
+  trackerProvider: Schema.optionalKey(TrackerProvider),
+  /** Jira connection. A patched token replaces the stored one; the marker keeps it. */
+  jira: Schema.optionalKey(JiraSettings),
   /** Whole-list replacement: the roles are edited as one screen, not merged. */
   subagents: Schema.optionalKey(SubagentList),
   /** Saved composer prompts keyed by project id; patching replaces the whole map. */
