@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import type { VaultGraphSnapshot } from "@t3tools/contracts";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
@@ -22,7 +22,9 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { SidebarInset } from "../ui/sidebar";
 import { Spinner } from "../ui/spinner";
+import { BrainNoteReader } from "./BrainNoteReader";
 import { BrainScene, type BrainGraphNode, type BrainLink } from "./BrainScene";
+import { BrainVaultExplorer } from "./BrainVaultExplorer";
 import { clusterHue, fileColor, folderColor, folderClusterKey, nodeColorCss } from "./graphTheme";
 import { VaultPicker, type VaultRootKind } from "./VaultPicker";
 
@@ -108,6 +110,9 @@ export function BrainPage() {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  /** The note open in the reader panel; the selected node lights up in the brain. */
+  const [openNoteId, setOpenNoteId] = useState<string | null>(null);
+  const [explorerCollapsed, setExplorerCollapsed] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [clusterFilter, setClusterFilter] = useState<string | null>(null);
@@ -331,263 +336,291 @@ export function BrainPage() {
   };
 
   return (
-    <SidebarInset
-      className="relative h-dvh min-h-0 overflow-hidden"
-      style={{ background: "#05070d" }}
-    >
+    <SidebarInset className="flex h-dvh min-h-0 overflow-hidden" style={{ background: "#05070d" }}>
       {snapshot !== null ? (
-        <div className="absolute inset-0">
-          <BrainScene
-            nodes={nodes}
-            links={links}
-            selectedId={selectedId}
-            highlightedIds={highlightedIds}
-            detailed={nodes.length <= DETAILED_NODE_LIMIT}
-            autoRotate={autoRotate}
-            onSelect={setSelectedId}
-            onHover={setHoveredId}
-          />
-        </div>
+        <BrainVaultExplorer
+          nodes={snapshot.nodes}
+          selectedId={selectedId}
+          onOpen={(id) => {
+            setSelectedId(id);
+            setOpenNoteId(id);
+          }}
+          collapsed={explorerCollapsed}
+          onToggleCollapsed={() => setExplorerCollapsed((value) => !value)}
+        />
       ) : null}
-
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-wrap items-center gap-2 p-3">
-        <div className="pointer-events-auto flex items-center gap-2">
-          <Button variant="ghost" size="icon-sm" aria-label="Volver" onClick={navigateToMainApp}>
-            <ArrowLeftIcon />
-          </Button>
-          <span className="flex items-center gap-1.5 text-sm font-semibold text-white/90">
-            <BrainIcon className="size-4" aria-hidden />
-            Cerebro
-          </span>
-        </div>
-        <div className="pointer-events-auto max-w-96 min-w-48 flex-1 rounded-md bg-black/50">
-          <Input
-            font="mono"
-            size="sm"
-            value={query}
-            placeholder="Buscar nota o etiqueta"
-            aria-label="Buscar en el grafo"
-            onChange={(event) => setQuery(event.currentTarget.value)}
-          />
-        </div>
-        <div className="pointer-events-auto flex items-center gap-1.5">
-          <Button
-            variant={following ? "default" : "ghost"}
-            size="icon-sm"
-            aria-label={following ? "Dejar de vigilar el vault" : "Vigilar el vault"}
-            onClick={() => setFollowing((value) => !value)}
-          >
-            <RadarIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={autoRotate ? "Parar la rotación" : "Girar automáticamente"}
-            onClick={() => setAutoRotate((value) => !value)}
-          >
-            {autoRotate ? <PauseIcon /> : <OrbitIcon />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Volver a escanear"
-            disabled={snapshot === null || scanning}
-            onClick={() => {
-              if (snapshot !== null) void runScan(snapshot.vaultPath);
-            }}
-          >
-            <RefreshCwIcon />
-          </Button>
-          <Button variant="ghost" size="icon-sm" aria-label="Cambiar de vault" onClick={clearVault}>
-            <XIcon />
-          </Button>
-        </div>
-      </div>
-
-      {snapshot === null ? (
-        <div className="absolute inset-0 flex items-center justify-center p-6">
-          {environmentId === null ? (
-            <p className="text-sm text-white/70">Conecta un entorno para leer el vault.</p>
-          ) : (
-            <VaultPicker
-              environmentId={environmentId}
-              recents={recents}
-              scanning={scanning}
-              onPick={(path, kind) => {
-                setVaultRootKind(kind);
-                localStorage.setItem(VAULT_KIND_STORAGE_KEY, JSON.stringify({ path, kind }));
-                void runScan(path);
-              }}
+      <div className="relative min-w-0 flex-1">
+        {snapshot !== null ? (
+          <div className="absolute inset-0">
+            <BrainScene
+              nodes={nodes}
+              links={links}
+              selectedId={selectedId}
+              highlightedIds={highlightedIds}
+              detailed={nodes.length <= DETAILED_NODE_LIMIT}
+              autoRotate={autoRotate}
+              onSelect={setSelectedId}
+              onHover={setHoveredId}
             />
-          )}
-        </div>
-      ) : null}
-
-      {scanning && snapshot !== null ? (
-        <div className="absolute inset-x-0 top-16 flex justify-center">
-          <span className="flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-xs text-white/80">
-            <Spinner aria-hidden size="sm" />
-            Releyendo el vault
-          </span>
-        </div>
-      ) : null}
-
-      {error !== null ? (
-        <div className="absolute inset-x-0 bottom-4 z-20 flex justify-center">
-          <p className="rounded-lg border border-error/40 bg-black/70 px-3 py-2 text-xs text-error">
-            {error}
-          </p>
-        </div>
-      ) : null}
-
-      {hoveredNode !== null && hoveredNode.id !== selectedId ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-10 flex justify-center">
-          <span className="rounded-full border border-white/10 bg-black/70 px-3 py-1 text-2xs text-white/85">
-            {hoveredNode.label}
-            {hoveredNode.extension !== undefined ? (
-              <span className="ml-1.5 text-white/40">.{hoveredNode.extension}</span>
-            ) : null}
-          </span>
-        </div>
-      ) : null}
-
-      {snapshot !== null ? (
-        <div className="pointer-events-none absolute bottom-3 left-3 flex max-w-72 flex-col gap-2 text-2xs text-white/60">
-          <div className="pointer-events-auto flex flex-col gap-1">
-            <span className="truncate font-mono text-white/40">{snapshot.vaultPath}</span>
-            <span className="flex items-center gap-1.5 text-3xs">
-              <span
-                aria-hidden
-                className="size-1.5 rounded-full"
-                style={{ background: vaultRootKind === "obsidian" ? "#69c98a" : "#6b7280" }}
-              />
-              {vaultRootKind === "obsidian"
-                ? "raíz de vault de Obsidian (.obsidian)"
-                : vaultRootKind === "plain"
-                  ? "carpeta sin .obsidian: se dibuja igual"
-                  : "raíz sin comprobar"}
-            </span>
-            <span>
-              {snapshot.fileCount} ficheros · {snapshot.folderCount} carpetas ·{" "}
-              {snapshot.sameNameLinkCount} nombres repetidos · {snapshot.durationMs} ms
-            </span>
-            <span className="text-white/35">
-              {following ? "Vigilando el vault" : "Vigilancia desactivada"}
-              {lastSyncAt === null ? "" : ` · leído ${relativeTime(lastSyncAt)}`}
-            </span>
-            {snapshot.truncated ? (
-              <span className="text-warning">
-                Vault recortado: sube el límite para verlo entero.
-              </span>
-            ) : null}
           </div>
-          <div className="pointer-events-auto flex flex-wrap gap-1">
-            {clusters.map((entry) => {
-              const active = clusterFilter === entry.cluster;
-              return (
-                <button
-                  key={entry.cluster}
-                  type="button"
-                  onClick={() => setClusterFilter(active ? null : entry.cluster)}
-                  className="flex items-center gap-1.5 rounded-full border border-white/10 px-2 py-0.5 hover:border-white/40"
-                  style={{ opacity: clusterFilter === null || active ? 1 : 0.4 }}
-                >
-                  <span
-                    aria-hidden
-                    className="size-2 rounded-full"
-                    style={{ background: fileColor(entry.cluster, "md") }}
-                  />
-                  <span className="max-w-32 truncate">{entry.cluster}</span>
-                  <span className="text-white/35">{entry.count}</span>
-                </button>
-              );
-            })}
-            <span
-              className="flex items-center gap-1.5 rounded-full border border-white/10 px-2 py-0.5"
-              aria-label={`${snapshot.folderCount} carpetas`}
+        ) : null}
+
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-wrap items-center gap-2 p-3">
+          <div className="pointer-events-auto flex items-center gap-2">
+            <Button variant="ghost" size="icon-sm" aria-label="Volver" onClick={navigateToMainApp}>
+              <ArrowLeftIcon />
+            </Button>
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-white/90">
+              <BrainIcon className="size-4" aria-hidden />
+              Cerebro
+            </span>
+          </div>
+          <div className="pointer-events-auto max-w-96 min-w-48 flex-1 rounded-md bg-black/50">
+            <Input
+              font="mono"
+              size="sm"
+              value={query}
+              placeholder="Buscar nota o etiqueta"
+              aria-label="Buscar en el grafo"
+              onChange={(event) => setQuery(event.currentTarget.value)}
+            />
+          </div>
+          <div className="pointer-events-auto flex items-center gap-1.5">
+            <Button
+              variant={following ? "default" : "ghost"}
+              size="icon-sm"
+              aria-label={following ? "Dejar de vigilar el vault" : "Vigilar el vault"}
+              onClick={() => setFollowing((value) => !value)}
             >
-              <span
-                aria-hidden
-                className="size-2 rounded-full border border-white/40"
-                style={{
-                  background: folderColor(1, true),
-                  boxShadow: `0 0 8px ${folderColor(1, true)}`,
-                }}
-              />
-              <span>carpetas</span>
-              <span className="text-white/35">{snapshot.folderCount}</span>
-            </span>
-          </div>
-        </div>
-      ) : null}
-
-      {selectedNode !== null ? (
-        <div className="absolute top-16 right-3 z-20 flex w-72 flex-col gap-2 rounded-xl border border-white/10 bg-black/70 p-3 text-xs text-white/80 backdrop-blur">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex min-w-0 flex-col">
-              <span className="truncate text-sm font-semibold text-white">
-                {selectedNode.label}
-              </span>
-              <span className="truncate font-mono text-3xs text-white/40">
-                {selectedNode.id}
-                {selectedNode.extension !== undefined ? ` · .${selectedNode.extension}` : ""}
-              </span>
-            </div>
+              <RadarIcon />
+            </Button>
             <Button
               variant="ghost"
-              size="icon-micro"
-              aria-label="Cerrar ficha"
-              onClick={() => setSelectedId(null)}
+              size="icon-sm"
+              aria-label={autoRotate ? "Parar la rotación" : "Girar automáticamente"}
+              onClick={() => setAutoRotate((value) => !value)}
+            >
+              {autoRotate ? <PauseIcon /> : <OrbitIcon />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Volver a escanear"
+              disabled={snapshot === null || scanning}
+              onClick={() => {
+                if (snapshot !== null) void runScan(snapshot.vaultPath);
+              }}
+            >
+              <RefreshCwIcon />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Cambiar de vault"
+              onClick={clearVault}
             >
               <XIcon />
             </Button>
           </div>
-          <div className="flex flex-wrap gap-1 text-3xs">
-            <span className="rounded-full bg-white/10 px-2 py-0.5">
-              {selectedNode.kind === "folder" ? "carpeta" : "fichero"}
-            </span>
-            <span className="rounded-full bg-white/10 px-2 py-0.5">
-              {selectedNode.degree} conexiones
-            </span>
-            <span className="rounded-full bg-white/10 px-2 py-0.5">nivel {selectedNode.depth}</span>
-            {selectedNode.bytes > 0 ? (
-              <span className="rounded-full bg-white/10 px-2 py-0.5">
-                {formatBytes(selectedNode.bytes)}
-              </span>
-            ) : null}
+        </div>
+
+        {snapshot === null ? (
+          <div className="absolute inset-0 flex items-center justify-center p-6">
+            {environmentId === null ? (
+              <p className="text-sm text-white/70">Conecta un entorno para leer el vault.</p>
+            ) : (
+              <VaultPicker
+                environmentId={environmentId}
+                recents={recents}
+                scanning={scanning}
+                onPick={(path, kind) => {
+                  setVaultRootKind(kind);
+                  localStorage.setItem(VAULT_KIND_STORAGE_KEY, JSON.stringify({ path, kind }));
+                  void runScan(path);
+                }}
+              />
+            )}
           </div>
-          {selectedNeighbours.length > 0 ? (
-            <div className="flex flex-col gap-0.5">
-              <span className="text-3xs tracking-wide text-white/35 uppercase">Conectado con</span>
-              <div className="max-h-56 overflow-y-auto">
-                {selectedNeighbours.map((node) => (
+        ) : null}
+
+        {scanning && snapshot !== null ? (
+          <div className="absolute inset-x-0 top-16 flex justify-center">
+            <span className="flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-xs text-white/80">
+              <Spinner aria-hidden size="sm" />
+              Releyendo el vault
+            </span>
+          </div>
+        ) : null}
+
+        {error !== null ? (
+          <div className="absolute inset-x-0 bottom-4 z-20 flex justify-center">
+            <p className="rounded-lg border border-error/40 bg-black/70 px-3 py-2 text-xs text-error">
+              {error}
+            </p>
+          </div>
+        ) : null}
+
+        {hoveredNode !== null && hoveredNode.id !== selectedId ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-24 z-10 flex justify-center">
+            <span className="rounded-full border border-white/10 bg-black/70 px-3 py-1 text-2xs text-white/85">
+              {hoveredNode.label}
+              {hoveredNode.extension !== undefined ? (
+                <span className="ml-1.5 text-white/40">.{hoveredNode.extension}</span>
+              ) : null}
+            </span>
+          </div>
+        ) : null}
+
+        {snapshot !== null ? (
+          <div className="pointer-events-none absolute bottom-3 left-3 flex max-w-72 flex-col gap-2 text-2xs text-white/60">
+            <div className="pointer-events-auto flex flex-col gap-1">
+              <span className="truncate font-mono text-white/40">{snapshot.vaultPath}</span>
+              <span className="flex items-center gap-1.5 text-3xs">
+                <span
+                  aria-hidden
+                  className="size-1.5 rounded-full"
+                  style={{ background: vaultRootKind === "obsidian" ? "#69c98a" : "#6b7280" }}
+                />
+                {vaultRootKind === "obsidian"
+                  ? "raíz de vault de Obsidian (.obsidian)"
+                  : vaultRootKind === "plain"
+                    ? "carpeta sin .obsidian: se dibuja igual"
+                    : "raíz sin comprobar"}
+              </span>
+              <span>
+                {snapshot.fileCount} ficheros · {snapshot.folderCount} carpetas ·{" "}
+                {snapshot.sameNameLinkCount} nombres repetidos · {snapshot.durationMs} ms
+              </span>
+              <span className="text-white/35">
+                {following ? "Vigilando el vault" : "Vigilancia desactivada"}
+                {lastSyncAt === null ? "" : ` · leído ${relativeTime(lastSyncAt)}`}
+              </span>
+              {snapshot.truncated ? (
+                <span className="text-warning">
+                  Vault recortado: sube el límite para verlo entero.
+                </span>
+              ) : null}
+            </div>
+            <div className="pointer-events-auto flex flex-wrap gap-1">
+              {clusters.map((entry) => {
+                const active = clusterFilter === entry.cluster;
+                return (
                   <button
-                    key={node.id}
+                    key={entry.cluster}
                     type="button"
-                    className="flex w-full items-center gap-1.5 truncate rounded px-1 py-0.5 text-left hover:bg-white/10"
-                    onClick={() => setSelectedId(node.id)}
+                    onClick={() => setClusterFilter(active ? null : entry.cluster)}
+                    className="flex items-center gap-1.5 rounded-full border border-white/10 px-2 py-0.5 hover:border-white/40"
+                    style={{ opacity: clusterFilter === null || active ? 1 : 0.4 }}
                   >
                     <span
                       aria-hidden
-                      className="size-1.5 shrink-0 rounded-full"
-                      style={{ background: nodeColorCss(node, true) }}
+                      className="size-2 rounded-full"
+                      style={{ background: fileColor(entry.cluster, "md") }}
                     />
-                    <span className="truncate">{node.label}</span>
+                    <span className="max-w-32 truncate">{entry.cluster}</span>
+                    <span className="text-white/35">{entry.count}</span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
+              <span
+                className="flex items-center gap-1.5 rounded-full border border-white/10 px-2 py-0.5"
+                aria-label={`${snapshot.folderCount} carpetas`}
+              >
+                <span
+                  aria-hidden
+                  className="size-2 rounded-full border border-white/40"
+                  style={{
+                    background: folderColor(1, true),
+                    boxShadow: `0 0 8px ${folderColor(1, true)}`,
+                  }}
+                />
+                <span>carpetas</span>
+                <span className="text-white/35">{snapshot.folderCount}</span>
+              </span>
             </div>
-          ) : null}
-        </div>
-      ) : null}
+          </div>
+        ) : null}
 
-      {query.trim().length > 0 ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center">
-          <span className="rounded-full bg-black/60 px-3 py-1 text-2xs text-white/60">
-            <SearchIcon aria-hidden className="mr-1 inline size-3" />
-            {query.trim()} resalta los ficheros que coinciden
-          </span>
-        </div>
+        {selectedNode !== null && openNoteId === null ? (
+          <div className="absolute top-16 right-3 z-20 flex w-72 flex-col gap-2 rounded-xl border border-white/10 bg-black/70 p-3 text-xs text-white/80 backdrop-blur">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate text-sm font-semibold text-white">
+                  {selectedNode.label}
+                </span>
+                <span className="truncate font-mono text-3xs text-white/40">
+                  {selectedNode.id}
+                  {selectedNode.extension !== undefined ? ` · .${selectedNode.extension}` : ""}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon-micro"
+                aria-label="Cerrar ficha"
+                onClick={() => setSelectedId(null)}
+              >
+                <XIcon />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-1 text-3xs">
+              <span className="rounded-full bg-white/10 px-2 py-0.5">
+                {selectedNode.kind === "folder" ? "carpeta" : "fichero"}
+              </span>
+              <span className="rounded-full bg-white/10 px-2 py-0.5">
+                {selectedNode.degree} conexiones
+              </span>
+              <span className="rounded-full bg-white/10 px-2 py-0.5">
+                nivel {selectedNode.depth}
+              </span>
+              {selectedNode.bytes > 0 ? (
+                <span className="rounded-full bg-white/10 px-2 py-0.5">
+                  {formatBytes(selectedNode.bytes)}
+                </span>
+              ) : null}
+            </div>
+            {selectedNeighbours.length > 0 ? (
+              <div className="flex flex-col gap-0.5">
+                <span className="text-3xs tracking-wide text-white/35 uppercase">
+                  Conectado con
+                </span>
+                <div className="max-h-56 overflow-y-auto">
+                  {selectedNeighbours.map((node) => (
+                    <button
+                      key={node.id}
+                      type="button"
+                      className="flex w-full items-center gap-1.5 truncate rounded px-1 py-0.5 text-left hover:bg-white/10"
+                      onClick={() => setSelectedId(node.id)}
+                    >
+                      <span
+                        aria-hidden
+                        className="size-1.5 shrink-0 rounded-full"
+                        style={{ background: nodeColorCss(node, true) }}
+                      />
+                      <span className="truncate">{node.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {query.trim().length > 0 ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center">
+            <span className="rounded-full bg-black/60 px-3 py-1 text-2xs text-white/60">
+              <SearchIcon aria-hidden className="mr-1 inline size-3" />
+              {query.trim()} resalta los ficheros que coinciden
+            </span>
+          </div>
+        ) : null}
+      </div>
+      {snapshot !== null && openNoteId !== null ? (
+        <BrainNoteReader
+          environmentId={environmentId}
+          vaultPath={snapshot.vaultPath}
+          relativePath={openNoteId}
+          onClose={() => setOpenNoteId(null)}
+        />
       ) : null}
     </SidebarInset>
   );
