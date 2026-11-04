@@ -271,13 +271,22 @@ export function applyPreferredCodexDefaultModel(
 /**
  * Codex has no static default capability set, so a bare custom slug borrows
  * the first built-in's descriptors; an entry with its own capabilities keeps
- * them.
+ * them. The context-window ladder is dropped: it is Codex's own model sizes, and
+ * a custom slug may route somewhere those do not apply.
  */
 function appendCustomCodexModels(
   models: ReadonlyArray<ServerProviderModel>,
   customModels: ReadonlyArray<CustomModelSetting>,
 ): ReadonlyArray<ServerProviderModel> {
-  const fallbackCapabilities = models.find((model) => model.capabilities)?.capabilities ?? null;
+  const inherited = models.find((model) => model.capabilities)?.capabilities ?? null;
+  const fallbackCapabilities =
+    inherited === null
+      ? null
+      : createModelCapabilities({
+          optionDescriptors: (inherited.optionDescriptors ?? []).filter(
+            (descriptor) => descriptor.id !== "contextWindow",
+          ),
+        });
   return providerModelsFromSettings(models, customModels, fallbackCapabilities);
 }
 

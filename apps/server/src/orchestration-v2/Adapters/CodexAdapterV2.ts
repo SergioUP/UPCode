@@ -62,6 +62,7 @@ import type {
   ProviderUserInputAnswers,
   ProviderApprovalDecision,
   ProviderApprovalOption,
+  ProviderOptionSelections,
   ProviderRequestKind,
   ProviderThreadId,
   ProviderTurnId,
@@ -93,7 +94,10 @@ import * as Stream from "effect/Stream";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import { resolveAttachmentPath, resolveAttachmentPathById } from "../../attachmentStore.ts";
-import { getCodexServiceTierOptionValue } from "../../codexModelOptions.ts";
+import {
+  getCodexContextWindowTokens,
+  getCodexServiceTierOptionValue,
+} from "../../codexModelOptions.ts";
 import { ServerConfig } from "../../config.ts";
 import { expandHomePath } from "@t3tools/provider-core/server/pathExpansion";
 import {
@@ -1314,7 +1318,7 @@ export const CODEX_THREAD_CONFIG = { "tools.update_plan.enabled": true } as cons
 
 export function codexThreadRuntimeParams(input: {
   readonly mcpSession: McpProviderSession.McpProviderSessionConfig | undefined;
-  readonly modelSelection?: { readonly model: string };
+  readonly modelSelection?: { readonly model: string; readonly options?: ProviderOptionSelections };
   readonly runtimePolicy?: ProviderAdapter.ProviderAdapterV2RuntimePolicy;
 }): {
   readonly cwd?: string;
@@ -1322,11 +1326,17 @@ export function codexThreadRuntimeParams(input: {
   readonly config: Readonly<Record<string, Schema.Json>>;
 } {
   const { mcpSession } = input;
+  // T3 owns the window ladder because Codex reports no sizes; Codex then uses
+  // the value for token accounting and its automatic compaction threshold.
+  const modelContextWindowTokens = getCodexContextWindowTokens(input.modelSelection);
   return {
     ...(input.runtimePolicy?.cwd == null ? {} : { cwd: input.runtimePolicy.cwd }),
     ...(input.modelSelection === undefined ? {} : { model: input.modelSelection.model }),
     config: {
       ...CODEX_THREAD_CONFIG,
+      ...(modelContextWindowTokens === undefined
+        ? {}
+        : { model_context_window: modelContextWindowTokens }),
       ...(mcpSession === undefined
         ? {}
         : {

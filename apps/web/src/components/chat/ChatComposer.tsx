@@ -298,6 +298,7 @@ import {
   renderProviderTraitsPicker,
 } from "./composerProviderState";
 import { ContextWindowMeter, ContextWindowMeterPlaceholder } from "./ContextWindowMeter";
+import { ContextWindowSelector } from "./ContextWindowSelector";
 import {
   providerSupportsManualCompaction,
   resolveContextWindowModelDisplayName,
@@ -3007,6 +3008,17 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     isComposerOwned: true,
   } satisfies Parameters<typeof renderProviderTraitsPicker>[0];
   const providerTraitsPicker = renderProviderTraitsPicker(providerTraitsPickerInput);
+  const contextWindowSelector = (
+    <ContextWindowSelector
+      provider={selectedProvider}
+      instanceId={selectedInstanceId}
+      models={selectedProviderModels}
+      model={selectedModel}
+      modelOptions={composerModelOptions?.[selectedInstanceId]}
+      {...(routeKind === "server" ? { threadRef: routeThreadRef } : {})}
+      {...(routeKind === "draft" && draftId ? { draftId } : {})}
+    />
+  );
   const [inlineRestingControlsHost, setInlineRestingControlsHost] = useState<HTMLDivElement | null>(
     null,
   );
@@ -7763,6 +7775,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                         compactDisabled || noProviderAvailable || isSendBusy || isConnecting
                       }
                       compactDisabledReason={resolvedCompactDisabledReason}
+                      contextWindowSelector={contextWindowSelector}
                     />
                   ) : reserveContextWindowMeter ? (
                     <ContextWindowMeterPlaceholder />

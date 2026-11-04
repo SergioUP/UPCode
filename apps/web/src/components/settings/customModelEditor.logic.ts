@@ -194,13 +194,27 @@ export function draftFromDefinition(entry: CustomModelDefinition): CustomModelDr
   };
 }
 
-/** Claude context choices require runtime suffix mappings that custom entries do not carry. */
+/**
+ * Context-window choices are provider-owned: Claude maps them to runtime model
+ * suffixes and Codex to its own model sizes, neither of which a custom entry
+ * carries.
+ */
+const CONTEXT_WINDOW_CAPABLE_DRIVERS: ReadonlySet<ProviderDriverKind> = new Set([
+  ProviderDriverKind.make("claudeAgent"),
+  ProviderDriverKind.make("codex"),
+]);
+
 export function descriptorsFromCapabilities(
   capabilities: ModelCapabilities | null | undefined,
   driverKind: ProviderDriverKind | null,
 ): EditorDescriptor[] {
   return (capabilities?.optionDescriptors ?? [])
-    .filter((descriptor) => driverKind !== "claudeAgent" || descriptor.id !== "contextWindow")
+    .filter(
+      (descriptor) =>
+        descriptor.id !== "contextWindow" ||
+        driverKind === null ||
+        !CONTEXT_WINDOW_CAPABLE_DRIVERS.has(driverKind),
+    )
     .map(descriptorToEditor);
 }
 

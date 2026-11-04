@@ -5,10 +5,14 @@
  *
  * @module provider/codexModelCatalog
  */
-import type { ServerProviderUpdateRequiredModel } from "@t3tools/contracts";
+import type {
+  ProviderOptionDescriptor,
+  ServerProviderModel,
+  ServerProviderUpdateRequiredModel,
+} from "@t3tools/contracts";
 import * as ModelCatalog from "@t3tools/provider-core/server/ModelCatalog";
 import type { ServerProviderDraft } from "@t3tools/provider-core/server/snapshotProbe";
-import { codexModelFamily } from "@t3tools/shared/model";
+import { codexModelFamily, createModelCapabilities } from "@t3tools/shared/model";
 import { compareSemverVersions, parseSemver } from "@t3tools/shared/semver";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -16,6 +20,57 @@ import { TrimmedNonEmptyString } from "@t3tools/contracts";
 
 /** Dated Codex builds match their base model's catalog entry. */
 const CODEX_MATCHING: ModelCatalog.CatalogMatching = { family: codexModelFamily };
+
+/**
+ * Context-window sizes T3 offers for Codex models. Codex's `model/list` reports
+ * no window size, so the choice is ours: the value travels to the thread as
+ * `model_context_window` and Codex uses it for token accounting and automatic
+ * compaction. `default` omits the override and leaves Codex's own value alone,
+ * which is always the safe pick for a model we do not know.
+ *
+ * Order is narrowest to widest. A value wider than the model's real cap only
+ * makes Codex compact too late, so keep the ladder conservative.
+ */
+const CODEX_CONTEXT_WINDOW_CHOICES: ReadonlyArray<{ id: string; label: string }> = [
+  { id: "272k", label: "272k" },
+  { id: "400k", label: "400k" },
+  { id: "1m", label: "1M" },
+];
+
+const CODEX_CONTEXT_WINDOW_DEFAULT_ID = "default";
+
+function codexContextWindowDescriptor(): ProviderOptionDescriptor {
+  return {
+    id: "contextWindow",
+    label: "Context Window",
+    type: "select",
+    options: [
+      { id: CODEX_CONTEXT_WINDOW_DEFAULT_ID, label: "Auto", isDefault: true },
+      ...CODEX_CONTEXT_WINDOW_CHOICES.map((choice) => ({ ...choice })),
+    ],
+  };
+}
+
+/**
+ * Adds the context-window choice to every model Codex discovers. Custom models
+ * are user-authored slugs with unknown windows, so they keep whatever the user
+ * configured and never inherit Codex's ladder.
+ */
+function applyCodexContextWindowChoices(
+  models: ReadonlyArray<ServerProviderModel>,
+): ReadonlyArray<ServerProviderModel> {
+  return models.map((model) => {
+    if (model.isCustom) return model;
+    const optionDescriptors = model.capabilities?.optionDescriptors ?? [];
+    if (optionDescriptors.some((descriptor) => descriptor.id === "contextWindow")) return model;
+    return {
+      ...model,
+      capabilities: createModelCapabilities({
+        optionDescriptors: [...optionDescriptors, codexContextWindowDescriptor()],
+      }),
+    };
+  });
+}
 
 const CodexModelAdapter = Schema.Struct({
   codex: Schema.optional(Schema.Struct({ minVersion: Schema.optional(TrimmedNonEmptyString) })),
@@ -58,8 +113,10 @@ export function applyCodexModelCatalog(
   catalog: ModelCatalog.ProviderCatalog | undefined,
 ): ServerProviderDraft {
   const updateRequiredModels = codexUpdateRequiredModels(catalog, draft);
+  const classified = ModelCatalog.applyModelCatalog(draft, catalog, CODEX_MATCHING);
   return {
-    ...ModelCatalog.applyModelCatalog(draft, catalog, CODEX_MATCHING),
+    ...classified,
+    models: applyCodexContextWindowChoices(classified.models),
     ...(updateRequiredModels.length > 0 ? { updateRequiredModels } : {}),
   };
 }

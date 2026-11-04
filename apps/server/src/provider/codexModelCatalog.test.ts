@@ -88,4 +88,60 @@ describe("applyCodexModelCatalog", () => {
       ],
     );
   });
+
+  it("offers the T3 context-window ladder on discovered models", () => {
+    const withWindow = applyCodexModelCatalog(
+      draft("1.2.0", [
+        model({
+          slug: "gpt-test",
+          capabilities: {
+            optionDescriptors: [
+              {
+                id: "reasoningEffort",
+                label: "Reasoning",
+                type: "select",
+                options: [{ id: "high", label: "High" }],
+              },
+            ],
+          },
+        }),
+      ]),
+      catalog,
+    );
+
+    assert.deepStrictEqual(
+      withWindow.models[0]?.capabilities?.optionDescriptors?.map((descriptor) => descriptor.id),
+      ["reasoningEffort", "contextWindow"],
+    );
+    assert.deepStrictEqual(withWindow.models[0]?.capabilities?.optionDescriptors?.[1], {
+      id: "contextWindow",
+      label: "Context Window",
+      type: "select",
+      options: [
+        { id: "default", label: "Auto", isDefault: true },
+        { id: "272k", label: "272k" },
+        { id: "400k", label: "400k" },
+        { id: "1m", label: "1M" },
+      ],
+    });
+  });
+
+  it("skips custom models and models that already choose a window", () => {
+    const described = {
+      id: "contextWindow",
+      label: "Context Window",
+      type: "select" as const,
+      options: [{ id: "wide", label: "Wide" }],
+    };
+    const result = applyCodexModelCatalog(
+      draft("1.2.0", [
+        model({ slug: "gpt-custom", isCustom: true }),
+        model({ slug: "gpt-described", capabilities: { optionDescriptors: [described] } }),
+      ]),
+      catalog,
+    );
+
+    assert.isNull(result.models[0]?.capabilities ?? null);
+    assert.deepStrictEqual(result.models[1]?.capabilities?.optionDescriptors, [described]);
+  });
 });

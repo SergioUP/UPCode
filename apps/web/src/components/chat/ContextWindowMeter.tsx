@@ -1,5 +1,6 @@
 import { Button } from "../ui/button";
 import { type ContextWindowSnapshot, formatContextWindowTokens } from "~/lib/contextWindow";
+import type { ReactNode } from "react";
 import { Popover, PopoverPopup, PopoverTrigger } from "../ui/popover";
 import { formatContextWindowCompactionMessage } from "./ContextWindowMeter.logic";
 import { Minimize2Icon } from "lucide-react";
@@ -36,8 +37,17 @@ export function ContextWindowMeter(props: {
   onCompact?: (() => void) | undefined;
   compactDisabled?: boolean | undefined;
   compactDisabledReason?: string | null | undefined;
+  /** Provider-supplied window sizes; rendered above the compaction row. */
+  contextWindowSelector?: ReactNode | undefined;
 }) {
-  const { usage, modelDisplayName, onCompact, compactDisabled, compactDisabledReason } = props;
+  const {
+    usage,
+    modelDisplayName,
+    onCompact,
+    compactDisabled,
+    compactDisabledReason,
+    contextWindowSelector,
+  } = props;
   const usedPercentage = formatPercentage(usage.usedPercentage);
   const normalizedPercentage = Math.max(0, Math.min(100, usage.usedPercentage ?? 0));
   const label = contextWindowLabel(usage);
@@ -54,7 +64,7 @@ export function ContextWindowMeter(props: {
       <PopoverTrigger
         openOnHover
         delay={150}
-        closeDelay={onCompact ? 150 : 0}
+        closeDelay={onCompact || contextWindowSelector ? 150 : 0}
         render={
           <button
             type="button"
@@ -146,6 +156,9 @@ export function ContextWindowMeter(props: {
             <div className="text-pretty text-secondary-label text-2xs font-medium">
               {formatContextWindowCompactionMessage(modelDisplayName, usage.autoCompactThreshold)}
             </div>
+          ) : null}
+          {contextWindowSelector ? (
+            <div className="mt-1 border-t border-border/60 pt-2">{contextWindowSelector}</div>
           ) : null}
           {onCompact ? (
             <>

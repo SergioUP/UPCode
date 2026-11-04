@@ -677,6 +677,33 @@ describe("CodexAdapterV2 process spawning", () => {
     );
   });
 
+  it("sends the selected context window as thread config", () => {
+    const params = CodexAdapterV2.codexThreadRuntimeParams({
+      mcpSession: undefined,
+      modelSelection: {
+        model: "gpt-6-astra",
+        options: [{ id: "contextWindow", value: "1m" }],
+      },
+    });
+
+    assert.deepEqual(params.config, {
+      "tools.update_plan.enabled": true,
+      model_context_window: 1_000_000,
+    });
+  });
+
+  it("omits the context window when the model keeps its own", () => {
+    const params = CodexAdapterV2.codexThreadRuntimeParams({
+      mcpSession: undefined,
+      modelSelection: {
+        model: "gpt-6-astra",
+        options: [{ id: "contextWindow", value: "default" }],
+      },
+    });
+
+    assert.isUndefined(params.config.model_context_window);
+  });
+
   it.effect("resolves Windows command shims through the shared spawn policy", () =>
     Effect.gen(function* () {
       const command = yield* CodexAdapterV2.makeCodexAppServerSpawnCommand({
