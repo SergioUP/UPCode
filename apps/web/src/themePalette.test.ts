@@ -539,7 +539,9 @@ describe("theme files", () => {
       expect(theme.sidebarArtwork).toBe(true);
       expect(themeAllowsSidebarArtwork(theme.id)).toBe(true);
       expect(theme.colors.accent).toMatch(/^oklch\(/);
-      expect(theme.variants?.dark?.accent).toMatch(/^oklch\(/);
+      for (const mode of ["light", "dark"] as const) {
+        expect(getThemeColorsForMode(theme, mode)?.accent).toMatch(/^oklch\(/);
+      }
 
       for (const mode of ["light", "dark"] as const) {
         const colors = getThemeColorsForMode(theme, mode);
@@ -1181,14 +1183,14 @@ describe("singleAppearanceOf", () => {
 });
 
 describe("redi theme", () => {
-  it("claims light as its base and carries a dark half", () => {
+  it("claims dark as its base and carries a light half", () => {
     const theme = BUILT_IN_THEMES.find((candidate) => candidate.id === "redi");
 
     expect(theme?.label).toBe("Redi");
-    expect(theme?.appearance).toBe("light");
-    expect(theme?.variants?.dark).toBeDefined();
+    expect(theme?.appearance).toBe("dark");
+    expect(theme?.variants?.light).toBeDefined();
 
-    // The light half has to be the light one: same red, paper backdrop.
+    // The two halves have to be the two halves: same red, different backdrop.
     const redi = getThemeDefinition("redi")!;
     const dark = getThemeColorsForMode(redi, "dark")!;
     const light = getThemeColorsForMode(redi, "light")!;
@@ -1196,8 +1198,8 @@ describe("redi theme", () => {
     expect(dark.searchMatchBackground).not.toBe(light.searchMatchBackground);
   });
 
-  it("ships the two typefaces it references, so it renders offline", () => {
-    for (const file of ["anton.woff2", "geist-variable.woff2"]) {
+  it("ships the three typefaces it references, so it renders offline", () => {
+    for (const file of ["anton.woff2", "geist-variable.woff2", "great-vibes.woff2"]) {
       expect(existsSync(new URL(`../public/fonts/${file}`, import.meta.url))).toBe(true);
     }
   });

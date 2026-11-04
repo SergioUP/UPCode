@@ -2409,17 +2409,200 @@ code {
   src: url("/fonts/geist-variable.woff2") format("woff2");
 }
 
+@font-face {
+  font-family: "Great Vibes";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/great-vibes.woff2") format("woff2");
+}
+
 html[data-theme-id="redi"] {
   /* Unset font preferences remove their inline override, so the theme owns the
      faces unless the reader picked one in Settings -> Appearance. */
   --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-display: "Anton", "Arial Narrow", Impact, sans-serif;
+  --font-script: "Great Vibes", "Segoe Script", cursive;
   /* cindy.app is drawn with hard, near-square corners. */
-  --radius: 0.25rem;
+  --radius: 0.85rem;
+
+  /* Pigments the palette has no role for: the three weights of red the chrome
+     borrows from the artwork. Everything derives from the accent, so a
+     recoloured Redi stays consistent. */
+  --redi-red: var(--app-theme-accent);
+  --redi-red-mist: color-mix(in oklab, var(--app-theme-accent) 14%, transparent);
+  --redi-red-veil: color-mix(in oklab, var(--app-theme-accent) 26%, transparent);
 }
 
 html[data-theme-id="redi"] h1 {
   font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: 0.01em;
+}
+
+/* The hero art belongs to the chat surface, not to a component: it is painted
+   here so no React tree knows a theme can have a banner, and so switching
+   themes removes it without a re-render. `data-chat-surface` is the opaque
+   wrapper inside the canvas -- painting on the canvas itself would sit behind
+   that wrapper's own background and never be seen. Three layers paint in
+   order: the left and bottom fades that keep the text column clear, then the
+   art, anchored to the right edge the way the reference does. */
+html[data-theme-id="redi"] [data-chat-surface] {
+  background-image:
+    linear-gradient(to right, var(--background) 0%, var(--background) 18%, transparent 78%),
+    linear-gradient(to bottom, transparent 0%, transparent 42%, var(--background) 96%),
+    url("/themes/redi/hero.webp");
+  background-repeat: no-repeat;
+  background-size:
+    100% 100%,
+    100% 100%,
+    auto 21rem;
+  background-position:
+    0 0,
+    0 0,
+    right 9rem top -2.5rem;
+}
+
+/* The timeline puts an opaque canvas on its own wrapper, which would hide the
+   art above it. Only the wrapper directly under the surface gives up its
+   paint, and only under this theme. */
+html[data-theme-id="redi"] [data-chat-surface] > .bg-background {
+  background-color: transparent;
+}
+
+/* The sidebar carries the same red only as a haze: a wash under the toolbar and
+   a script initial behind the footer, both below any interactive row. */
+html[data-theme-id="redi"] [data-slot="sidebar"] {
+  position: relative;
+  background-image: linear-gradient(
+    180deg,
+    var(--redi-red-mist) 0%,
+    transparent 18rem,
+    transparent 100%
+  );
+}
+
+html[data-theme-id="redi"] [data-slot="sidebar"]::after {
+  content: "R";
+  position: absolute;
+  inset-block-end: 0.25rem;
+  inset-inline-start: -1.5rem;
+  z-index: 1;
+  font-family: var(--font-script);
+  font-size: 11rem;
+  line-height: 1;
+  color: var(--redi-red);
+  opacity: 0.13;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* The stage art is the one piece of the shell that carries a fixed palette per
+   theme; without these it stays the default blue and fights the ink. */
+html[data-theme-id="redi"] {
+  --stage-art-top: oklch(0.471 0.152 22.6);
+  --stage-art-mid: oklch(0.352 0.121 20.4);
+  --stage-art-bottom: oklch(0.208 0.062 18.2);
+  --stage-art-highlight: oklch(0.932 0.048 24.1);
+  --stage-art-secondary: oklch(0.662 0.176 22.9);
+  --stage-art-tertiary: oklch(0.598 0.124 44.2);
+  --stage-art-line: oklch(0.938 0.041 22.4);
+  --stage-art-celeste-highlight: oklch(0.958 0.03 26.1);
+  --stage-art-celeste-secondary: oklch(0.774 0.09 20.8);
+  --stage-art-violet-highlight: oklch(0.884 0.06 26.7);
+  --stage-art-grid-line: oklch(0.944 0.024 22.1);
+  --stage-night-top: oklch(0.418 0.128 21.8);
+  --stage-night-mid: oklch(0.302 0.096 20.2);
+  --stage-night-bottom: oklch(0.176 0.046 18.6);
+  --stage-night-highlight: oklch(0.902 0.056 22.9);
+  --stage-night-secondary: oklch(0.618 0.148 21.4);
+  --stage-night-tertiary: oklch(0.548 0.112 40.6);
+  --stage-night-line: oklch(0.936 0.038 21.9);
+  --stage-night-glow-highlight: oklch(0.572 0.176 24.8);
+  --stage-night-glow-secondary: oklch(0.352 0.098 20.6);
+  --stage-night-sparkle: oklch(0.884 0.052 23.4);
+}
+
+/* ---------------------------------------------------------------------------
+   Redi, superficie: vidrio, degradados y una respiración.
+   El vidrio se apoya en el ajuste del usuario: `GlassAppearanceSync` escribe
+   `--glass-opacity` y `--glass-blur` inline desde Ajustes -> Apariencia. Si lo
+   tiene al 100%, las mezclas quedan opacas y el desenfoque a 0: el tema no
+   pisa esa preferencia, sólo la aprovecha.
+   --------------------------------------------------------------------------- */
+html[data-theme-id="redi"] {
+  --redi-glass-card: color-mix(
+    in oklab,
+    var(--app-theme-surface) var(--glass-opacity),
+    transparent
+  );
+  --redi-glass-panel: color-mix(
+    in oklab,
+    var(--app-theme-canvas) var(--glass-opacity),
+    transparent
+  );
+  --redi-glass-edge: color-mix(in oklab, var(--app-theme-accent) 32%, transparent);
+  --redi-glass-top: color-mix(in oklab, white 7%, transparent);
+  --redi-sheen: linear-gradient(180deg, var(--redi-glass-top) 0%, transparent 44%);
+}
+
+@keyframes redi-breathe {
+  0%,
+  100% {
+    opacity: 0.34;
+  }
+  50% {
+    opacity: 0.78;
+  }
+}
+
+/* Popovers, menús y diálogos: vidrio sobre el arte, con filo rojo. */
+html[data-theme-id="redi"] [data-slot="popover-popup"],
+html[data-theme-id="redi"] [data-slot="menu-popup"],
+html[data-theme-id="redi"] [data-slot="select-popup"],
+html[data-theme-id="redi"] [data-slot="dialog-popup"] {
+  background-image: var(--redi-sheen);
+  border-color: var(--redi-glass-edge);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+}
+
+/* El composer es el objeto iluminado de la pantalla: filo rojo, halo y una
+   respiración lenta. La animación sólo mueve `opacity` de una capa estática:
+   se compone en GPU y no repinta el texto. Se pausa con el resto de
+   animaciones de la app (`--visible-animation-state`) y con reduced-motion. */
+html[data-theme-id="redi"] [data-slot="composer-shell"] {
+  position: relative;
+  border-color: var(--redi-glass-edge);
+  box-shadow:
+    0 0 0 1px var(--redi-red-mist),
+    0 28px 64px -34px var(--redi-red-veil);
+}
+
+html[data-theme-id="redi"] [data-slot="composer-shell"]::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 1px solid var(--redi-red-veil);
+  box-shadow:
+    0 0 26px -4px var(--redi-red-veil),
+    inset 0 0 20px -14px var(--redi-red-veil);
+  opacity: 0.45;
+  animation: redi-breathe 7s ease-in-out infinite;
+  animation-play-state: var(--visible-animation-state, running);
+}
+
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
+  html[data-theme-id="redi"] [data-slot="composer-shell"]::after {
+    animation: none;
+    opacity: 0.45;
+  }
+}
+
+/* Las tarjetas de la barra lateral y los paneles flotantes ganan el filo rojo
+   sin tocar su relleno: el color del borde ya sale de la paleta. */
+html[data-theme-id="redi"] [data-slot="sidebar"] {
+  --sidebar-border: var(--redi-glass-edge);
 }
