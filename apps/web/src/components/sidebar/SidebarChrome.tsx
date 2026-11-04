@@ -324,25 +324,7 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
             />
           ) : null}
           <SidebarUtilityItem
-            icon={
-              <span className="relative flex items-center justify-center">
-                <ChartNoAxesColumnIcon className="text-current" />
-                {allowance === null ? null : (
-                  <span
-                    className={cn(
-                      "absolute -top-1 -right-1.5 rounded-full px-1 text-5xs font-semibold tabular-nums",
-                      allowance.remaining <= 15
-                        ? "bg-error text-white"
-                        : allowance.remaining <= 35
-                          ? "bg-warning text-black"
-                          : "bg-success text-black",
-                    )}
-                  >
-                    {allowance.remaining}
-                  </span>
-                )}
-              </span>
-            }
+            icon={<ChartNoAxesColumnIcon className="text-current" />}
             label={
               allowance === null
                 ? "Usage"
