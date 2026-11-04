@@ -20,7 +20,6 @@ import { vaultGraph } from "../../state/vaultGraph";
 import { useNavigateToMainApp } from "../sidebar/mainAppLocation";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { SidebarInset } from "../ui/sidebar";
 import { Spinner } from "../ui/spinner";
 import { BrainNoteReader } from "./BrainNoteReader";
 import { BrainScene, type BrainGraphNode, type BrainLink } from "./BrainScene";
@@ -68,7 +67,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/** "hace 2 min" sin dependencias de fechas: el cerebro sólo necesita una pista. */
+/** "hace 2 min" sin dependencias de fechas: el cerebro sÃ³lo necesita una pista. */
 function relativeTime(epochMs: number): string {
   const seconds = Math.max(0, Math.round((Date.now() - epochMs) / 1000));
   if (seconds < 45) return "ahora mismo";
@@ -336,7 +335,12 @@ export function BrainPage() {
   };
 
   return (
-    <SidebarInset className="flex h-dvh min-h-0 overflow-hidden" style={{ background: "#05070d" }}>
+    // Full-bleed route: the app sidebar is hidden, so the vault tree can sit
+    // where Obsidian puts it and the brain keeps the rest.
+    <div
+      className="flex h-dvh min-h-0 w-full flex-row overflow-hidden"
+      style={{ background: "#05070d" }}
+    >
       {snapshot !== null ? (
         <BrainVaultExplorer
           nodes={snapshot.nodes}
@@ -397,7 +401,7 @@ export function BrainPage() {
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label={autoRotate ? "Parar la rotación" : "Girar automáticamente"}
+              aria-label={autoRotate ? "Parar la rotaciÃ³n" : "Girar automÃ¡ticamente"}
               onClick={() => setAutoRotate((value) => !value)}
             >
               {autoRotate ? <PauseIcon /> : <OrbitIcon />}
@@ -482,22 +486,22 @@ export function BrainPage() {
                   style={{ background: vaultRootKind === "obsidian" ? "#69c98a" : "#6b7280" }}
                 />
                 {vaultRootKind === "obsidian"
-                  ? "raíz de vault de Obsidian (.obsidian)"
+                  ? "raÃ­z de vault de Obsidian (.obsidian)"
                   : vaultRootKind === "plain"
                     ? "carpeta sin .obsidian: se dibuja igual"
-                    : "raíz sin comprobar"}
+                    : "raÃ­z sin comprobar"}
               </span>
               <span>
-                {snapshot.fileCount} ficheros · {snapshot.folderCount} carpetas ·{" "}
-                {snapshot.sameNameLinkCount} nombres repetidos · {snapshot.durationMs} ms
+                {snapshot.fileCount} ficheros Â· {snapshot.folderCount} carpetas Â·{" "}
+                {snapshot.sameNameLinkCount} nombres repetidos Â· {snapshot.durationMs} ms
               </span>
               <span className="text-white/35">
                 {following ? "Vigilando el vault" : "Vigilancia desactivada"}
-                {lastSyncAt === null ? "" : ` · leído ${relativeTime(lastSyncAt)}`}
+                {lastSyncAt === null ? "" : ` Â· leÃ­do ${relativeTime(lastSyncAt)}`}
               </span>
               {snapshot.truncated ? (
                 <span className="text-warning">
-                  Vault recortado: sube el límite para verlo entero.
+                  Vault recortado: sube el lÃ­mite para verlo entero.
                 </span>
               ) : null}
             </div>
@@ -550,7 +554,7 @@ export function BrainPage() {
                 </span>
                 <span className="truncate font-mono text-3xs text-white/40">
                   {selectedNode.id}
-                  {selectedNode.extension !== undefined ? ` · .${selectedNode.extension}` : ""}
+                  {selectedNode.extension !== undefined ? ` Â· .${selectedNode.extension}` : ""}
                 </span>
               </div>
               <Button
@@ -622,6 +626,6 @@ export function BrainPage() {
           onClose={() => setOpenNoteId(null)}
         />
       ) : null}
-    </SidebarInset>
+    </div>
   );
 }
