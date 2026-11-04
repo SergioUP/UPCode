@@ -142,6 +142,7 @@ const makeWithOptions = Effect.fn("McpSessionRegistry.make")(function* (
           "orchestration",
           "worktree",
           "pull-requests",
+          "azure-devops",
           // The Vault tools gate every call on the server's own `agentAccess`.
           "ssh",
           ...(request.capabilities ?? (browserToolsAvailable ? (["preview"] as const) : [])),
