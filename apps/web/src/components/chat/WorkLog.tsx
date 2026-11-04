@@ -131,6 +131,7 @@ export function WorkLogRow({
   return (
     <div
       {...rowProps}
+      data-work-log-card={activityCard || undefined}
       className={cn(
         className,
         activityCard &&
