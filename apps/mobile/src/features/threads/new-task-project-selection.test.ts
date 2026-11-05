@@ -43,7 +43,7 @@ function makeProject(
 
 function makeScope(projects: ReadonlyArray<EnvironmentProject>): HomeProjectScope {
   return {
-    key: "github.com/t3tools/t3code",
+    key: "github.com/upango/upcode",
     title: "UPCode",
     representative: projects[0]!,
     projects,
@@ -72,19 +72,19 @@ describe("getProjectScopeSelectionTarget", () => {
 
 describe("resolveEnvironmentProjectMatch", () => {
   it("follows the same repository onto the target machine", () => {
-    const selected = makeProject("upcode", "mac", { repositoryKey: "github.com/t3tools/t3code" });
+    const selected = makeProject("upcode", "mac", { repositoryKey: "github.com/upango/upcode" });
     const target = [
-      makeProject("other", "server", { repositoryKey: "github.com/t3tools/other" }),
-      makeProject("upcode-clone", "server", { repositoryKey: "github.com/t3tools/t3code" }),
+      makeProject("other", "server", { repositoryKey: "github.com/upango/other" }),
+      makeProject("upcode-clone", "server", { repositoryKey: "github.com/upango/upcode" }),
     ];
     expect(resolveEnvironmentProjectMatch(target, selected)).toBe(target[1]);
   });
 
   it("falls back to workspace basename, then title, for unindexed projects", () => {
-    const selected = makeProject("upcode", "mac", { workspaceRoot: "/Users/me/t3code" });
+    const selected = makeProject("upcode", "mac", { workspaceRoot: "/Users/me/upcode" });
     const byBasename = [
       makeProject("other", "server"),
-      makeProject("srv", "server", { workspaceRoot: "/home/me/t3code" }),
+      makeProject("srv", "server", { workspaceRoot: "/home/me/upcode" }),
     ];
     expect(resolveEnvironmentProjectMatch(byBasename, selected)).toBe(byBasename[1]);
 
@@ -97,22 +97,22 @@ describe("resolveEnvironmentProjectMatch", () => {
 
   it("does not treat a known different repository as a basename or title match", () => {
     const selected = makeProject("upcode", "mac", {
-      repositoryKey: "github.com/t3tools/t3code",
-      workspaceRoot: "/Users/me/t3code",
+      repositoryKey: "github.com/upango/upcode",
+      workspaceRoot: "/Users/me/upcode",
     });
     const fork = makeProject("fork", "server", {
-      repositoryKey: "github.com/someone/t3code",
+      repositoryKey: "github.com/someone/upcode",
       title: "upcode",
-      workspaceRoot: "/home/me/t3code",
+      workspaceRoot: "/home/me/upcode",
     });
-    const unindexed = makeProject("unindexed", "server", { workspaceRoot: "/srv/t3code" });
+    const unindexed = makeProject("unindexed", "server", { workspaceRoot: "/srv/upcode" });
     expect(resolveEnvironmentProjectMatch([fork, unindexed], selected)).toBe(unindexed);
     // Without any weaker match the fork is still the first-project fallback.
     expect(resolveEnvironmentProjectMatch([fork], selected)).toBe(fork);
   });
 
   it("falls back to the first project on the target so the draft has a key to carry over to", () => {
-    const selected = makeProject("upcode", "mac", { repositoryKey: "github.com/t3tools/t3code" });
+    const selected = makeProject("upcode", "mac", { repositoryKey: "github.com/upango/upcode" });
     const target = [makeProject("unrelated", "server"), makeProject("also-unrelated", "server")];
     expect(resolveEnvironmentProjectMatch(target, selected)).toBe(target[0]);
     expect(resolveEnvironmentProjectMatch([], selected)).toBeNull();

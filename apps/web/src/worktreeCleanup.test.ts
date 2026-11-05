@@ -87,7 +87,7 @@ describe("getOrphanedWorktreePathForThread", () => {
 describe("formatWorktreePathForDisplay", () => {
   it("shows only the last path segment for unix-like paths", () => {
     const result = formatWorktreePathForDisplay(
-      "/Users/julius/.upcode/worktrees/t3code-mvp/t3code-4e609bb8",
+      "/Users/julius/.upcode/worktrees/upcode-mvp/upcode-4e609bb8",
     );
     expect(result).toBe("upcode-4e609bb8");
   });

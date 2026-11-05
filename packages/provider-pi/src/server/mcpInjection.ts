@@ -231,16 +231,16 @@ function withoutToolSelectionArgs(args: ReadonlyArray<string>): ReadonlyArray<st
   return filtered;
 }
 
-function piT3McpExtensionDestPath(cacheDir: string): string {
+function piUPCodeMcpExtensionDestPath(cacheDir: string): string {
   return `${cacheDir.replace(/\\/g, "/")}/${PI_UPCODE_MCP_EXTENSION_FILENAME}`;
 }
 
-export const materializePiT3McpExtension = Effect.fn("materializePiT3McpExtension")(function* (
+export const materializePiUPCodeMcpExtension = Effect.fn("materializePiUPCodeMcpExtension")(function* (
   cacheDir: string,
 ) {
   const fs = yield* FileSystem.FileSystem;
   yield* fs.makeDirectory(cacheDir, { recursive: true });
-  const dest = piT3McpExtensionDestPath(cacheDir);
+  const dest = piUPCodeMcpExtensionDestPath(cacheDir);
   const existing = yield* fs.readFileString(dest).pipe(Effect.orElseSucceed(() => ""));
   if (existing !== PI_UPCODE_MCP_EXTENSION_SOURCE) {
     yield* fs.writeFileString(dest, PI_UPCODE_MCP_EXTENSION_SOURCE);
@@ -260,10 +260,10 @@ export function buildPiRpcLaunch(input: {
 }): {
   readonly args: ReadonlyArray<string>;
   readonly env: NodeJS.ProcessEnv;
-  readonly hasT3Mcp: boolean;
+  readonly hasUPCodeMcp: boolean;
 } {
-  const hasT3Extension = input.disableExtensions !== true && input.extensionPath !== undefined;
-  const hasT3Mcp = hasT3Extension && input.mcpSession !== undefined;
+  const hasUPCodeExtension = input.disableExtensions !== true && input.extensionPath !== undefined;
+  const hasUPCodeMcp = hasUPCodeExtension && input.mcpSession !== undefined;
   const extensionSafeArgs =
     input.disableExtensions === true
       ? withoutExplicitExtensions(input.launchArgs)
@@ -281,7 +281,7 @@ export function buildPiRpcLaunch(input: {
     ...(input.disableTools === true ? ["--no-tools"] : []),
   ];
   if (
-    hasT3Extension &&
+    hasUPCodeExtension &&
     input.extensionPath !== undefined &&
     !hasExplicitExtension(args, input.extensionPath)
   ) {
@@ -298,16 +298,16 @@ export function buildPiRpcLaunch(input: {
     args,
     env: {
       ...environment,
-      ...(hasT3Extension && input.extensionPath !== undefined
+      ...(hasUPCodeExtension && input.extensionPath !== undefined
         ? { [UPCODE_PI_MCP_EXTENSION_PATH_ENV]: input.extensionPath }
         : {}),
-      ...(hasT3Extension && input.runtimeMode !== undefined
+      ...(hasUPCodeExtension && input.runtimeMode !== undefined
         ? {
             [UPCODE_PI_RUNTIME_MODE_ENV]:
               input.runtimeMode === "auto" ? "approval-required" : input.runtimeMode,
           }
         : {}),
-      ...(hasT3Mcp && input.mcpSession !== undefined
+      ...(hasUPCodeMcp && input.mcpSession !== undefined
         ? {
             [UPCODE_MCP_URL_ENV]: input.mcpSession.endpoint,
             [UPCODE_MCP_BEARER_ENV]: bearerTokenFromAuthorizationHeader(
@@ -316,6 +316,6 @@ export function buildPiRpcLaunch(input: {
           }
         : {}),
     },
-    hasT3Mcp,
+    hasUPCodeMcp,
   };
 }

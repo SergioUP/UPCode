@@ -54,7 +54,7 @@ vi.mock("../../hooks/useCopyToClipboard", () => ({
   useCopyToClipboard: () => ({ copyToClipboard: vi.fn(), copied: false }),
 }));
 vi.mock("../../cloud/publicConfig", () => ({ hasCloudPublicConfig: () => false }));
-vi.mock("../clerk/useT3ConnectAuthPrompt", () => ({ useT3ConnectAuthPrompt: vi.fn() }));
+vi.mock("../clerk/useUPCodeConnectAuthPrompt", () => ({ useUPCodeConnectAuthPrompt: vi.fn() }));
 vi.mock("../../onboarding/firstRun", () => ({
   useCompleteOnboarding: () => state.completeOnboarding,
 }));

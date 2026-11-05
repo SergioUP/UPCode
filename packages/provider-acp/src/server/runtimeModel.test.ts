@@ -1176,7 +1176,7 @@ describe("AcpRuntimeModel", () => {
   it("turns future ACP content and session updates into explicit placeholders", () => {
     expect(
       acpContentBlockDisplayText({
-        type: "_t3_unknown",
+        type: "_upcode_unknown",
         originalType: "chart",
         raw: { type: "chart", points: [] },
       }),
@@ -1186,7 +1186,7 @@ describe("AcpRuntimeModel", () => {
       parseSessionUpdateEvent({
         sessionId: "session-1",
         update: {
-          sessionUpdate: "_t3_unknown",
+          sessionUpdate: "_upcode_unknown",
           originalSessionUpdate: "timeline_update",
           raw: { sessionUpdate: "timeline_update", entries: [] },
         },
@@ -1536,7 +1536,7 @@ describe("extractMcpToolCallIdentity", () => {
     for (const title of [
       "upcode___delegate_task",
       "upcode-delegate_task",
-      'mcp__t3_code__delegate_task: {"mode":"async"}',
+      'mcp__upcode_code__delegate_task: {"mode":"async"}',
       'upcode__delegate_task: {"mode":"async"}',
       "delegate_task_upcode",
       "upcode/delegate_task",

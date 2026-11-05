@@ -117,7 +117,7 @@ UPCodeSourceTextOutsideTapCoordinatorForWindow(UIWindow *window) {
   return coordinator;
 }
 
-@interface UPCodeSourceText () <RCTT3SourceTextViewProtocol, UITextViewDelegate,
+@interface UPCodeSourceText () <RCTUPCodeSourceTextViewProtocol, UITextViewDelegate,
                             UPCodeSourceTextOutsideTapTarget>
 @end
 

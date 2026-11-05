@@ -1,7 +1,7 @@
 # Building the mobile Screens dependency
 
 The mobile v5 stack uses a committed tarball from the
-[UPCode Screens fork](https://github.com/pingdotgg/react-native-screens/tree/upcode-v5.0.0-t3.27).
+[UPCode Screens fork](https://github.com/pingdotgg/react-native-screens/tree/upcode-v5.0.0).
 The fork owns the integration changes; the app does not patch this package.
 Each archive includes compiled JavaScript, declarations, native source and
 `upcode-fork.json` recording its version, source commit and upstream base.
@@ -10,7 +10,7 @@ To reproduce an archive, use Node 24 and the repository's pinned Yarn from a
 clean fork checkout at the source commit recorded in its `upcode-fork.json`:
 
 ```sh
-yarn --cwd /tmp/upcode-screens-fork pack:upcode /absolute/path/to/t3code/apps/mobile/deps
+yarn --cwd /tmp/upcode-screens-fork pack:upcode /absolute/path/to/upcode/apps/mobile/deps
 ```
 
 For an update, sync the fork's `main` with upstream, merge it and the required

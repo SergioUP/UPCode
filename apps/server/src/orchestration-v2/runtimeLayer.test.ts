@@ -190,11 +190,11 @@ const watchedPullRequestDetail = (input: {
   projectId: input.projectId,
   projectTitle: "Watch wake",
   workspaceRoot: "/workspace/watch",
-  repository: "pingdotgg/t3code",
+  repository: "SergioUP/UPCode",
   number: input.number,
   title: "Watched pull request",
   body: "",
-  url: `https://github.com/pingdotgg/t3code/pull/${input.number}`,
+  url: `https://github.com/SergioUP/UPCode/pull/${input.number}`,
   author: { login: "agent-user", name: null, avatarUrl: null },
   state: "open",
   isDraft: false,
@@ -1977,9 +1977,9 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
       const threadId = ThreadId.make("runtime-layer-linked-pull-request-thread");
       const linkedPullRequest = {
         projectId: ProjectId.make("runtime-layer-linked-pull-request-project"),
-        repository: "pingdotgg/t3code",
+        repository: "SergioUP/UPCode",
         number: 8160,
-        url: "https://github.com/pingdotgg/t3code/pull/8160",
+        url: "https://github.com/SergioUP/UPCode/pull/8160",
       } as const;
 
       yield* orchestrator.dispatch({
@@ -2074,9 +2074,9 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
         },
         branchPullRequest: {
           projectId,
-          repository: "pingdotgg/t3code",
+          repository: "SergioUP/UPCode",
           number: 1,
-          url: "https://github.com/pingdotgg/t3code/pull/1",
+          url: "https://github.com/SergioUP/UPCode/pull/1",
         },
       });
       for (const [index, number] of [2, 2, 1, 3].entries()) {
@@ -2087,7 +2087,7 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
           host: "GitHub.com",
           repository: "SergioUP/UPCode",
           number,
-          url: `https://github.com/pingdotgg/t3code/pull/${number}`,
+          url: `https://github.com/SergioUP/UPCode/pull/${number}`,
           source: "manual",
         });
         assert.deepEqual(
@@ -2100,7 +2100,7 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
         commandId: CommandId.make("branch-pr-unlink"),
         threadId,
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "SergioUP/UPCode",
         number: 1,
       });
       yield* orchestrator.dispatch({
@@ -2108,9 +2108,9 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
         commandId: CommandId.make("branch-pr-link-after-unlink"),
         threadId,
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "SergioUP/UPCode",
         number: 4,
-        url: "https://github.com/pingdotgg/t3code/pull/4",
+        url: "https://github.com/SergioUP/UPCode/pull/4",
         source: "manual",
       });
       assert.isTrue((yield* maintenance.rebuild).valid);
@@ -2148,14 +2148,14 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
           threadId,
           ...key,
           number,
-          url: `https://github.com/pingdotgg/t3code/pull/${number}`,
+          url: `https://github.com/SergioUP/UPCode/pull/${number}`,
           source: number === 1 ? "manual" : "stack",
         });
       }
       const linked = yield* orchestrator.getThreadShell(threadId);
       assert.deepEqual(
         linked?.pullRequests?.map(({ host, repository, number }) => ({ host, repository, number })),
-        [1, 2].map((number) => ({ host: "github.com", repository: "pingdotgg/t3code", number })),
+        [1, 2].map((number) => ({ host: "github.com", repository: "SergioUP/UPCode", number })),
       );
       yield* orchestrator.dispatch({
         type: "thread.pull-request.unlink",
@@ -2184,7 +2184,7 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
         threadId,
         ...key,
         number: 2,
-        url: "https://github.com/pingdotgg/t3code/pull/2",
+        url: "https://github.com/SergioUP/UPCode/pull/2",
         source: "stack",
       });
       assert.equal(
@@ -2202,7 +2202,7 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
         threadId,
         ...key,
         number: 2,
-        url: "https://github.com/pingdotgg/t3code/pull/2",
+        url: "https://github.com/SergioUP/UPCode/pull/2",
         source: "manual",
       });
       assert.equal(
@@ -2231,8 +2231,8 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
         branch: null,
         worktreePath: null,
       });
-      const key = { host: "github.com", repository: "pingdotgg/t3code", number: 7 };
-      const url = "https://github.com/pingdotgg/t3code/pull/7";
+      const key = { host: "github.com", repository: "SergioUP/UPCode", number: 7 };
+      const url = "https://github.com/SergioUP/UPCode/pull/7";
       const watchOf = Effect.map(
         orchestrator.getThreadShell(threadId),
         (thread) => thread?.pullRequests?.[0]?.watch,
@@ -2326,7 +2326,7 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
         branch: null,
         worktreePath: null,
       });
-      const key = { host: "github.com", repository: "pingdotgg/t3code" };
+      const key = { host: "github.com", repository: "SergioUP/UPCode" };
       for (const number of [7, 8]) {
         yield* orchestrator.dispatch({
           type: "thread.pull-request.watch",
@@ -2335,7 +2335,7 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
           ...key,
           number,
           watching: true,
-          link: { url: `https://github.com/pingdotgg/t3code/pull/${number}`, source: "agent" },
+          link: { url: `https://github.com/SergioUP/UPCode/pull/${number}`, source: "agent" },
         });
       }
       const before = yield* orchestrator.getThreadShell(threadId);
@@ -2431,10 +2431,10 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
         type: "thread.pull-request.watch" as const,
         threadId,
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "SergioUP/UPCode",
         number: 7,
         watching: true,
-        link: { url: "https://github.com/pingdotgg/t3code/pull/7", source: "agent" as const },
+        link: { url: "https://github.com/SergioUP/UPCode/pull/7", source: "agent" as const },
       };
       const watched = Effect.map(
         orchestrator.getThreadShell(threadId),
@@ -2497,10 +2497,10 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
         commandId: CommandId.make("pr-watch-unreadable-start"),
         threadId,
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "SergioUP/UPCode",
         number: 8,
         watching: true,
-        link: { url: "https://github.com/pingdotgg/t3code/pull/8", source: "agent" },
+        link: { url: "https://github.com/SergioUP/UPCode/pull/8", source: "agent" },
       });
       const reactor = yield* PullRequestWatchReactor.make.pipe(
         Effect.provide(
@@ -2562,10 +2562,10 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
               commandId: CommandId.make(`watch:${threadId}`),
               threadId,
               host: "github.com",
-              repository: "pingdotgg/t3code",
+              repository: "SergioUP/UPCode",
               number: 9,
               watching: true,
-              link: { url: "https://github.com/pingdotgg/t3code/pull/9", source: "agent" },
+              link: { url: "https://github.com/SergioUP/UPCode/pull/9", source: "agent" },
             });
           });
         for (const threadId of threadIds) yield* watchFrom(threadId);
@@ -2699,7 +2699,7 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
         branch: null,
         worktreePath: null,
       });
-      const key = { host: "github.com", repository: "pingdotgg/t3code", number: 11 };
+      const key = { host: "github.com", repository: "SergioUP/UPCode", number: 11 };
       const watching = (on: boolean, id: string) =>
         orchestrator.dispatch({
           type: "thread.pull-request.watch",
@@ -2707,7 +2707,7 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
           threadId,
           ...key,
           watching: on,
-          link: { url: "https://github.com/pingdotgg/t3code/pull/11", source: "agent" },
+          link: { url: "https://github.com/SergioUP/UPCode/pull/11", source: "agent" },
         });
       yield* watching(true, "start");
 
@@ -2757,7 +2757,7 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
       assert.deepEqual(ended, [
         {
           threadId,
-          pullRequest: "github.com/pingdotgg/t3code#11",
+          pullRequest: "github.com/SergioUP/UPCode#11",
           reason: "stopped",
           minutes: 480,
           quietMinutes: 120,
@@ -2801,10 +2801,10 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
         commandId: CommandId.make("pr-watch-fingerprint-start"),
         threadId,
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "SergioUP/UPCode",
         number: 11,
         watching: true,
-        link: { url: "https://github.com/pingdotgg/t3code/pull/11", source: "agent" },
+        link: { url: "https://github.com/SergioUP/UPCode/pull/11", source: "agent" },
       });
 
       let fingerprint: { status: string; remarks: string } | "rate-limited" = {
@@ -2976,8 +2976,8 @@ it.layer(layerTest)("OrchestrationV2LayerLive lifecycle", (it) => {
         branch: null,
         worktreePath: null,
       });
-      const key = { host: "github.com", repository: "pingdotgg/t3code", number: 7 };
-      const url = "https://github.com/pingdotgg/t3code/pull/7";
+      const key = { host: "github.com", repository: "SergioUP/UPCode", number: 7 };
+      const url = "https://github.com/SergioUP/UPCode/pull/7";
       yield* orchestrator.dispatch({
         type: "thread.pull-request.link",
         commandId: CommandId.make(`pr-watch-wake-link-${mode}`),

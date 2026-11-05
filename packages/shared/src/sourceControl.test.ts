@@ -241,7 +241,7 @@ it("puts owner and name back together for an identity recorded before displayNam
     owner: "upango",
     name: "upcode",
   });
-  expect(selector).toBe("upango/t3code");
+  expect(selector).toBe("upango/upcode");
 });
 
 it("names nothing for a project with no remote to name it by", () => {

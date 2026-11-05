@@ -41,7 +41,7 @@ it("formats package runner commands from their cache entry paths", () => {
 it("treats stable installs as direct invocations", () => {
   for (const entryPath of [
     "/usr/local/lib/node_modules/upcode/dist/bin.mjs",
-    "/home/theo/Code/work/t3code/apps/server/dist/bin.mjs",
+    "/home/theo/Code/work/upcode/apps/server/dist/bin.mjs",
     "/home/theo/.upcode/runtime/0.0.31/node_modules/upcode/dist/bin.mjs",
     "",
   ]) {
@@ -153,7 +153,7 @@ it.layer(NodeServices.layer)("root CLI commands", (it) => {
       yield* fs.makeDirectory(path.dirname(shim), { recursive: true });
       yield* fs.writeFileString(shim, "#!/bin/sh\n", { mode: 0o755 });
       const desktop = {
-        node: "/tmp/.mount_UPCodeabc/t3code",
+        node: "/tmp/.mount_UPCodeabc/upcode",
         entry: "/tmp/.mount_UPCodeabc/resources/app.asar/apps/server/dist/bin.mjs",
         env: { UPCODE_CLI_PATH: shim },
       };

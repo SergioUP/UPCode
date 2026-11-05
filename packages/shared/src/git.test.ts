@@ -19,22 +19,22 @@ import {
 describe("normalizeGitRemoteUrl", () => {
   it("canonicalizes equivalent GitHub remotes across protocol variants", () => {
     expect(normalizeGitRemoteUrl("git@github.com:UPango/UPCode.git")).toBe(
-      "github.com/t3tools/t3code",
+      "github.com/upango/upcode",
     );
     expect(normalizeGitRemoteUrl("https://github.com/UPango/UPCode.git")).toBe(
-      "github.com/t3tools/t3code",
+      "github.com/upango/upcode",
     );
     expect(normalizeGitRemoteUrl("ssh://git@github.com/UPango/UPCode")).toBe(
-      "github.com/t3tools/t3code",
+      "github.com/upango/upcode",
     );
   });
 
   it("preserves nested group paths for providers like GitLab", () => {
     expect(normalizeGitRemoteUrl("git@gitlab.com:UPango/platform/UPCode.git")).toBe(
-      "gitlab.com/t3tools/platform/t3code",
+      "gitlab.com/upango/platform/upcode",
     );
     expect(normalizeGitRemoteUrl("https://gitlab.com/UPango/platform/UPCode.git")).toBe(
-      "gitlab.com/t3tools/platform/t3code",
+      "gitlab.com/upango/platform/upcode",
     );
   });
 
@@ -58,22 +58,22 @@ describe("normalizeGitRemoteUrl", () => {
 
   it("gives an Azure DevOps repository the same key over SSH as over HTTPS", () => {
     expect(normalizeGitRemoteUrl("git@ssh.dev.azure.com:v3/UPango/Platform/UPCode")).toBe(
-      "dev.azure.com/t3tools/platform/_git/t3code",
+      "dev.azure.com/upango/platform/_git/upcode",
     );
     expect(normalizeGitRemoteUrl("ssh://git@ssh.dev.azure.com:22/v3/UPango/Platform/UPCode")).toBe(
-      "dev.azure.com/t3tools/platform/_git/t3code",
+      "dev.azure.com/upango/platform/_git/upcode",
     );
     expect(
       normalizeGitRemoteUrl("https://UPango@dev.azure.com/UPango/Platform/_git/UPCode"),
-    ).toBe("dev.azure.com/t3tools/platform/_git/t3code");
+    ).toBe("dev.azure.com/upango/platform/_git/upcode");
   });
 
   it("puts the organization back in the host on the name dev.azure.com replaced", () => {
     expect(
       normalizeGitRemoteUrl("UPango@vs-ssh.visualstudio.com:v3/UPango/Platform/UPCode"),
-    ).toBe("upango.visualstudio.com/platform/_git/t3code");
+    ).toBe("upango.visualstudio.com/platform/_git/upcode");
     expect(normalizeGitRemoteUrl("https://UPango.visualstudio.com/Platform/_git/UPCode")).toBe(
-      "upango.visualstudio.com/platform/_git/t3code",
+      "upango.visualstudio.com/platform/_git/upcode",
     );
   });
 
@@ -81,10 +81,10 @@ describe("normalizeGitRemoteUrl", () => {
     // Not `v3`, and not four segments: rewriting either would invent a repository that the web
     // spelling has no name for, so the remote stands as it arrived.
     expect(normalizeGitRemoteUrl("git@ssh.dev.azure.com:v4/UPango/Platform/UPCode")).toBe(
-      "ssh.dev.azure.com/v4/t3tools/platform/t3code",
+      "ssh.dev.azure.com/v4/upango/platform/upcode",
     );
     expect(normalizeGitRemoteUrl("git@ssh.dev.azure.com:v3/UPango/UPCode")).toBe(
-      "ssh.dev.azure.com/v3/t3tools/t3code",
+      "ssh.dev.azure.com/v3/upango/upcode",
     );
   });
 });
@@ -97,12 +97,12 @@ describe("parseOriginUrlFromGitConfig", () => {
       '[remote "upstream"]',
       "\turl = https://github.com/other/repo.git",
       '[remote "origin"]',
-      "\turl = git@github.com:pingdotgg/t3code.git",
+      "\turl = git@github.com:SergioUP/UPCode.git",
       "\tfetch = +refs/heads/*:refs/remotes/origin/*",
       '[branch "main"]',
       "\tremote = origin",
     ].join("\n");
-    expect(parseOriginUrlFromGitConfig(config)).toBe("git@github.com:pingdotgg/t3code.git");
+    expect(parseOriginUrlFromGitConfig(config)).toBe("git@github.com:SergioUP/UPCode.git");
   });
 
   it("strips inline comments and quotes from the url value", () => {
@@ -193,13 +193,13 @@ describe("isTemporaryWorktreeBranch", () => {
     );
   });
 
-  it("matches legacy upcode temporary worktree refs", () => {
+  it("matches uuid-shaped temporary worktree refs", () => {
     expect(isTemporaryWorktreeBranch("upcode/deadbeef")).toBe(true);
     expect(isTemporaryWorktreeBranch("upcode-deadbeef")).toBe(true);
     expect(isTemporaryWorktreeBranch("upcode/f4ae4e0e-f971-4d48-b4f2-9cf0aa54ab12")).toBe(true);
     expect(
       isTemporaryWorktreeBranch(`${WORKTREE_BRANCH_PREFIX}/f4ae4e0e-f971-4d48-b4f2-9cf0aa54ab12`),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("rejects UUID-shaped refs that are not RFC 4122 v4", () => {

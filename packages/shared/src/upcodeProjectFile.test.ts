@@ -2,16 +2,16 @@ import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
-  buildT3ProjectFileJsonSchema,
-  parseT3ProjectFile,
+  buildUPCodeProjectFileJsonSchema,
+  parseUPCodeProjectFile,
   UPCodeProjectFileFromJson,
-} from "./t3ProjectFile.ts";
+} from "./upcodeProjectFile.ts";
 
 const decodeJson = Schema.decodeUnknownSync(UPCodeProjectFileFromJson);
 
-describe("buildT3ProjectFileJsonSchema", () => {
+describe("buildUPCodeProjectFileJsonSchema", () => {
   it("emits a draft 2020-12 schema with the published $id", () => {
-    const schema = buildT3ProjectFileJsonSchema();
+    const schema = buildUPCodeProjectFileJsonSchema();
 
     expect(schema.$schema).toBe("https://json-schema.org/draft/2020-12/schema");
     expect(schema.$id).toBe("https://upcode.codes/schema/upcode.json");
@@ -20,7 +20,7 @@ describe("buildT3ProjectFileJsonSchema", () => {
   });
 
   it("documents every supported field", () => {
-    const schema = buildT3ProjectFileJsonSchema() as {
+    const schema = buildUPCodeProjectFileJsonSchema() as {
       properties: Record<
         string,
         {
@@ -57,7 +57,7 @@ describe("buildT3ProjectFileJsonSchema", () => {
   });
 
   it("stays JSON-serializable", () => {
-    const schema = buildT3ProjectFileJsonSchema();
+    const schema = buildUPCodeProjectFileJsonSchema();
     expect(JSON.parse(JSON.stringify(schema))).toEqual(schema);
   });
 });
@@ -81,15 +81,15 @@ describe("UPCodeProjectFileFromJson", () => {
   });
 });
 
-describe("parseT3ProjectFile", () => {
+describe("parseUPCodeProjectFile", () => {
   it("returns the decoded file for valid contents", () => {
-    expect(parseT3ProjectFile('{ "defaultThreadEnvMode": "worktree" }')).toEqual({
+    expect(parseUPCodeProjectFile('{ "defaultThreadEnvMode": "worktree" }')).toEqual({
       defaultThreadEnvMode: "worktree",
     });
   });
 
   it("returns null for malformed or invalid contents", () => {
-    expect(parseT3ProjectFile("{ not json")).toBeNull();
-    expect(parseT3ProjectFile('{ "defaultThreadEnvMode": "spaceship" }')).toBeNull();
+    expect(parseUPCodeProjectFile("{ not json")).toBeNull();
+    expect(parseUPCodeProjectFile('{ "defaultThreadEnvMode": "spaceship" }')).toBeNull();
   });
 });

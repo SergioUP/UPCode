@@ -101,8 +101,8 @@ vi.mock("~/hooks/useSettings", () => ({
   usePrimarySettings: () => DEFAULT_SERVER_SETTINGS,
   useEnvironmentSettings: () => DEFAULT_SERVER_SETTINGS,
 }));
-vi.mock("~/hooks/useT3ProjectFileScripts", () => ({
-  useT3ProjectFileState: () => ({
+vi.mock("~/hooks/useUPCodeProjectFileScripts", () => ({
+  useUPCodeProjectFileState: () => ({
     status: "valid",
     file: null,
     scripts: [{ name: "Imported", command: "vp test" }],

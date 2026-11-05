@@ -16,7 +16,7 @@
 $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$repo = "pingdotgg/t3code"
+$repo = "SergioUP/UPCode"
 $baseUrl = if ($env:UPCODE_RELEASE_BASE_URL) { $env:UPCODE_RELEASE_BASE_URL.TrimEnd("/") } else { "https://github.com/$repo/releases/download" }
 $upcodeHome = if ($env:UPCODE_HOME) { $env:UPCODE_HOME } else { Join-Path $HOME ".upcode" }
 $binDir = if ($env:UPCODE_INSTALL_BIN_DIR) { $env:UPCODE_INSTALL_BIN_DIR } else { Join-Path $HOME ".local\bin" }

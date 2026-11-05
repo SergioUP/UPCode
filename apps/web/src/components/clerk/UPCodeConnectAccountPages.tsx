@@ -29,7 +29,7 @@ type PortalTargets = Readonly<Record<string, HTMLDivElement | undefined>>;
  * UserButton. Clerk mounts custom pages into DOM nodes it owns, so the caller
  * must keep `portals` rendered for as long as the modal can be open.
  */
-export function useT3ConnectAccountPage(): {
+export function useUPCodeConnectAccountPage(): {
   readonly open: (() => void) | null;
   readonly portals: ReactNode;
 } {

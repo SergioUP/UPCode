@@ -1,7 +1,7 @@
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vite-plus/test";
 
-import { UPCodeProjectFile, type UPCodeProjectFile as UPCodeProjectFileType } from "./t3ProjectFile.ts";
+import { UPCodeProjectFile, type UPCodeProjectFile as UPCodeProjectFileType } from "./upcodeProjectFile.ts";
 
 const decode = Schema.decodeUnknownSync(UPCodeProjectFile as never) as (
   input: unknown,

@@ -303,7 +303,7 @@ const main = Command.make(
       });
     const recordPath = path.join(
       home,
-      ".cache/t3code/native-clients",
+      ".cache/upcode/native-clients",
       platform,
       `${yield* digest(device)}.json`,
     );

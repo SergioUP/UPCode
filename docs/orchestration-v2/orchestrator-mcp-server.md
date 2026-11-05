@@ -160,7 +160,7 @@ UPCODE_MCP_BEARER_TOKEN=<provider-session-token>
 ```
 
 The extension preserves public names under `mcp__upcode__` for saved loadouts
-and tool selectors. Modern Pi also receives hidden `mcp__t3_code__` aliases,
+and tool selectors. Modern Pi also receives hidden `mcp__upcode_code__` aliases,
 which reserve the normalized namespace against configured MCP servers without
 adding declarations or search results. On Pi 0.99+,
 `orchestrator_capabilities`, `delegate_task`, and `task_status` remain directly

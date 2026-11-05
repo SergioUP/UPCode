@@ -4,21 +4,21 @@ import { LogInIcon } from "lucide-react";
 import { hasCloudPublicConfig } from "../../cloud/publicConfig";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
 import { UPCODE_CONNECT_ACCOUNT_PAGES } from "./UPCodeConnectAccountPages";
-import { useT3ConnectAuthPrompt } from "./useT3ConnectAuthPrompt";
+import { useUPCodeConnectAuthPrompt } from "./useUPCodeConnectAuthPrompt";
 
 export function UPCodeConnectSidebarSignIn() {
   if (!hasCloudPublicConfig()) return null;
 
-  return <ConfiguredT3ConnectSidebarSignIn />;
+  return <ConfiguredUPCodeConnectSidebarSignIn />;
 }
 
 export function UPCodeConnectSidebarAvatar() {
   if (!hasCloudPublicConfig()) return null;
 
-  return <ConfiguredT3ConnectSidebarAvatar />;
+  return <ConfiguredUPCodeConnectSidebarAvatar />;
 }
 
-function ConfiguredT3ConnectSidebarAvatar() {
+function ConfiguredUPCodeConnectSidebarAvatar() {
   const { isLoaded, isSignedIn } = useAuth();
 
   if (!isLoaded || !isSignedIn) return null;
@@ -46,9 +46,9 @@ function ConfiguredT3ConnectSidebarAvatar() {
   );
 }
 
-function ConfiguredT3ConnectSidebarSignIn() {
+function ConfiguredUPCodeConnectSidebarSignIn() {
   const { isLoaded, isSignedIn } = useAuth();
-  const { authPrompt, openAuthPrompt } = useT3ConnectAuthPrompt();
+  const { authPrompt, openAuthPrompt } = useUPCodeConnectAuthPrompt();
 
   if (!isLoaded || isSignedIn) return null;
 

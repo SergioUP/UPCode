@@ -31,11 +31,11 @@ import {
   type WorkLogToolLifecycleStatus,
 } from "@upcode/client-runtime/work-log/presentation";
 import {
-  resolveT3McpToolDefinition,
-  resolveT3McpToolPresentation,
+  resolveUPCodeMcpToolDefinition,
+  resolveUPCodeMcpToolPresentation,
   type UPCodeMcpToolLogo,
   type UPCodeMcpToolPresentation,
-} from "@upcode/shared/t3McpToolPresentation";
+} from "@upcode/shared/upcodeMcpToolPresentation";
 import type {
   ChatAttachment,
   MessageId,
@@ -589,7 +589,7 @@ function itemToolPresentation(item: OrchestrationV2TurnItem): UPCodeMcpToolPrese
   if (item.type !== "dynamic_tool") {
     return null;
   }
-  return resolveT3McpToolPresentation(item.toolName) ?? resolveT3McpToolPresentation(item.title);
+  return resolveUPCodeMcpToolPresentation(item.toolName) ?? resolveUPCodeMcpToolPresentation(item.title);
 }
 
 function itemSummary(
@@ -929,7 +929,7 @@ function groupAdjacentActivities(entries: ReadonlyArray<RawThreadFeedEntry>): Th
         item.type === "dynamic_tool" &&
         item.runId !== null &&
         (item.status === "running" || item.status === "completed") &&
-        resolveT3McpToolDefinition(item.toolName)?.summaryAction === "delegate" &&
+        resolveUPCodeMcpToolDefinition(item.toolName)?.summaryAction === "delegate" &&
         !workEntryDisplayIndicatesToolFailure(entry.activity.workEntry)
       ) {
         const output = compactDynamicToolOutput(item.output);

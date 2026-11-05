@@ -14,7 +14,7 @@ const labels = new Map([
 function project(
   id: string,
   environmentId = nucbox,
-  canonicalKey: string | null = "github.com/pingdotgg/t3code",
+  canonicalKey: string | null = "github.com/SergioUP/UPCode",
 ) {
   return {
     id: ProjectId.make(id),
@@ -76,7 +76,7 @@ describe("pull request project filter choices", () => {
   it("distinguishes same-named repositories on one server by checkout path", () => {
     const projects = [
       project("upstream"),
-      project("fork", nucbox, "github.com/juliusmarminge/t3code"),
+      project("fork", nucbox, "github.com/juliusmarminge/upcode"),
     ];
 
     const choices = pullRequestFilterProjects(projects, labels);
@@ -89,7 +89,7 @@ describe("pull request project filter choices", () => {
 
   it("keeps repositories on different hosts separate", () => {
     const choices = pullRequestFilterProjects(
-      [project("github"), project("enterprise", nucbox, "git.example.com/pingdotgg/t3code")],
+      [project("github"), project("enterprise", nucbox, "git.example.com/SergioUP/UPCode")],
       labels,
     );
 

@@ -19,7 +19,7 @@ describe("resolveDesktopAppControlAddress", () => {
       joinPath: (...segments) => segments.join("/"),
     });
 
-    expect(first.directory).toBe("/tmp/t3code-1000");
+    expect(first.directory).toBe("/tmp/upcode-1000");
     expect(first.address.length).toBeLessThan(108);
     expect(first.address).not.toBe(second.address);
   });

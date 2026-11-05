@@ -10,7 +10,7 @@ import {
   deriveToolActivityPresentation,
   mergeToolActivityData,
 } from "@upcode/shared/toolActivity";
-import { UPCODE_MCP_TOOL_NAMES } from "@upcode/shared/t3McpToolPresentation";
+import { UPCODE_MCP_TOOL_NAMES } from "@upcode/shared/upcodeMcpToolPresentation";
 import type {
   OrchestrationV2ProviderThreadNativeMetadata,
   ThreadTokenUsageSnapshot,
@@ -334,7 +334,7 @@ export function acpContentBlockDisplayText(
       const mimeType = boundedContentMetadata(content.mimeType, 256) || "unknown type";
       return `[ACP audio (${mimeType})]`;
     }
-    case "_t3_unknown":
+    case "_upcode_unknown":
       return `[Unsupported ACP content: ${boundedContentMetadata(content.originalType, 128) || "unknown"}]`;
   }
 }
@@ -368,9 +368,9 @@ function sanitizeAcpToolCallContent(
         };
       case "terminal":
         return { type: "terminal", terminalId: entry.terminalId };
-      case "_t3_unknown":
+      case "_upcode_unknown":
         return {
-          type: "_t3_unknown",
+          type: "_upcode_unknown",
           originalType: boundedContentMetadata(entry.originalType, 128) || "unknown",
           raw: null,
         };
@@ -1079,7 +1079,7 @@ function acpMcpFallbackInput(value: string | undefined): Record<string, unknown>
  * Agents flatten injected MCP tools into model-facing function names with no
  * shared convention (survey of the 2026-08 registry builds): Kilo and
  * opencode use `upcode_<tool>`, claude-acp and qwen `mcp__upcode__<tool>`,
- * Amp `mcp__t3_code__<tool>` (hyphens mangled), droid `upcode___<tool>`,
+ * Amp `mcp__upcode_code__<tool>` (hyphens mangled), droid `upcode___<tool>`,
  * Copilot `upcode-<tool>`, cline appends `: <args json>`. UPCode always injects
  * its server as "upcode", and matches are additionally gated on the known
  * UPCode tool inventory, so the separator match can stay loose.
@@ -1628,7 +1628,7 @@ export function parseSessionUpdateEvent(params: EffectAcpSchema.SessionNotificat
       });
       break;
     }
-    case "_t3_unknown": {
+    case "_upcode_unknown": {
       events.push({
         _tag: "UnknownUpdate",
         updateType: boundedContentMetadata(upd.originalSessionUpdate, 128) || "unknown",

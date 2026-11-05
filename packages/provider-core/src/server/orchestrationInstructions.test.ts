@@ -31,17 +31,17 @@ describe("UPCode orchestration provider instructions", () => {
     const injected = upcodeOrchestrationPromptForFirstRun({
       prompt,
       runOrdinal: 1,
-      hasT3Mcp: true,
+      hasUPCodeMcp: true,
     });
 
     assert.include(injected, "<upcode_code_orchestration_instructions>");
     assert.include(injected, `<user_request>\n${prompt}\n</user_request>`);
     assert.equal(
-      upcodeOrchestrationPromptForFirstRun({ prompt, runOrdinal: 2, hasT3Mcp: true }),
+      upcodeOrchestrationPromptForFirstRun({ prompt, runOrdinal: 2, hasUPCodeMcp: true }),
       prompt,
     );
     assert.equal(
-      upcodeOrchestrationPromptForFirstRun({ prompt, runOrdinal: 1, hasT3Mcp: false }),
+      upcodeOrchestrationPromptForFirstRun({ prompt, runOrdinal: 1, hasUPCodeMcp: false }),
       prompt,
     );
   });
@@ -54,7 +54,7 @@ describe("UPCode orchestration provider instructions", () => {
   it("gives ACP sessions provider-neutral mode, browser, and orchestration guidance", () => {
     const injected = upcodeAcpPromptWithInstructions({
       prompt: "Inspect the repository.",
-      state: { interactionMode: "default", hasT3Mcp: true },
+      state: { interactionMode: "default", hasUPCodeMcp: true },
     });
 
     assert.include(injected, "UPCode interaction mode: Default");
@@ -65,7 +65,7 @@ describe("UPCode orchestration provider instructions", () => {
 
   it("reinjects ACP guidance only when mode or tool availability changes", () => {
     const prompt = "Continue.";
-    const defaultState = { interactionMode: "default", hasT3Mcp: true } as const;
+    const defaultState = { interactionMode: "default", hasUPCodeMcp: true } as const;
 
     assert.equal(
       upcodeAcpPromptWithInstructions({ prompt, state: defaultState, previousState: defaultState }),
@@ -81,7 +81,7 @@ describe("UPCode orchestration provider instructions", () => {
     );
     const withoutMcp = upcodeAcpPromptWithInstructions({
       prompt,
-      state: { interactionMode: "default", hasT3Mcp: false },
+      state: { interactionMode: "default", hasUPCodeMcp: false },
     });
     assert.include(withoutMcp, "UPCode interaction mode: Default");
     assert.notInclude(withoutMcp, "UPCode collaborative browser");

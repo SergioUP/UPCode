@@ -23,11 +23,11 @@ describe("findPromptLinkProject", () => {
     const projects = [
       {
         id: "fork",
-        repositoryIdentity: identity("github.com/pingdotgg/t3code", "github.com/me/t3code"),
+        repositoryIdentity: identity("github.com/SergioUP/UPCode", "github.com/me/upcode"),
       },
       { id: "none", repositoryIdentity: null },
       { id: "recent", repositoryIdentity: identity("github.com/SergioUP/UPCode") },
-      { id: "older", repositoryIdentity: identity("github.com/pingdotgg/t3code") },
+      { id: "older", repositoryIdentity: identity("github.com/SergioUP/UPCode") },
     ];
     expect(findPromptLinkProject(projects, { owner: "pingdotgg", name: "upcode" })?.id).toBe(
       "recent",
@@ -41,9 +41,9 @@ describe("findPromptLinkPullRequestThread", () => {
   const link = (number: number, source: ThreadPullRequestLink["source"] = "created") =>
     ({
       host: "github.com",
-      repository: "pingdotgg/t3code",
+      repository: "SergioUP/UPCode",
       number,
-      url: `https://github.com/pingdotgg/t3code/pull/${number}`,
+      url: `https://github.com/SergioUP/UPCode/pull/${number}`,
       source,
       linkedAt: "2026-01-01T00:00:00.000Z",
       snapshot: null,

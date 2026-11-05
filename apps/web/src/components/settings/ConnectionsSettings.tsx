@@ -159,7 +159,7 @@ import {
   supportsServerUpdateThreadContinuation,
 } from "~/versionSkew";
 import { hasCloudPublicConfig } from "~/cloud/publicConfig";
-import { RemoveT3ConnectEnvironmentDialog } from "../clerk/RemoveT3ConnectEnvironmentDialog";
+import { RemoveUPCodeConnectEnvironmentDialog } from "../clerk/RemoveUPCodeConnectEnvironmentDialog";
 import { useCloudLinkController } from "~/cloud/useCloudLinkController";
 import { authEnvironment } from "~/state/auth";
 import { environmentCatalog } from "~/connection/catalog";
@@ -2808,12 +2808,12 @@ export function ConnectionsSettings() {
   // device. Switching off is the reversible path, so removal always confirms.
   // UPCode Connect environments get their own dialog: removing one here leaves its
   // account registration, so it points to where that can be deregistered.
-  const [pendingT3ConnectRemoval, setPendingT3ConnectRemoval] =
+  const [pendingUPCodeConnectRemoval, setPendingUPCodeConnectRemoval] =
     useState<EnvironmentPresentation | null>(null);
   const handleRemoveSavedBackend = useCallback(
     async (environment: EnvironmentPresentation) => {
       if (environment.relayManaged && hasCloudPublicConfig()) {
-        setPendingT3ConnectRemoval(environment);
+        setPendingUPCodeConnectRemoval(environment);
         return;
       }
       // Fail closed: no mounted confirm host means no removal.
@@ -4158,13 +4158,13 @@ export function ConnectionsSettings() {
         />
       </SettingsSection>
       {hasCloudPublicConfig() ? (
-        <RemoveT3ConnectEnvironmentDialog
-          environmentLabel={pendingT3ConnectRemoval?.label ?? null}
-          onCancel={() => setPendingT3ConnectRemoval(null)}
+        <RemoveUPCodeConnectEnvironmentDialog
+          environmentLabel={pendingUPCodeConnectRemoval?.label ?? null}
+          onCancel={() => setPendingUPCodeConnectRemoval(null)}
           onConfirm={() => {
-            if (!pendingT3ConnectRemoval) return;
-            setPendingT3ConnectRemoval(null);
-            void removeSavedBackend(pendingT3ConnectRemoval);
+            if (!pendingUPCodeConnectRemoval) return;
+            setPendingUPCodeConnectRemoval(null);
+            void removeSavedBackend(pendingUPCodeConnectRemoval);
           }}
         />
       ) : null}

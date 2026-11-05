@@ -721,9 +721,9 @@ type ModelRef = ReturnType<typeof Model.Ref.make>;
  * session ids. A turn keeps its id in `nativeTurnRef`.
  */
 const turnPromptId = (sessionId: string, attemptId: string) =>
-  SessionMessage.ID.make(`msg_t3_turn_${sessionId}:${attemptId}`);
+  SessionMessage.ID.make(`msg_upcode_turn_${sessionId}:${attemptId}`);
 const steerPromptId = (sessionId: string, messageId: string) =>
-  SessionMessage.ID.make(`msg_t3_steer_${sessionId}:${messageId}`);
+  SessionMessage.ID.make(`msg_upcode_steer_${sessionId}:${messageId}`);
 
 /**
  * The user message a turn prompted with. Turns from before UPCode chose prompt ids

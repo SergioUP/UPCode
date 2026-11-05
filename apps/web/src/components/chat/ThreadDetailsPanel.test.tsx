@@ -4,13 +4,13 @@ import { PopoverCreateHandle } from "../ui/popover";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const testState = vi.hoisted(() => ({
-  useT3ProjectFileScripts: vi.fn(),
+  useUPCodeProjectFileScripts: vi.fn(),
   projectScriptsControl: vi.fn(),
 }));
 
-vi.mock("../../hooks/useT3ProjectFileScripts", () => ({
-  useT3ProjectFileScripts: (...args: ReadonlyArray<unknown>) =>
-    testState.useT3ProjectFileScripts(...args),
+vi.mock("../../hooks/useUPCodeProjectFileScripts", () => ({
+  useUPCodeProjectFileScripts: (...args: ReadonlyArray<unknown>) =>
+    testState.useUPCodeProjectFileScripts(...args),
 }));
 vi.mock("../BranchToolbar", () => ({
   BranchToolbar: () => null,
@@ -39,7 +39,7 @@ import { ThreadDetailsPanel, type ThreadDetailsPanelProps } from "./ThreadDetail
 
 describe("ThreadDetailsPanel", () => {
   beforeEach(() => {
-    testState.useT3ProjectFileScripts.mockReset();
+    testState.useUPCodeProjectFileScripts.mockReset();
     testState.projectScriptsControl.mockReset();
   });
 
@@ -53,7 +53,7 @@ describe("ThreadDetailsPanel", () => {
         icon: "test",
       },
     ] satisfies ReadonlyArray<UPCodeProjectFileScript>;
-    testState.useT3ProjectFileScripts.mockReturnValue(fileScripts);
+    testState.useUPCodeProjectFileScripts.mockReturnValue(fileScripts);
 
     const props: ThreadDetailsPanelProps = {
       anchor: { current: null },
@@ -86,7 +86,7 @@ describe("ThreadDetailsPanel", () => {
 
     renderToStaticMarkup(<ThreadDetailsPanel {...props} />);
 
-    expect(testState.useT3ProjectFileScripts).toHaveBeenCalledWith(environmentId, gitCwd);
+    expect(testState.useUPCodeProjectFileScripts).toHaveBeenCalledWith(environmentId, gitCwd);
     expect(testState.projectScriptsControl).toHaveBeenCalledWith(
       expect.objectContaining({
         displayMode: "panel",

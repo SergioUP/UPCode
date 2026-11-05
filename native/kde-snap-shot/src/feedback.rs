@@ -3,7 +3,7 @@
 use super::*;
 use std::io::BufRead;
 
-const OBJECT: &str = "/com/t3tools/KdeCapture/Feedback";
+const OBJECT: &str = "/com/upango/KdeCapture/Feedback";
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]

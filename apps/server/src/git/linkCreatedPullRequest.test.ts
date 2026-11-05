@@ -156,7 +156,7 @@ describe("linkCreatedPullRequest", () => {
         result: prResult({
           status: "created",
           number: 42,
-          url: "https://github.com/t3tools/t3code/pull/42",
+          url: "https://github.com/upango/upcode/pull/42",
         }),
         commandId,
       }).pipe(Effect.provide(layerDependenciesFor(dispatch)));
@@ -167,9 +167,9 @@ describe("linkCreatedPullRequest", () => {
           commandId: "server:pr-created-link:test",
           threadId: THREAD_ID,
           host: "github.com",
-          repository: "upango/t3code",
+          repository: "upango/upcode",
           number: 42,
-          url: "https://github.com/t3tools/t3code/pull/42",
+          url: "https://github.com/upango/upcode/pull/42",
           source: "created",
         },
       ]);
@@ -187,7 +187,7 @@ describe("linkCreatedPullRequest", () => {
       }).pipe(Effect.provide(layerDependencies));
       yield* linkCreatedPullRequest({
         threadId: THREAD_ID,
-        result: prResult({ status: "created", url: "https://github.com/t3tools/t3code/pull/42" }),
+        result: prResult({ status: "created", url: "https://github.com/upango/upcode/pull/42" }),
         commandId,
       }).pipe(Effect.provide(layerDependencies));
 
@@ -208,7 +208,7 @@ describe("linkCreatedPullRequest", () => {
       const result = prResult({
         status: "opened_existing",
         number: 7,
-        url: "https://github.com/t3tools/t3code/pull/7",
+        url: "https://github.com/upango/upcode/pull/7",
       });
       yield* linkCreatedPullRequest({ threadId: THREAD_ID, result, commandId }).pipe(
         Effect.provide(layerDependenciesFor(rejecting)),

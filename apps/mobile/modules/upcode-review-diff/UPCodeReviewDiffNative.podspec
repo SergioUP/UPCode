@@ -7,7 +7,7 @@ Pod::Spec.new do |s|
   s.version = package['version']
   s.summary = 'Native review diff debug surface for UPCode mobile.'
   s.description = 'Native iOS review diff renderer used to prototype fast mobile review scrolling.'
-  s.homepage = 'https://t3tools.com'
+  s.homepage = 'https://upango.com'
   s.license = { :type => 'UNLICENSED' }
   s.author = { 'UPCode Tools' => 'hello@upango.com' }
   s.platforms = { :ios => '16.1' }

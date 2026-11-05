@@ -329,7 +329,7 @@ function getAutoUpdateDisabledReason(args: {
   if (args.disabledByEnv) {
     return "Automatic updates are disabled by the UPCODE_DISABLE_AUTO_UPDATE setting.";
   }
-  if (isT3UpdateFeed(args.updateFeed.value)) {
+  if (isUPCodeUpdateFeed(args.updateFeed.value)) {
     return "This build carries UPCode's update feed, so it does not update itself.";
   }
   if (args.platform === "linux" && !args.appImage && !args.isDebPackage) {
@@ -338,7 +338,7 @@ function getAutoUpdateDisabledReason(args: {
   return null;
 }
 
-function isT3UpdateFeed(feed: AppUpdateYmlConfig): boolean {
+function isUPCodeUpdateFeed(feed: AppUpdateYmlConfig): boolean {
   return (
     feed.owner?.trim().toLowerCase() === UPCODE_UPDATE_FEED.owner &&
     feed.repo?.trim().toLowerCase() === UPCODE_UPDATE_FEED.repo

@@ -1113,7 +1113,7 @@ const program = Effect.gen(function* () {
                 sources: [
                   { type: "url", url: "https://upcode.codes" },
                   { type: "url", url: "https://upcode.codes" },
-                  { type: "url", url: "https://github.com/pingdotgg/t3code" },
+                  { type: "url", url: "https://github.com/SergioUP/UPCode" },
                 ],
               },
               id: "grok-web-search",

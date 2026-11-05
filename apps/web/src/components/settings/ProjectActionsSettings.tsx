@@ -8,7 +8,7 @@ import {
 import { DEFAULT_RESOLVED_KEYBINDINGS } from "@upcode/shared/keybindings";
 import { ChevronDownIcon, PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { useT3ProjectFileState } from "../../hooks/useT3ProjectFileScripts";
+import { useUPCodeProjectFileState } from "../../hooks/useUPCodeProjectFileScripts";
 import { useEnvironments } from "../../state/environments";
 import {
   EMPTY_PROJECT_SCRIPT_INPUT,
@@ -91,7 +91,7 @@ export function ProjectActionsSettings() {
   // A project's upcode.json can declare actions to import. Read it from the
   // representative checkout; the imported action still fans out.
   const representativeMember = target?.projectId ? memberById.get(target.projectId) : undefined;
-  const upcodeFile = useT3ProjectFileState(
+  const upcodeFile = useUPCodeProjectFileState(
     representativeMember?.environmentId ?? EnvironmentId.make("none"),
     representativeMember?.workspaceRoot ?? null,
   );

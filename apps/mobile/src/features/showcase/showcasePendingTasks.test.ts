@@ -12,7 +12,7 @@ const projects: ReadonlyArray<EnvironmentProject> = [
     environmentId: EnvironmentId.make("moonbase-terminal"),
     id: ProjectId.make("upcode"),
     title: "UPCode",
-    workspaceRoot: "/workspace/t3code",
+    workspaceRoot: "/workspace/upcode",
     repositoryIdentity: null,
     defaultModelSelection: { instanceId: ProviderInstanceId.make("codex"), model: "gpt-5.4" },
     scripts: [],

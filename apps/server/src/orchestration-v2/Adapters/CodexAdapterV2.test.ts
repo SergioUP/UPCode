@@ -478,7 +478,7 @@ describe("CodexAdapterV2 runtime policy", () => {
         codexInput: [{ type: "text", text: "what's on my list?" }],
         runtimePolicy: policy,
         modelSelection,
-        hasT3Mcp: true,
+        hasUPCodeMcp: true,
         appContext,
       });
       assert.deepEqual(withUPCode.additionalContext?.["mcp_app_todos_list_todos_item-1"], {
@@ -503,7 +503,7 @@ describe("CodexAdapterV2 runtime policy", () => {
           instanceId: ProviderInstanceId.make("codex"),
           model: "gpt-5.4",
         },
-        hasT3Mcp: true,
+        hasUPCodeMcp: true,
       });
 
       assert.equal(params.collaborationMode?.mode, "default");
@@ -532,7 +532,7 @@ describe("CodexAdapterV2 runtime policy", () => {
           instanceId: ProviderInstanceId.make("codex"),
           model: "gpt-5.4",
         },
-        hasT3Mcp: false,
+        hasUPCodeMcp: false,
       });
 
       assert.isUndefined(params.collaborationMode);
@@ -553,7 +553,7 @@ describe("CodexAdapterV2 runtime policy", () => {
           instanceId: ProviderInstanceId.make("codex"),
           model: "gpt-5.4",
         },
-        hasT3Mcp: true,
+        hasUPCodeMcp: true,
       });
 
       assert.equal(params.collaborationMode?.mode, "plan");
@@ -579,7 +579,7 @@ describe("CodexAdapterV2 runtime policy", () => {
           instanceId: ProviderInstanceId.make("codex"),
           model: "gpt-5.4",
         },
-        hasT3Mcp: false,
+        hasUPCodeMcp: false,
       });
 
       assert.equal(params.collaborationMode?.mode, "plan");
@@ -2818,7 +2818,7 @@ describe("CodexAdapterV2 post-settle continuation", () => {
           codexInput: [{ type: "text", text: "work" }],
           runtimePolicy: CODEX_TEST_RUNTIME_POLICY,
           modelSelection: CODEX_TEST_MODEL_SELECTION,
-          hasT3Mcp: true,
+          hasUPCodeMcp: true,
         });
         assert.include(
           params.additionalContext?.upcode_code_orchestration?.value ?? "",

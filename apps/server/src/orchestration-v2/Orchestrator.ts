@@ -9462,7 +9462,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
         }),
       );
 
-      // Open interrupt edge cases are tracked in https://github.com/pingdotgg/t3code/issues/15013.
+      // Open interrupt edge cases are tracked in https://github.com/SergioUP/UPCode/issues/15013.
       yield* emitEvent({
         type: "turn-item.updated",
         threadId: command.threadId,

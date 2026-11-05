@@ -27,7 +27,7 @@ For stacked work, set \`baseRef\` to the intended parent branch and \`startFromO
 
 \`upcode_thread_launch\` has no idempotency key. Retain its returned threadId and inspect it with \`upcode_thread_read\` / \`upcode_thread_wait\`; preparation can still be running after acceptance. If a launch fails or its response is lost, inspect \`upcode_thread_list\` before retrying, since a thread may already exist.
 
-Tool names may include a harness-normalized MCP prefix, such as \`mcp__t3_code__delegate_task\`; the semantics are the same. Some harnesses attach optional MCP servers lazily: if an initial tool-catalog scan does not show UPCode tools, do not conclude that cross-provider delegation is unavailable. Make one bounded direct attempt using the known UPCode tool name on the next tool step. In Codex code mode, for example, call \`tools.mcp__t3_code__orchestrator_capabilities({})\` before reporting that the capability is absent. Keep polling/wait loops bounded, do not duplicate active work, and use stable \`clientRequestId\` values when retrying tools that accept them.
+Tool names may include a harness-normalized MCP prefix, such as \`mcp__upcode_code__delegate_task\`; the semantics are the same. Some harnesses attach optional MCP servers lazily: if an initial tool-catalog scan does not show UPCode tools, do not conclude that cross-provider delegation is unavailable. Make one bounded direct attempt using the known UPCode tool name on the next tool step. In Codex code mode, for example, call \`tools.mcp__upcode_code__orchestrator_capabilities({})\` before reporting that the capability is absent. Keep polling/wait loops bounded, do not duplicate active work, and use stable \`clientRequestId\` values when retrying tools that accept them.
 
 ACP fallback: some ACP agents accept the injected MCP server but fail to expose its tools. When the UPCode tools are absent and \`UPCODE_ACP_MCP_NODE\` is present, call the same tools through the terminal: \`ELECTRON_RUN_AS_NODE=1 "$UPCODE_ACP_MCP_NODE" \${UPCODE_ACP_MCP_ENTRYPOINT:+"$UPCODE_ACP_MCP_ENTRYPOINT"} acp-mcp-call orchestrator_capabilities '{}'\` (\`UPCODE_ACP_MCP_ENTRYPOINT\` is unset when UPCode runs as a standalone executable). Delegate with \`acp-mcp-call delegate_task '{"task":"...","target":{"providerInstanceId":"...","model":"..."},"mode":"async","clientRequestId":"..."}'\`. This is the supported UPCode transport fallback, not an ordinary shell-based substitute for delegation.
 
@@ -62,7 +62,7 @@ Investigate with read-only actions and do not edit files or otherwise execute th
 
 export interface UPCodeAcpInstructionState {
   readonly interactionMode: ProviderInteractionMode;
-  readonly hasT3Mcp: boolean;
+  readonly hasUPCodeMcp: boolean;
 }
 
 /**
@@ -78,7 +78,7 @@ export function upcodeAcpPromptWithInstructions(input: {
   if (input.prompt.trimStart().startsWith("/")) return input.prompt;
   if (
     input.previousState?.interactionMode === input.state.interactionMode &&
-    input.previousState.hasT3Mcp === input.state.hasT3Mcp
+    input.previousState.hasUPCodeMcp === input.state.hasUPCodeMcp
   ) {
     return input.prompt;
   }
@@ -86,7 +86,7 @@ export function upcodeAcpPromptWithInstructions(input: {
     input.state.interactionMode === "plan"
       ? UPCODE_ACP_PLAN_MODE_INSTRUCTIONS
       : UPCODE_ACP_DEFAULT_MODE_INSTRUCTIONS,
-    ...(input.state.hasT3Mcp
+    ...(input.state.hasUPCodeMcp
       ? [UPCODE_BROWSER_TOOL_INSTRUCTIONS.trim(), UPCODE_ORCHESTRATION_INSTRUCTIONS.trim()]
       : []),
   ];
@@ -98,20 +98,20 @@ export function upcodeAcpPromptWithInstructions(input: {
  * context in the first prompt. Keep the wrapper explicit so it cannot be
  * mistaken for text authored by the user.
  */
-function prependT3OrchestrationInstructions(prompt: string): string {
+function prependUPCodeOrchestrationInstructions(prompt: string): string {
   return `<upcode_code_orchestration_instructions>${UPCODE_ORCHESTRATION_INSTRUCTIONS.trim()}</upcode_code_orchestration_instructions>\n\n<user_request>\n${prompt}\n</user_request>`;
 }
 
 export function upcodeOrchestrationPromptForFirstRun(input: {
   readonly prompt: string;
   readonly runOrdinal: number;
-  readonly hasT3Mcp: boolean;
+  readonly hasUPCodeMcp: boolean;
 }): string {
-  return input.runOrdinal === 1 && input.hasT3Mcp
-    ? prependT3OrchestrationInstructions(input.prompt)
+  return input.runOrdinal === 1 && input.hasUPCodeMcp
+    ? prependUPCodeOrchestrationInstructions(input.prompt)
     : input.prompt;
 }
 
-export function upcodeOrchestrationSystemPrompt(hasT3Mcp: boolean): string | undefined {
-  return hasT3Mcp ? UPCODE_ORCHESTRATION_INSTRUCTIONS : undefined;
+export function upcodeOrchestrationSystemPrompt(hasUPCodeMcp: boolean): string | undefined {
+  return hasUPCodeMcp ? UPCODE_ORCHESTRATION_INSTRUCTIONS : undefined;
 }

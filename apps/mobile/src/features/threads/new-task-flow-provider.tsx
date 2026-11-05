@@ -25,7 +25,7 @@ import {
 } from "@upcode/contracts";
 import { sanitizeNewRefName } from "@upcode/shared/git";
 import { resolveNewThreadEnvMode, resolveProjectSettings } from "@upcode/shared/projectSettings";
-import { parseT3ProjectFile } from "@upcode/shared/t3ProjectFile";
+import { parseUPCodeProjectFile } from "@upcode/shared/upcodeProjectFile";
 import * as Arr from "effect/Array";
 import { pipe } from "effect/Function";
 
@@ -518,7 +518,7 @@ export function NewTaskFlowProvider(props: React.PropsWithChildren) {
     () =>
       upcodeProjectFileData === null || upcodeProjectFileData.truncated
         ? null
-        : parseT3ProjectFile(upcodeProjectFileData.contents),
+        : parseUPCodeProjectFile(upcodeProjectFileData.contents),
     [upcodeProjectFileData],
   );
   // Environment settings with the project's overrides and its upcode.json

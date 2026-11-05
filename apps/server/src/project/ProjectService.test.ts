@@ -36,7 +36,7 @@ const layerMetadata = Layer.merge(
   Layer.succeed(RepositoryIdentityResolver.RepositoryIdentityResolver, {
     resolve: (workspaceRoot) =>
       Effect.succeed({
-        canonicalKey: `github.com/t3tools/${workspaceRoot.split("/").at(-1)}`,
+        canonicalKey: `github.com/upango/${workspaceRoot.split("/").at(-1)}`,
         locator: {
           source: "git-remote" as const,
           remoteName: "origin",
@@ -135,7 +135,7 @@ it.layer(layerTest)("ProjectService", (it) => {
         projectId,
         (project) => project.repositoryIdentity !== null && project.faviconPath !== null,
       );
-      assert.equal(hydratedCreated?.repositoryIdentity?.canonicalKey, "github.com/t3tools/project");
+      assert.equal(hydratedCreated?.repositoryIdentity?.canonicalKey, "github.com/upango/project");
       assert.equal(hydratedCreated?.faviconPath, "/work/project/favicon.svg");
 
       const updated = yield* service.update({
@@ -506,7 +506,7 @@ it.effect(
               yield* Deferred.succeed(repositoryStarted, undefined);
               yield* Deferred.await(releaseRepository);
               return {
-                canonicalKey: "github.com/t3tools/slow-project",
+                canonicalKey: "github.com/upango/slow-project",
                 locator: {
                   source: "git-remote" as const,
                   remoteName: "origin",
@@ -580,13 +580,13 @@ it.effect(
         assert.isDefined(firstProject);
         assert.equal(
           firstProject.repositoryIdentity?.canonicalKey,
-          "github.com/t3tools/slow-project",
+          "github.com/upango/slow-project",
         );
         assert.equal(firstProject.faviconPath, "/work/slow-enrichment/favicon.svg");
 
         const byId = Option.getOrThrow(yield* service.getById(projectId));
         const secondSnapshot = yield* service.snapshot;
-        assert.equal(byId.repositoryIdentity?.canonicalKey, "github.com/t3tools/slow-project");
+        assert.equal(byId.repositoryIdentity?.canonicalKey, "github.com/upango/slow-project");
         assert.equal(secondSnapshot.projects[0]?.faviconPath, "/work/slow-enrichment/favicon.svg");
         assert.equal(yield* Ref.get(repositoryCalls), 1);
         assert.equal(yield* Ref.get(faviconCalls), 1);

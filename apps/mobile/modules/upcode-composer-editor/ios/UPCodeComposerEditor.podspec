@@ -4,7 +4,7 @@ Pod::Spec.new do |s|
   s.summary        = 'Native attributed composer editor for UPCode mobile.'
   s.description    = 'UIKit-backed rich text composer with atomic skill and file tokens.'
   s.author         = 'UPCode Tools'
-  s.homepage       = 'https://t3tools.com'
+  s.homepage       = 'https://upango.com'
   s.platforms      = {
     :ios => '16.4',
   }

@@ -960,9 +960,9 @@ describe("environment shell synchronization", () => {
     Effect.gen(function* () {
       const link = (number: number): ThreadPullRequestLink => ({
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "SergioUP/UPCode",
         number,
-        url: `https://github.com/pingdotgg/t3code/pull/${number}`,
+        url: `https://github.com/SergioUP/UPCode/pull/${number}`,
         source: "agent",
         linkedAt: "2026-06-20T00:00:00.000Z",
         snapshot: null,
@@ -1057,9 +1057,9 @@ describe("environment shell synchronization", () => {
     Effect.gen(function* () {
       const link: ThreadPullRequestLink = {
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "SergioUP/UPCode",
         number: 7,
-        url: "https://github.com/pingdotgg/t3code/pull/7",
+        url: "https://github.com/SergioUP/UPCode/pull/7",
         source: "agent",
         linkedAt: "2026-06-20T00:00:00.000Z",
         snapshot: null,
@@ -1140,9 +1140,9 @@ describe("environment shell synchronization", () => {
     Effect.gen(function* () {
       const link: ThreadPullRequestLink = {
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "SergioUP/UPCode",
         number: 8,
-        url: "https://github.com/pingdotgg/t3code/pull/8",
+        url: "https://github.com/SergioUP/UPCode/pull/8",
         source: "agent",
         linkedAt: "2026-06-20T00:00:00.000Z",
         snapshot: null,
@@ -1207,9 +1207,9 @@ describe("environment shell synchronization", () => {
     Effect.gen(function* () {
       const link = (number: number): ThreadPullRequestLink => ({
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "SergioUP/UPCode",
         number,
-        url: `https://github.com/pingdotgg/t3code/pull/${number}`,
+        url: `https://github.com/SergioUP/UPCode/pull/${number}`,
         source: "agent",
         linkedAt: "2026-06-20T00:00:00.000Z",
         snapshot: null,

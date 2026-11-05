@@ -1005,7 +1005,7 @@ it.effect("returns successful desktop sign-in to the original Welcome step", () 
       yield* h.phase("succeeded");
       assert.include(
         h.callbackResponses[0]!.body,
-        'content="1;url=t3code-dev://app/welcome#agents:test-environment"',
+        'content="1;url=upcode-dev://app/welcome#agents:test-environment"',
       );
       assert.include(
         h.callbackResponses[0]!.body,

@@ -1,4 +1,4 @@
-import type { UPCodeMcpToolSummaryAction } from "@upcode/shared/t3McpToolPresentation";
+import type { UPCodeMcpToolSummaryAction } from "@upcode/shared/upcodeMcpToolPresentation";
 
 export interface UPCodeToolSummaryCall {
   readonly input: unknown;
@@ -81,7 +81,7 @@ function quantity(count: number, noun: string, plural = `${noun}s`): string {
 }
 
 /** Counts successful effects separately from failed or unfinished tool calls. */
-export function summarizeT3ToolCalls(
+export function summarizeUPCodeToolCalls(
   action: UPCodeMcpToolSummaryAction,
   calls: ReadonlyArray<UPCodeToolSummaryCall>,
 ): { label: string; failedCount: number } {

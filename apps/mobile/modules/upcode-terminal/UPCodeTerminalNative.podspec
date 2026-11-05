@@ -7,7 +7,7 @@ Pod::Spec.new do |s|
   s.version = package['version']
   s.summary = 'Native terminal surface for UPCode mobile.'
   s.description = 'Native terminal surface bridge used by the UPCode React Native app.'
-  s.homepage = 'https://t3tools.com'
+  s.homepage = 'https://upango.com'
   s.license = { :type => 'UNLICENSED' }
   s.author = { 'UPCode Tools' => 'hello@upango.com' }
   s.platforms = { :ios => '16.1' }

@@ -9,10 +9,10 @@ it("batches codesign calls without changing existing signing options", async () 
   const options = {
     app: "/tmp/UPCode.app",
     identity: "Developer ID Application: UPCode Tools, Inc.",
-    keychain: "/tmp/t3code.keychain",
-    provisioningProfile: "/tmp/t3code.provisionprofile",
+    keychain: "/tmp/upcode.keychain",
+    provisioningProfile: "/tmp/upcode.provisionprofile",
     optionsForFile: () => ({
-      entitlements: "/tmp/t3code.entitlements.plist",
+      entitlements: "/tmp/upcode.entitlements.plist",
       hardenedRuntime: true,
     }),
   } satisfies SignOptions;

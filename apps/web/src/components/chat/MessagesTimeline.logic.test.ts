@@ -834,7 +834,7 @@ describe("deriveMessagesTimelineRows", () => {
         id: TurnItemId.make("clone"),
         status: "completed",
         title: "Custom provider title",
-        toolName: "mcp__t3_code__t3_project_clone",
+        toolName: "mcp__upcode_code__upcode_project_clone",
         input: {},
         output: { cwd: "/tmp/repo" },
       },
@@ -3626,7 +3626,7 @@ describe("computeStableMessagesTimelineRows", () => {
 
 describe("resolveTimelineToolPresentation", () => {
   it("pretty prints Claude and Cursor UPCode MCP tool names", () => {
-    expect(resolveTimelineToolPresentation("mcp__upcode__t3_thread_read")).toEqual({
+    expect(resolveTimelineToolPresentation("mcp__upcode__upcode_thread_read")).toEqual({
       displayName: "Read a UPCode thread",
       logo: "upcode",
     });

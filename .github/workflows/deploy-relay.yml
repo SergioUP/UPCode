@@ -64,7 +64,7 @@ jobs:
           cache: true
           run-install: |
             args:
-              - --filter=t3code-relay...
+              - --filter=upcode-relay...
 
       - name: Deploy production relay stage
         run: vp run --filter upcode-relay deploy --stage prod --yes --no-input ${{ inputs.force && '--force' || '' }}

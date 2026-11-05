@@ -15,7 +15,7 @@ import {
   ExecutionEnvironmentDescriptor,
   PortSchema,
 } from "@upcode/contracts";
-import { resolveWorktreeT3Home } from "@upcode/shared/devHome";
+import { resolveWorktreeUPCodeHome } from "@upcode/shared/devHome";
 import { DEFAULT_SIGNAL_EXPORT } from "@upcode/shared/observability";
 import * as OtelEnvironment from "@upcode/shared/otelEnvironment";
 import {
@@ -246,7 +246,7 @@ const discoverPairTarget = Effect.fn("pair.discoverPairTarget")(function* (
     // Same precedence as dev-runner: inside a linked worktree its own `.upcode`
     // outranks the shared home, so `upcode pair` in a worktree pairs with the dev
     // server under test rather than the daily-driver install.
-    const worktreeHome = yield* resolveWorktreeT3Home(process.cwd());
+    const worktreeHome = yield* resolveWorktreeUPCodeHome(process.cwd());
     if (worktreeHome !== undefined) {
       bases.push(worktreeHome);
     }

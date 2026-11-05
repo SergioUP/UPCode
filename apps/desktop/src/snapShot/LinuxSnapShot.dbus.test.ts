@@ -220,7 +220,7 @@ it.runIf(hasDbus)("captures through real D-Bus marshalling on a private bus", as
       "--dest",
       "com.upango.UPCode.NiriTest.SnapShot",
       "--object-path",
-      "/com/t3tools/SnapShot",
+      "/com/upango/SnapShot",
       "--method",
       "com.upango.SnapShot.Capture",
     ];
@@ -241,7 +241,7 @@ it.runIf(hasDbus)("captures through real D-Bus marshalling on a private bus", as
     const invalid = server.call(
       new Message({
         destination: "com.upango.UPCode.NiriTest.SnapShot",
-        path: "/com/t3tools/SnapShot",
+        path: "/com/upango/SnapShot",
         interface: "com.upango.SnapShot",
         member: "Capture",
         signature: "s",

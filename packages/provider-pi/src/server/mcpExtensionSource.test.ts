@@ -34,7 +34,7 @@ async function loadHooks(commands: ReadonlyArray<SkillCommand> = []) {
       "async function",
     ),
   );
-  await NodeVM.runInNewContext(`${source}\nt3McpExtension(pi)`, {
+  await NodeVM.runInNewContext(`${source}\nupcodeMcpExtension(pi)`, {
     process: { env: {} },
     NodeFSP,
     NodePath,
@@ -141,10 +141,10 @@ describe("Pi MCP tool exposure", () => {
     assert.deepEqual(
       bridge.tools.filter((tool) => tool.exposure === "hidden").map((tool) => tool.name),
       [
-        "mcp__t3_code__orchestrator_capabilities",
-        "mcp__t3_code__delegate_task",
-        "mcp__t3_code__task_status",
-        "mcp__t3_code__preview_snapshot",
+        "mcp__upcode_code__orchestrator_capabilities",
+        "mcp__upcode_code__delegate_task",
+        "mcp__upcode_code__task_status",
+        "mcp__upcode_code__preview_snapshot",
       ],
     );
     const result = await bridge.tools
@@ -263,7 +263,7 @@ describe("Pi tool discovery permissions", () => {
           },
         },
       };
-      for (const prefix of ["mcp__upcode__", "mcp__t3_code__"]) {
+      for (const prefix of ["mcp__upcode__", "mcp__upcode_code__"]) {
         assert.isUndefined(
           await hook({ toolName: prefix + "orchestrator_capabilities", input: {} }, ctx),
         );
@@ -314,7 +314,7 @@ describe("Pi tool discovery permissions", () => {
         "async function",
       ),
     );
-    await NodeVM.runInNewContext(`${source}\nt3McpExtension(pi)`, {
+    await NodeVM.runInNewContext(`${source}\nupcodeMcpExtension(pi)`, {
       process: { env: { UPCODE_PI_RUNTIME_MODE: "approval-required" } },
       pi: {
         on: (name: string, handler: ToolCallHook) => {
@@ -361,7 +361,7 @@ async function loadRequestHook(): Promise<RequestHook> {
       "async function",
     ),
   );
-  await NodeVM.runInNewContext(`${source}\nt3McpExtension(pi)`, {
+  await NodeVM.runInNewContext(`${source}\nupcodeMcpExtension(pi)`, {
     process: { env: {} },
     pi: { on: (name: string, handler: RequestHook) => handlers.set(name, handler) },
   });

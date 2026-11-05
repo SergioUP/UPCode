@@ -364,13 +364,13 @@ export default async function upcodeMcpExtension(pi: ExtensionAPI) {
   const registerTools = () => {
     // Preserve public names for saved loadouts and tool selectors. Hidden
     // canonical names reserve ownership against Pi's configured MCP servers.
-    const prefixes = supportsExposure ? ["mcp__upcode__", "mcp__t3_code__"] : ["mcp__upcode__"];
+    const prefixes = supportsExposure ? ["mcp__upcode__", "mcp__upcode_code__"] : ["mcp__upcode__"];
     readOnlyMcpTools.clear();
     for (const tool of catalog) {
       const name = tool.name;
       for (const prefix of prefixes) {
         if (tool.annotations?.readOnlyHint === true) readOnlyMcpTools.add(\`\${prefix}\${name}\`);
-        const exposure = prefix === "mcp__t3_code__" ? "hidden" :
+        const exposure = prefix === "mcp__upcode_code__" ? "hidden" :
           deferOptionalTools && !directTools.has(name) ? "deferred" : "direct";
         pi.registerTool({
           name: \`\${prefix}\${name}\`,

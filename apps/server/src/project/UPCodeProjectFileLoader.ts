@@ -17,9 +17,9 @@ import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 
 import { UPCODE_PROJECT_FILE_NAME, type UPCodeProjectFile } from "@upcode/contracts";
-import { UPCodeProjectFileFromJson } from "@upcode/shared/t3ProjectFile";
+import { UPCodeProjectFileFromJson } from "@upcode/shared/upcodeProjectFile";
 
-const decodeT3ProjectFileJson = Schema.decodeEffect(UPCodeProjectFileFromJson);
+const decodeUPCodeProjectFileJson = Schema.decodeEffect(UPCodeProjectFileFromJson);
 
 export class UPCodeProjectFileLoadError extends Schema.TaggedError<UPCodeProjectFileLoadError>()(
   "UPCodeProjectFileLoadError",
@@ -49,7 +49,7 @@ export class UPCodeProjectFileLoader extends Context.Service<
   }
 >()("upcode/project/UPCodeProjectFileLoader") {}
 
-const logT3ProjectFileLoadError = (error: UPCodeProjectFileLoadError) =>
+const logUPCodeProjectFileLoadError = (error: UPCodeProjectFileLoadError) =>
   Effect.logWarning(error).pipe(
     Effect.annotateLogs({
       operation: error.operation,
@@ -73,7 +73,7 @@ export const make = Effect.gen(function* () {
           PlatformError: (error) =>
             error.reason._tag === "NotFound"
               ? Effect.succeed(Option.none<string>())
-              : logT3ProjectFileLoadError(
+              : logUPCodeProjectFileLoadError(
                   new UPCodeProjectFileLoadError({
                     operation: "read",
                     workspaceRoot,
@@ -86,11 +86,11 @@ export const make = Effect.gen(function* () {
       if (Option.isNone(raw)) {
         return Option.none<UPCodeProjectFile>();
       }
-      return yield* decodeT3ProjectFileJson(raw.value).pipe(
+      return yield* decodeUPCodeProjectFileJson(raw.value).pipe(
         Effect.asSome,
         Effect.catchTags({
           SchemaError: (error) =>
-            logT3ProjectFileLoadError(
+            logUPCodeProjectFileLoadError(
               new UPCodeProjectFileLoadError({
                 operation: "decode",
                 workspaceRoot,

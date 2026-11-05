@@ -4,7 +4,7 @@ import {
   type UPCodeProjectFile,
   type UPCodeProjectFileScript,
 } from "@upcode/contracts";
-import { parseT3ProjectFile } from "@upcode/shared/t3ProjectFile";
+import { parseUPCodeProjectFile } from "@upcode/shared/upcodeProjectFile";
 import { useMemo } from "react";
 
 import { useProjectFileQuery } from "~/components/files/projectFilesQueryState";
@@ -29,7 +29,7 @@ export interface UPCodeProjectFileState {
  * Decoded state of the project's checked-in `upcode.json`, including whether the
  * file exists but is broken — which the runtime otherwise swallows silently.
  */
-export function useT3ProjectFileState(
+export function useUPCodeProjectFileState(
   environmentId: EnvironmentId,
   cwd: string | null,
 ): UPCodeProjectFileState {
@@ -44,7 +44,7 @@ export function useT3ProjectFileState(
         scripts: NO_SCRIPTS,
       } as const;
     }
-    const file = parseT3ProjectFile(contents);
+    const file = parseUPCodeProjectFile(contents);
     if (file === null) {
       return { status: "invalid", file: null, scripts: NO_SCRIPTS } as const;
     }
@@ -57,9 +57,9 @@ export function useT3ProjectFileState(
  * scripts menu for import. Missing, truncated, or invalid files resolve to
  * an empty list.
  */
-export function useT3ProjectFileScripts(
+export function useUPCodeProjectFileScripts(
   environmentId: EnvironmentId,
   cwd: string | null,
 ): ReadonlyArray<UPCodeProjectFileScript> {
-  return useT3ProjectFileState(environmentId, cwd).scripts;
+  return useUPCodeProjectFileState(environmentId, cwd).scripts;
 }

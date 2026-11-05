@@ -13,7 +13,7 @@ import {
 } from "./mcpExtensionSource.ts";
 import {
   buildPiRpcLaunch,
-  materializePiT3McpExtension,
+  materializePiUPCodeMcpExtension,
   resolvePiLaunchArgs,
 } from "./mcpInjection.ts";
 
@@ -85,7 +85,7 @@ describe("pi UPCode MCP injection", () => {
       "--extension",
       "/tmp/cache/pi-upcode-mcp-extension.ts",
     ]);
-    assert.isFalse(permissionOnly.hasT3Mcp);
+    assert.isFalse(permissionOnly.hasUPCodeMcp);
     assert.isUndefined(permissionOnly.env[UPCODE_MCP_URL_ENV]);
     assert.isUndefined(permissionOnly.env[UPCODE_MCP_BEARER_ENV]);
     assert.equal(permissionOnly.env[UPCODE_PI_RUNTIME_MODE_ENV], "auto-accept-edits");
@@ -134,7 +134,7 @@ describe("pi UPCode MCP injection", () => {
       "--no-extensions",
       "--no-tools",
     ]);
-    assert.isFalse(launch.hasT3Mcp);
+    assert.isFalse(launch.hasUPCodeMcp);
     assert.deepInclude(resolvePiLaunchArgs("--mode text"), {
       ok: false,
       message: "Pi launch argument '--mode' is controlled by UPCode and cannot be overridden.",
@@ -159,7 +159,7 @@ describe("pi UPCode MCP injection", () => {
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const cacheDir = yield* fs.makeTempDirectoryScoped({ prefix: "upcode-pi-extensions-" });
-      const mcpDest = yield* materializePiT3McpExtension(cacheDir);
+      const mcpDest = yield* materializePiUPCodeMcpExtension(cacheDir);
       assert.isTrue(mcpDest.endsWith(PI_UPCODE_MCP_EXTENSION_FILENAME));
       const mcpSource = yield* fs.readFileString(mcpDest);
       assert.include(mcpSource, "export default async function upcodeMcpExtension");
@@ -169,7 +169,7 @@ describe("pi UPCode MCP injection", () => {
       assert.include(mcpSource, '"mcp-protocol-version"');
       assert.include(mcpSource, '"tools/call"');
       assert.include(mcpSource, "mcp__upcode__");
-      assert.include(mcpSource, "mcp__t3_code__");
+      assert.include(mcpSource, "mcp__upcode_code__");
     }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
   );
 });

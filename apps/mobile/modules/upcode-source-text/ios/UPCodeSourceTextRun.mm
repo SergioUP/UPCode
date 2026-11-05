@@ -6,7 +6,7 @@
 
 using namespace facebook::react;
 
-@interface UPCodeSourceTextRun () <RCTT3SourceTextRunViewProtocol>
+@interface UPCodeSourceTextRun () <RCTUPCodeSourceTextRunViewProtocol>
 
 @end
 

@@ -1,5 +1,5 @@
 import { UPCODE_PROJECT_FILE_NAME, type EnvironmentId, type UPCodeProjectFile } from "@upcode/contracts";
-import { parseT3ProjectFile } from "@upcode/shared/t3ProjectFile";
+import { parseUPCodeProjectFile } from "@upcode/shared/upcodeProjectFile";
 import { executeAtomQuery } from "@upcode/client-runtime/state/runtime";
 
 import {
@@ -11,14 +11,14 @@ import { appAtomRegistry } from "~/rpc/atomRegistry";
 /**
  * Read and decode the project's checked-in `upcode.json`.
  *
- * Imperative counterpart to `useT3ProjectFileState` for the new-thread path,
+ * Imperative counterpart to `useUPCodeProjectFileState` for the new-thread path,
  * which resolves defaults at call time rather than render time. The file
  * query atom caches per (environment, cwd), so repeat calls don't re-fetch.
  * Optimistic in-app writes overlay the query result, matching what
  * `useProjectFileQuery` renders. Missing, truncated, or invalid files
  * resolve to null.
  */
-export async function readT3ProjectFile(
+export async function readUPCodeProjectFile(
   environmentId: EnvironmentId,
   workspaceRoot: string,
 ): Promise<UPCodeProjectFile | null> {
@@ -34,5 +34,5 @@ export async function readT3ProjectFile(
     result._tag === "Success" ? result.value : null,
   );
   if (data === null || data.truncated) return null;
-  return parseT3ProjectFile(data.contents);
+  return parseUPCodeProjectFile(data.contents);
 }

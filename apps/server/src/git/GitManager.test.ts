@@ -1569,7 +1569,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
               {
                 number: 216,
                 title: "Saved branch PR",
-                url: "https://github.com/pingdotgg/t3code/pull/216",
+                url: "https://github.com/SergioUP/UPCode/pull/216",
                 baseRefName: "main",
                 headRefName: "feature/saved-branch",
                 headRefOid: "a".repeat(40),
@@ -1589,7 +1589,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
       expect(pullRequest).toMatchObject({
         number: 216,
         title: "Saved branch PR",
-        url: "https://github.com/pingdotgg/t3code/pull/216",
+        url: "https://github.com/SergioUP/UPCode/pull/216",
         baseRef: "main",
         headRef: "feature/saved-branch",
         headSha: "a".repeat(40),
@@ -1672,7 +1672,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
               {
                 number: 217,
                 title: "Deleted local branch PR",
-                url: "https://github.com/pingdotgg/t3code/pull/217",
+                url: "https://github.com/SergioUP/UPCode/pull/217",
                 baseRefName: "main",
                 headRefName: "feature/deleted-local-branch",
                 state: "MERGED",
@@ -2403,7 +2403,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
               {
                 number: 215,
                 title: "Merged branch was deleted",
-                url: "https://github.com/pingdotgg/t3code/pull/215",
+                url: "https://github.com/SergioUP/UPCode/pull/215",
                 baseRefName: "main",
                 headRefName: "feature/merged-branch-deleted",
                 state: "MERGED",
@@ -2421,7 +2421,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
       expect(status.pr).toEqual({
         number: 215,
         title: "Merged branch was deleted",
-        url: "https://github.com/pingdotgg/t3code/pull/215",
+        url: "https://github.com/SergioUP/UPCode/pull/215",
         baseRef: "main",
         headRef: "feature/merged-branch-deleted",
         state: "merged",
@@ -2451,7 +2451,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
               {
                 number: 214,
                 title: "Pushed without upstream",
-                url: "https://github.com/pingdotgg/t3code/pull/214",
+                url: "https://github.com/SergioUP/UPCode/pull/214",
                 baseRefName: "main",
                 headRefName: "feature/pushed-no-upstream",
                 state: "OPEN",
@@ -2683,14 +2683,14 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
                 {
                   number: 1661,
                   title: "Fork PR from main",
-                  url: "https://github.com/pingdotgg/t3code/pull/1661",
+                  url: "https://github.com/SergioUP/UPCode/pull/1661",
                   baseRefName: "main",
                   headRefName: "main",
                   state: "OPEN",
                   updatedAt: "2026-04-01T15:00:00Z",
                   isCrossRepository: true,
                   headRepository: {
-                    nameWithOwner: "lnieuwenhuis/t3code",
+                    nameWithOwner: "lnieuwenhuis/upcode",
                   },
                   headRepositoryOwner: {
                     login: "lnieuwenhuis",
@@ -2876,7 +2876,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
                 {
                   number: 1618,
                   title: "Correct PR",
-                  url: "https://github.com/pingdotgg/t3code/pull/1618",
+                  url: "https://github.com/SergioUP/UPCode/pull/1618",
                   baseRefName: "main",
                   headRefName: "effect-atom",
                   state: "OPEN",
@@ -2887,7 +2887,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
                 {
                   number: 1518,
                   title: "Wrong PR",
-                  url: "https://github.com/pingdotgg/t3code/pull/1518",
+                  url: "https://github.com/SergioUP/UPCode/pull/1518",
                   baseRefName: "main",
                   headRefName: "upstream/effect-atom",
                   state: "OPEN",
@@ -2903,7 +2903,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
         expect(status.pr).toEqual({
           number: 1618,
           title: "Correct PR",
-          url: "https://github.com/pingdotgg/t3code/pull/1618",
+          url: "https://github.com/SergioUP/UPCode/pull/1618",
           baseRef: "main",
           headRef: "effect-atom",
           state: "open",
@@ -4650,7 +4650,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
                 {
                   number: 1618,
                   title: "Correct PR",
-                  url: "https://github.com/pingdotgg/t3code/pull/1618",
+                  url: "https://github.com/SergioUP/UPCode/pull/1618",
                   baseRefName: "main",
                   headRefName: "effect-atom",
                 },
@@ -4659,7 +4659,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
                 {
                   number: 1518,
                   title: "Wrong PR",
-                  url: "https://github.com/pingdotgg/t3code/pull/1518",
+                  url: "https://github.com/SergioUP/UPCode/pull/1518",
                   baseRefName: "main",
                   headRefName: "upstream/effect-atom",
                 },
@@ -4962,7 +4962,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
     Effect.sync(() => {
       const headContext = {
         headBranch: "upcode/git-audit-stability",
-        headRepositoryNameWithOwner: "justsomelegs/t3code",
+        headRepositoryNameWithOwner: "justsomelegs/upcode",
         headRepositoryOwnerLogin: "justsomelegs",
         isCrossRepository: false,
       };
@@ -4972,13 +4972,13 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
           {
             number: 2284,
             title: "Improve branch mismatch warnings",
-            url: "https://github.com/pingdotgg/t3code/pull/2284",
+            url: "https://github.com/SergioUP/UPCode/pull/2284",
             baseRefName: "main",
             headRefName: "upcode/git-audit-stability",
             state: "open",
             updatedAt: Option.none(),
             isCrossRepository: true,
-            headRepositoryNameWithOwner: "justsomelegs/t3code",
+            headRepositoryNameWithOwner: "justsomelegs/upcode",
             headRepositoryOwnerLogin: "justsomelegs",
           },
           headContext,
@@ -5248,13 +5248,13 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
                 {
                   number: 1661,
                   title: "Fork PR with same branch name",
-                  url: "https://github.com/pingdotgg/t3code/pull/1661",
+                  url: "https://github.com/SergioUP/UPCode/pull/1661",
                   baseRefName: "main",
                   headRefName: "feature/no-fork-match",
                   state: "OPEN",
                   isCrossRepository: true,
                   headRepository: {
-                    nameWithOwner: "lnieuwenhuis/t3code",
+                    nameWithOwner: "lnieuwenhuis/upcode",
                   },
                   headRepositoryOwner: {
                     login: "lnieuwenhuis",
@@ -6012,7 +6012,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
           pullRequest: {
             number: 642,
             title: "fix: use commit as the default git action without origin",
-            url: "https://github.com/pingdotgg/t3code/pull/642",
+            url: "https://github.com/SergioUP/UPCode/pull/642",
             baseRefName: "main",
             headRefName: "fix/git-action-default-without-origin",
             state: "open",
@@ -6020,7 +6020,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
             headRepositoryOwnerLogin: "binbandit",
           },
           repositoryCloneUrls: {
-            "binbandit/t3code": {
+            "binbandit/upcode": {
               url: forkDir,
               sshUrl: forkDir,
             },

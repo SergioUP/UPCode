@@ -978,7 +978,7 @@ describe("ClaudeAdapterV2 session permissions", () => {
 
   it("adds a whole-tool session rule when Claude offers no suggestion", () => {
     const result = ClaudeAdapterV2.permissionResultFromDecision({
-      toolName: "mcp__t3__custom_tool",
+      toolName: "mcp__upcode__custom_tool",
       decision: "acceptForSession",
       toolInput: {},
       toolUseID: "tool-2",
@@ -991,7 +991,7 @@ describe("ClaudeAdapterV2 session permissions", () => {
     assert.deepEqual(result.updatedPermissions, [
       {
         type: "addRules",
-        rules: [{ toolName: "mcp__t3__custom_tool" }],
+        rules: [{ toolName: "mcp__upcode__custom_tool" }],
         behavior: "allow",
         destination: "session",
       },

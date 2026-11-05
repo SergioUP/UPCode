@@ -4,7 +4,7 @@ Pod::Spec.new do |s|
   s.summary        = 'Native UIKit controls for UPCode mobile.'
   s.description    = 'UIKit-backed controls that match native iOS navigation chrome.'
   s.author         = 'UPCode Tools'
-  s.homepage       = 'https://t3tools.com'
+  s.homepage       = 'https://upango.com'
   s.platforms      = {
     :ios => '18.0',
   }

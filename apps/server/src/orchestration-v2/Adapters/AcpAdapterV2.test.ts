@@ -1903,7 +1903,7 @@ describe("AcpAdapterV2", () => {
       assert.deepEqual(webItem("grok-web-search", "completed"), {
         title: "Web search: UPCode",
         patterns: ["UPCode"],
-        results: [{ url: "https://upcode.codes" }, { url: "https://github.com/pingdotgg/t3code" }],
+        results: [{ url: "https://upcode.codes" }, { url: "https://github.com/SergioUP/UPCode" }],
       });
       assert.deepEqual(webItem("grok-web-fetch", "completed")?.results, [
         { url: "https://upcode.codes", snippet: "UPCode page" },

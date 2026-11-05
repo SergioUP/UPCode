@@ -8,7 +8,7 @@ Pod::Spec.new do |s|
   s.version = package["version"]
   s.summary = "Native selectable source text for UPCode mobile."
   s.description = "Fabric-backed styled source text with whole-document selection."
-  s.homepage = "https://t3tools.com"
+  s.homepage = "https://upango.com"
   s.license = { :type => "MIT", :file => "LICENSE" }
   s.author = { "UPCode Tools" => "hello@upango.com" }
   s.platforms = { :ios => min_ios_version_supported }

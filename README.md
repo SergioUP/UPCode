@@ -17,7 +17,7 @@
 
 ---
 
-**UPCode** es un fork de [UPCode](https://github.com/pingdotgg/t3code) con una capa de trabajo encima pensada para un equipo que hace integraciones: **ERP/PIM → Shopify**, migraciones y apaños de catálogo. La idea es sencilla: que cada conversación con un agente esté pegada a la tarea real de Azure DevOps y no a la memoria de nadie.
+**UPCode** es un fork de [UPCode](https://github.com/SergioUP/UPCode) con una capa de trabajo encima pensada para un equipo que hace integraciones: **ERP/PIM → Shopify**, migraciones y apaños de catálogo. La idea es sencilla: que cada conversación con un agente esté pegada a la tarea real de Azure DevOps y no a la memoria de nadie.
 
 No es un orquestador de flotas de agentes ni un tablero para cincuenta sesiones. Es una mesa de control: pocos agentes a la vez, el trabajo a la vista y el contexto donde tiene que estar.
 
@@ -195,6 +195,6 @@ El workflow **UPCode Windows release** (`.github/workflows/upcode-windows-releas
 
 ## Créditos y licencia
 
-UPCode es un **fork de [UPCode](https://github.com/pingdotgg/t3code)**, de UPCode Tools Inc., publicado bajo licencia **MIT** (ver [LICENSE](LICENSE)). Este fork no está afiliado a UPCode Tools ni cuenta con su respaldo: los aciertos de la base son suyos, y los inventos de encima, nuestros.
+UPCode es un **fork de [UPCode](https://github.com/SergioUP/UPCode)**, de UPCode Tools Inc., publicado bajo licencia **MIT** (ver [LICENSE](LICENSE)). Este fork no está afiliado a UPCode Tools ni cuenta con su respaldo: los aciertos de la base son suyos, y los inventos de encima, nuestros.
 
 Se mantiene la licencia MIT y la atribución original. Si vienes de UPCode y echas algo en falta, está casi todo: la diferencia es la capa de Azure DevOps y la marca.

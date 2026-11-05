@@ -245,10 +245,10 @@
             "upcode-ember": "ember",
             "upcode-iris": "iris",
           };
-          const isLegacyT3ChatDark = storedTheme === "upcode-chat-dark";
+          const isLegacyUPCodeChatDark = storedTheme === "upcode-chat-dark";
           const themeId =
             storedTheme === null ? "" : (LEGACY_THEME_IDS[storedTheme] ?? storedTheme);
-          const legacyMode = isLegacyT3ChatDark ? "dark" : null;
+          const legacyMode = isLegacyUPCodeChatDark ? "dark" : null;
           const builtInModes = BUILT_IN_THEME_MODES[themeId] ?? null;
           const customTheme = builtInModes ? null : findCustomTheme(themeId);
           const themeModes =

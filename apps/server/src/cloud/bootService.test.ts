@@ -25,7 +25,7 @@ const linuxPlan = {
   program: [linuxRuntime, "__service-launcher"],
   baseDir: "/home/theo/.upcode",
   logPath: "/home/theo/.upcode/userdata/logs/boot-service.log",
-  unitPath: "/home/theo/.config/systemd/user/t3code.service",
+  unitPath: "/home/theo/.config/systemd/user/upcode.service",
 };
 
 it("runs the pinned runtime's own executable as the systemd launcher", () => {
@@ -41,7 +41,7 @@ it("reads the served UPCode home back out of a rendered unit or plist", () => {
     program: [`${baseDir}/runtime/versions/1.2.3/upcode`, "__service-launcher"],
     baseDir,
     logPath: `${baseDir}/userdata/logs/boot-service.log`,
-    unitPath: "/home/theo/.config/systemd/user/t3code.service",
+    unitPath: "/home/theo/.config/systemd/user/upcode.service",
   });
 
   expect(

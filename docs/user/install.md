@@ -48,10 +48,10 @@ Node.js for `npx`).
 
 There is no `upcode` executable for Intel Macs (the desktop app is available). To
 run a server there, build it from source with Node.js 24 and `vp`
-([Install vp](https://github.com/pingdotgg/t3code#install-vp)):
+([Install vp](https://github.com/SergioUP/UPCode#install-vp)):
 
 ```bash
-git clone https://github.com/pingdotgg/t3code
+git clone https://github.com/SergioUP/UPCode
 cd upcode && vp i && vp run build:desktop
 node apps/server/dist/bin.mjs
 ```
@@ -61,7 +61,7 @@ update it with `git pull` and a rebuild.
 
 ## Desktop app
 
-Download a release from [GitHub Releases](https://github.com/pingdotgg/t3code/releases),
+Download a release from [GitHub Releases](https://github.com/SergioUP/UPCode/releases),
 or use a package manager:
 
 | Platform           | Install                            |

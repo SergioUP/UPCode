@@ -1437,7 +1437,7 @@ describe("buildThreadFeed", () => {
     const toolItem: OrchestrationV2TurnItem = {
       ...base("item-upcode-tool", "2026-06-20T00:00:04.000Z", 3),
       type: "dynamic_tool",
-      toolName: "mcp__upcode__t3_thread_read",
+      toolName: "mcp__upcode__upcode_thread_read",
       input: { threadId: "thread-child" },
       output: { messages: [] },
     };
@@ -1503,7 +1503,7 @@ describe("buildThreadFeed", () => {
   it("uses canonical UPCode orchestration summaries in compact work groups", () => {
     const rows = [
       projected(command("2026-06-20T00:00:01.000Z"), 0),
-      ...["mcp__upcode__t3_thread_send", "upcode_code.upcode_thread_send", "upcode_thread_send"].map(
+      ...["mcp__upcode__upcode_thread_send", "upcode_code.upcode_thread_send", "upcode_thread_send"].map(
         (toolName, index) =>
           projected(
             {
@@ -1556,7 +1556,7 @@ describe("buildThreadFeed", () => {
         ...base("clone", "2026-09-19T00:00:02.000Z", 2),
         type: "dynamic_tool",
         title: "Custom provider title",
-        toolName: "mcp__t3_code__t3_project_clone",
+        toolName: "mcp__upcode_code__upcode_project_clone",
         input: {},
         output: { cwd: "/tmp/repo" },
       },

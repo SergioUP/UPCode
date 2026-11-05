@@ -1,5 +1,5 @@
 import { UPCODE_PROJECT_FILE_NAME, type UPCodeProjectFile } from "@upcode/contracts";
-import { parseT3ProjectFile } from "@upcode/shared/t3ProjectFile";
+import { parseUPCodeProjectFile } from "@upcode/shared/upcodeProjectFile";
 import { useAtomValue } from "@effect/atom-react";
 import * as Option from "effect/Option";
 import { AsyncResult, Atom } from "effect/reactivity";
@@ -44,7 +44,7 @@ function useMemberProjectFiles(scope: ReturnType<typeof resolveSettingsScope>) {
               )?.data ?? Option.getOrNull(AsyncResult.value(result));
             files.set(
               member.physicalProjectKey,
-              data === null || data.truncated ? null : parseT3ProjectFile(data.contents),
+              data === null || data.truncated ? null : parseUPCodeProjectFile(data.contents),
             );
           }
           return files;

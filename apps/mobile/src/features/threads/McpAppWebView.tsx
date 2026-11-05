@@ -46,7 +46,7 @@ const ROW_BOTTOM_MARGIN = 8;
 // opaque-origin iframe, as web does, so the app's `window.parent` and the
 // `event.source` of host replies are a real window, which the MCP Apps SDK
 // requires. The outer page only relays: app → React Native, and host
-// replies (injected as `__t3McpAppReceive(...)`) → app.
+// replies (injected as `__upcodeMcpAppReceive(...)`) → app.
 //
 // Android exposes `ReactNativeWebView` to every frame, so a frame nested in
 // the app could post to React Native directly. The outer page therefore wraps
@@ -66,7 +66,7 @@ function outerDocument(src: string, allow: string, secret: string) {
 var send=function(m){window.ReactNativeWebView.postMessage(JSON.stringify({secret:secret,message:m}));};
 frame.addEventListener("load",function(){loads+=1;if(loads>1&&live){live=false;send({upcode:"navigated"});}});
 window.addEventListener("message",function(e){if(live&&e.source===frame.contentWindow)send(e.data);});
-window.__t3McpAppReceive=function(m){live&&frame.contentWindow&&frame.contentWindow.postMessage(m,"*");};
+window.__upcodeMcpAppReceive=function(m){live&&frame.contentWindow&&frame.contentWindow.postMessage(m,"*");};
 frame.src=${JSON.stringify(src).replace(/</g, "\\u003c")};})();</script></body></html>`;
 }
 
@@ -324,7 +324,7 @@ export function ThreadMcpApp(props: {
       hostVersion: Constants.expoConfig?.version ?? "0.0.0",
       post: (message) =>
         webView.current?.injectJavaScript(
-          `window.__t3McpAppReceive&&window.__t3McpAppReceive(${JSON.stringify(message)});true;`,
+          `window.__upcodeMcpAppReceive&&window.__upcodeMcpAppReceive(${JSON.stringify(message)});true;`,
         ),
       hostContext,
       callTool: async ({ name, arguments: args }) => {

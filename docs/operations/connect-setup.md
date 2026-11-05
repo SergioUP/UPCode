@@ -103,7 +103,7 @@ Local signed builds additionally use:
 
 ```dotenv
 UPCODE_APPLE_TEAM_ID=ABC1234567
-UPCODE_MACOS_PROVISIONING_PROFILE=/absolute/path/to/t3code.provisionprofile
+UPCODE_MACOS_PROVISIONING_PROFILE=/absolute/path/to/upcode.provisionprofile
 # Override only when the RP domain differs from the Clerk Frontend API hostname.
 UPCODE_CLERK_PASSKEY_RP_DOMAINS=example.clerk.accounts.dev,clerk.example.com
 ```

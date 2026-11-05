@@ -52,7 +52,7 @@ const PROJECT_SCRIPTS = JSON.stringify([
 ]);
 
 const SHOWCASE_TERMINAL_PROMPT =
-  "\u001b[1;32m→\u001b[0m \u001b[1;36mt3code\u001b[0m \u001b[1;34mgit:(\u001b[1;31mfeat/remote-command-center\u001b[1;34m)\u001b[0m \u001b[1;33m✗\u001b[0m ";
+  "\u001b[1;32m→\u001b[0m \u001b[1;36mupcode\u001b[0m \u001b[1;34mgit:(\u001b[1;31mfeat/remote-command-center\u001b[1;34m)\u001b[0m \u001b[1;33m✗\u001b[0m ";
 
 // A dev-server startup mirroring the web settings' terminal font preview:
 // zsh-style prompt, brand line, addresses, the thread's 612-test summary,
@@ -65,7 +65,7 @@ export const SHOWCASE_TERMINAL_BUFFER = [
   "",
   "  \u001b[32m→\u001b[0m  \u001b[2mLocal:\u001b[0m    \u001b[4;36mhttp://127.0.0.1:5173/\u001b[0m",
   "  \u001b[32m→\u001b[0m  \u001b[2mNetwork:\u001b[0m  \u001b[4;36mhttp://192.168.1.24:5173/\u001b[0m",
-  "  \u001b[32m→\u001b[0m  \u001b[2mProject:\u001b[0m  \u001b[1mt3code\u001b[0m \u001b[2m— ~/Code/t3code\u001b[0m",
+  "  \u001b[32m→\u001b[0m  \u001b[2mProject:\u001b[0m  \u001b[1mupcode\u001b[0m \u001b[2m— ~/Code/upcode\u001b[0m",
   "",
   "  \u001b[32m✓ 612 passed\u001b[0m   \u001b[33m△ 2 warnings\u001b[0m   \u001b[31m✗ 0 failed\u001b[0m",
   "",
@@ -124,7 +124,7 @@ export const SHOWCASE_PROJECTS = [
     id: "upcode",
     title: "UPCode",
     directory: "upcode",
-    repositoryUrl: "https://github.com/pingdotgg/t3code.git",
+    repositoryUrl: "https://github.com/SergioUP/UPCode.git",
     favicon: PROJECT_FAVICONS.upcode,
   },
   {
@@ -312,7 +312,7 @@ async function seedUPCodeWorkspace(workspaceRoot: string): Promise<void> {
   );
   await initializeRepository({
     workspaceRoot,
-    repositoryUrl: "https://github.com/pingdotgg/t3code.git",
+    repositoryUrl: "https://github.com/SergioUP/UPCode.git",
     commitMessage: "Show connected environments",
   });
   await runGit(workspaceRoot, ["checkout", "-b", "feat/remote-command-center"]);
@@ -430,7 +430,7 @@ function insertThread(
 // V1 tables this seed owns. `projection_projects` is not listed: V2 still
 // stores projects there, so the seed upserts its own rows instead. V2 clients
 // do not read the V1 thread rows; moving the seed to V2 is tracked in
-// https://github.com/pingdotgg/t3code/issues/15013.
+// https://github.com/SergioUP/UPCode/issues/15013.
 const SEEDED_V1_TABLES = [
   "projection_pending_approvals",
   "projection_thread_proposed_plans",

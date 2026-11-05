@@ -3687,8 +3687,8 @@ it.layer(McpProviderSessions.layer)("OpenCode2 adapter", (it) => {
 
   it.effect("clears a staged revert whose commit failed, before the next prompt too", () =>
     Effect.gen(function* () {
-      const kept = "msg_t3_turn_run-attempt:kept:1";
-      const dropped = "msg_t3_turn_run-attempt:dropped:1";
+      const kept = "msg_upcode_turn_run-attempt:kept:1";
+      const dropped = "msg_upcode_turn_run-attempt:dropped:1";
       const { runtime, thread } = yield* resumed([
         out("message.list", "<any>"),
         reply("message.list", {
@@ -3729,7 +3729,7 @@ it.layer(McpProviderSessions.layer)("OpenCode2 adapter", (it) => {
         runAttemptId: RunAttemptId.make(`run-attempt:${attempt}:1`),
         nativeTurnRef: {
           driver: OPENCODE_PROVIDER,
-          nativeId: `msg_t3_turn_run-attempt:${attempt}:1`,
+          nativeId: `msg_upcode_turn_run-attempt:${attempt}:1`,
           strength: "weak" as const,
         },
         ordinal,
@@ -3757,8 +3757,8 @@ it.layer(McpProviderSessions.layer)("OpenCode2 adapter", (it) => {
 
   it.effect("offers no follow-up for the execution a cleared revert starts", () =>
     Effect.gen(function* () {
-      const kept = "msg_t3_turn_run-attempt:kept:1";
-      const dropped = "msg_t3_turn_run-attempt:dropped:1";
+      const kept = "msg_upcode_turn_run-attempt:kept:1";
+      const dropped = "msg_upcode_turn_run-attempt:dropped:1";
       const offers: Array<ProviderContinuationRequests.ProviderContinuationRequest> = [];
       const { runtime, thread } = yield* resumed([
         out("message.list", "<any>"),
@@ -3798,7 +3798,7 @@ it.layer(McpProviderSessions.layer)("OpenCode2 adapter", (it) => {
         runAttemptId: RunAttemptId.make(`run-attempt:${attempt}:1`),
         nativeTurnRef: {
           driver: OPENCODE_PROVIDER,
-          nativeId: `msg_t3_turn_run-attempt:${attempt}:1`,
+          nativeId: `msg_upcode_turn_run-attempt:${attempt}:1`,
           strength: "weak" as const,
         },
         ordinal,
@@ -3927,7 +3927,7 @@ it.layer(McpProviderSessions.layer)("OpenCode2 adapter", (it) => {
     ["rolls back once a timed-out Stop's run has left the server", false],
   ] as const)("%s", ([, running]) =>
     Effect.gen(function* () {
-      const prompt = `msg_t3_turn_${SESSION}:attempt:opencode2-adapter`;
+      const prompt = `msg_upcode_turn_${SESSION}:attempt:opencode2-adapter`;
       const { runtime, thread } = yield* resumed([
         ...stopTimedOut,
         // The server says whether the stopped run still goes.
@@ -3997,7 +3997,7 @@ it.layer(McpProviderSessions.layer)("OpenCode2 adapter", (it) => {
 
   it.effect("takes back a stranded steer again when its first cancel failed", () =>
     Effect.gen(function* () {
-      const steerId = `msg_t3_steer_${SESSION}:message:opencode2-adapter:steer`;
+      const steerId = `msg_upcode_steer_${SESSION}:message:opencode2-adapter:steer`;
       const cancelOut = out("session.inbox.cancel", { sessionID: SESSION, inboxID: steerId });
       const { runtime, thread } = yield* resumed([
         out("session.prompt", { sessionID: SESSION, text: "<any>" }),
@@ -4088,8 +4088,8 @@ it.layer(McpProviderSessions.layer)("OpenCode2 adapter", (it) => {
 
   it.effect("drops the turns a rollback cut from the snapshot it returns", () =>
     Effect.gen(function* () {
-      const kept = `msg_t3_turn_${SESSION}:attempt:opencode2-adapter`;
-      const dropped = `msg_t3_turn_${SESSION}:attempt:opencode2-adapter:2`;
+      const kept = `msg_upcode_turn_${SESSION}:attempt:opencode2-adapter`;
+      const dropped = `msg_upcode_turn_${SESSION}:attempt:opencode2-adapter:2`;
       const { runtime, thread } = yield* resumed([
         out("session.prompt", { sessionID: SESSION, text: "<any>" }),
         promptAccepted,
@@ -4157,7 +4157,7 @@ it.layer(McpProviderSessions.layer)("OpenCode2 adapter", (it) => {
 
   it.effect("starts a turn sent during a rollback only once the cut is made", () =>
     Effect.gen(function* () {
-      const prompted = `msg_t3_turn_${SESSION}:attempt:earlier`;
+      const prompted = `msg_upcode_turn_${SESSION}:attempt:earlier`;
       // The replay is strictly ordered: a prompt sent while the rollback still
       // reads or cuts the history fails it.
       const { runtime, thread } = yield* resumed([
@@ -4216,8 +4216,8 @@ it.layer(McpProviderSessions.layer)("OpenCode2 adapter", (it) => {
     ],
   ] as const)("%s", ([, running]) =>
     Effect.gen(function* () {
-      const first = `msg_t3_turn_${SESSION}:attempt:first`;
-      const second = `msg_t3_turn_${SESSION}:attempt:second`;
+      const first = `msg_upcode_turn_${SESSION}:attempt:first`;
+      const second = `msg_upcode_turn_${SESSION}:attempt:second`;
       // A runtime that never loaded the session, as after a UPCode restart
       // against a server that kept running.
       const runtime = yield* openCode2ReplayRuntime([
@@ -4338,7 +4338,7 @@ it.layer(McpProviderSessions.layer)("OpenCode2 adapter", (it) => {
 
   it.effect("lets the next turn start when a rollback's stage never answers", () =>
     Effect.gen(function* () {
-      const prompted = `msg_t3_turn_${SESSION}:attempt:earlier`;
+      const prompted = `msg_upcode_turn_${SESSION}:attempt:earlier`;
       const { runtime, thread } = yield* resumed([
         out("message.list", "<any>"),
         reply("message.list", {
@@ -4505,7 +4505,7 @@ it.layer(McpProviderSessions.layer)("OpenCode2 adapter", (it) => {
       const [first, second] = turns;
       return { runtime, thread, first: first!, second: second! };
     });
-  const CONTINUED_PROMPT = `msg_t3_turn_${SESSION}:attempt:attempt:opencode2-adapter`;
+  const CONTINUED_PROMPT = `msg_upcode_turn_${SESSION}:attempt:attempt:opencode2-adapter`;
   const CONTINUED_REPORT = `<subagent sessionID="${CHILD}" state="completed" description="Sleep">\nCHILD_OK\n</subagent>`;
   const continuedHistory = {
     data: [
@@ -5120,7 +5120,7 @@ it.layer(McpProviderSessions.layer)("OpenCode2 adapter", (it) => {
   it.effect("ends a follow-up turn a steer joined exactly once", () =>
     Effect.gen(function* () {
       const reportText = `<subagent sessionID="${CHILD}" state="completed" description="Sleep">\nCHILD_OK\n</subagent>`;
-      const steerId = `msg_t3_steer_${SESSION}:message:opencode2-adapter:steer`;
+      const steerId = `msg_upcode_steer_${SESSION}:message:opencode2-adapter:steer`;
       const offers: Array<ProviderContinuationRequests.ProviderContinuationRequest> = [];
       const { runtime, thread } = yield* resumed([
         ...backgroundLaunch(CHILD),

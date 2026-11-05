@@ -998,14 +998,14 @@ describe("resolveSidebarThreadStatus", () => {
 describe("pullRequestMatchesSearchQuery", () => {
   const branchPullRequest = {
     projectId: ProjectId.make("project"),
-    repository: "pingdotgg/t3code",
+    repository: "SergioUP/UPCode",
     number: 123,
-    url: "https://github.com/pingdotgg/t3code/pull/123",
+    url: "https://github.com/SergioUP/UPCode/pull/123",
   };
 
   it("matches when every query token appears in the PR's terms", () => {
     expect(pullRequestMatchesSearchQuery({ branchPullRequest }, "123")).toBe(true);
-    expect(pullRequestMatchesSearchQuery({ branchPullRequest }, "pingdotgg/t3code #123")).toBe(
+    expect(pullRequestMatchesSearchQuery({ branchPullRequest }, "SergioUP/UPCode #123")).toBe(
       true,
     );
   });

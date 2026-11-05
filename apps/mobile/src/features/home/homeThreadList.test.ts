@@ -126,11 +126,11 @@ describe("home project scopes", () => {
     const localEnvironmentId = EnvironmentId.make("environment-local");
     const remoteEnvironmentId = EnvironmentId.make("environment-remote");
     const repositoryIdentity = {
-      canonicalKey: "github.com/pingdotgg/t3code",
+      canonicalKey: "github.com/SergioUP/UPCode",
       locator: {
         source: "git-remote" as const,
         remoteName: "origin",
-        remoteUrl: "git@github.com:pingdotgg/t3code.git",
+        remoteUrl: "git@github.com:SergioUP/UPCode.git",
       },
     };
     const projects = [
@@ -169,11 +169,11 @@ describe("home project scopes", () => {
     const localEnvironmentId = EnvironmentId.make("environment-local");
     const remoteEnvironmentId = EnvironmentId.make("environment-remote");
     const repositoryIdentity = {
-      canonicalKey: "github.com/pingdotgg/t3code",
+      canonicalKey: "github.com/SergioUP/UPCode",
       locator: {
         source: "git-remote" as const,
         remoteName: "origin",
-        remoteUrl: "git@github.com:pingdotgg/t3code.git",
+        remoteUrl: "git@github.com:SergioUP/UPCode.git",
       },
     };
     const projects = [
@@ -187,7 +187,7 @@ describe("home project scopes", () => {
         environmentId: remoteEnvironmentId,
         id: ProjectId.make("project-remote-with-identity"),
         title: "upcode",
-        workspaceRoot: "/remote/t3code",
+        workspaceRoot: "/remote/upcode",
         repositoryIdentity,
         updatedAt: "2026-06-01T00:00:00.000Z",
       }),
@@ -195,7 +195,7 @@ describe("home project scopes", () => {
         environmentId: remoteEnvironmentId,
         id: ProjectId.make("project-remote-fresh"),
         title: "upcode",
-        workspaceRoot: "/remote/t3code/",
+        workspaceRoot: "/remote/upcode/",
         updatedAt: "2026-06-02T00:00:00.000Z",
       }),
     ];
@@ -291,11 +291,11 @@ describe("home project scopes", () => {
     const localEnvironmentId = EnvironmentId.make("environment-local");
     const remoteEnvironmentId = EnvironmentId.make("environment-remote");
     const repositoryIdentity = {
-      canonicalKey: "github.com/pingdotgg/t3code",
+      canonicalKey: "github.com/SergioUP/UPCode",
       locator: {
         source: "git-remote" as const,
         remoteName: "origin",
-        remoteUrl: "git@github.com:pingdotgg/t3code.git",
+        remoteUrl: "git@github.com:SergioUP/UPCode.git",
       },
     };
     const olderMember = makeProject({

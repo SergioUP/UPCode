@@ -38,12 +38,12 @@ const TARGET = new PrimaryConnectionTarget({
 const PUBLISH_RESULT: SourceControlPublishRepositoryResult = {
   repository: {
     provider: SourceControlProviderKind.make("github"),
-    nameWithOwner: "upango/t3code",
-    url: "https://github.com/t3tools/t3code",
-    sshUrl: "git@github.com:upango/t3code.git",
+    nameWithOwner: "upango/upcode",
+    url: "https://github.com/upango/upcode",
+    sshUrl: "git@github.com:upango/upcode.git",
   },
   remoteName: "origin",
-  remoteUrl: "git@github.com:upango/t3code.git",
+  remoteUrl: "git@github.com:upango/upcode.git",
   branch: "main",
   upstreamBranch: "origin/main",
   status: "pushed",
@@ -142,7 +142,7 @@ describe("source control environment atoms", () => {
             input: {
               cwd: "/repo",
               provider: SourceControlProviderKind.make("github"),
-              repository: "upango/t3code",
+              repository: "upango/upcode",
               visibility: "private",
             },
           }),
@@ -158,7 +158,7 @@ describe("source control environment atoms", () => {
             input: {
               cwd: "/repo",
               provider: SourceControlProviderKind.make("github"),
-              repository: "upango/t3code",
+              repository: "upango/upcode",
               visibility: "private",
             },
           }),

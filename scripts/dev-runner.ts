@@ -5,7 +5,7 @@ import * as NodeOS from "node:os";
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as NetService from "@upcode/shared/Net";
-import { resolveGitWorktreePath, resolveWorktreeT3Home } from "@upcode/shared/devHome";
+import { resolveGitWorktreePath, resolveWorktreeUPCodeHome } from "@upcode/shared/devHome";
 import * as HostProcess from "@upcode/shared/HostProcess";
 import { resolveSpawnCommand } from "@upcode/shared/shell";
 import * as Config from "effect/Config";
@@ -667,11 +667,11 @@ export function runDevRunnerWithInput(input: DevRunnerCliInput) {
     // A dev server started inside a worktree defaults to that worktree's own
     // (gitignored) `.upcode` — see @upcode/shared/devHome for why this must
     // outrank an ambient UPCODE_HOME. `--home-dir` still wins.
-    const worktreeHome = yield* resolveWorktreeT3Home(yield* HostProcess.WorkingDirectory);
+    const worktreeHome = yield* resolveWorktreeUPCodeHome(yield* HostProcess.WorkingDirectory);
     // Trim before choosing: `--home-dir ""` is not a selection, and treating it
     // as one would skip the worktree default and land on the shared home —
     // exactly the outcome this precedence exists to prevent.
-    const resolvedT3Home =
+    const resolvedUPCodeHome =
       (input.upcodeHome?.trim() || undefined) ??
       worktreeHome ??
       (hostEnvironment.UPCODE_HOME?.trim() || undefined);
@@ -680,7 +680,7 @@ export function runDevRunnerWithInput(input: DevRunnerCliInput) {
       baseEnv: hostEnvironment,
       serverOffset,
       webOffset,
-      upcodeHome: resolvedT3Home,
+      upcodeHome: resolvedUPCodeHome,
       browser: input.browser,
       autoBootstrapProjectFromCwd: input.autoBootstrapProjectFromCwd,
       logWebSocketEvents: input.logWebSocketEvents,

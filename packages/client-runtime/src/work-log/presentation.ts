@@ -9,10 +9,10 @@ import {
   type ThreadId,
 } from "@upcode/contracts";
 import {
-  resolveT3McpToolDefinition,
+  resolveUPCodeMcpToolDefinition,
   type UPCodeMcpToolDefinition,
   type UPCodeMcpToolSummaryAction,
-} from "@upcode/shared/t3McpToolPresentation";
+} from "@upcode/shared/upcodeMcpToolPresentation";
 import { classifyMarkdownImageSource } from "@upcode/client-runtime/markdown-images";
 import { resolveMediaSource } from "@upcode/client-runtime/media-source";
 import { parseChangeRequestUrl } from "@upcode/shared/changeRequestUrl";
@@ -22,10 +22,10 @@ import { classifyToolActivity } from "@upcode/shared/toolActivity";
 import { toolOutputIndicatesFailure } from "@upcode/shared/toolOutput";
 
 import {
-  summarizeT3ToolCalls,
+  summarizeUPCodeToolCalls,
   upcodeToolResultIndicatesFailure,
   type UPCodeToolSummaryCall,
-} from "@upcode/client-runtime/t3ToolSummary";
+} from "@upcode/client-runtime/upcodeToolSummary";
 
 export type WorkLogToolLifecycleStatus = RuntimeItemStatus | "stopped" | "idle";
 
@@ -125,7 +125,7 @@ function workEntryToolName(
     return `${data.server}.${data.tool}`;
   }
   if (typeof data?.toolName === "string") return data.toolName;
-  return resolveT3McpToolDefinition(entry.toolTitle) ? entry.toolTitle : entry.label;
+  return resolveUPCodeMcpToolDefinition(entry.toolTitle) ? entry.toolTitle : entry.label;
 }
 
 function workEntryToolOutput(
@@ -138,7 +138,7 @@ function workEntryToolOutput(
     : (data?.output ?? data?.result ?? data?.rawOutput ?? data?.content);
 }
 
-function resolveT3McpToolPresentation(
+function resolveUPCodeMcpToolPresentation(
   definition: UPCodeMcpToolDefinition | null,
   status: string | undefined,
   data?: unknown,
@@ -203,9 +203,9 @@ export function resolveWorkEntryToolPresentation(
   >,
   fallbackStatus?: "inProgress" | "completed",
 ) {
-  const definition = resolveT3McpToolDefinition(workEntryToolName(entry));
+  const definition = resolveUPCodeMcpToolDefinition(workEntryToolName(entry));
   const status = entry.toolLifecycleStatus ?? fallbackStatus;
-  return resolveT3McpToolPresentation(
+  return resolveUPCodeMcpToolPresentation(
     definition,
     definition && upcodeToolResultIndicatesFailure(workEntryToolOutput(entry)) ? "failed" : status,
     entry.toolData,
@@ -373,7 +373,7 @@ function workEntryIndicatesToolFailureFromOutput(
   }
   if (!workLogEntryIsToolLike(entry)) return false;
   if (
-    resolveT3McpToolDefinition(workEntryToolName(entry)) &&
+    resolveUPCodeMcpToolDefinition(workEntryToolName(entry)) &&
     upcodeToolResultIndicatesFailure(workEntryToolOutput(entry))
   ) {
     return true;
@@ -665,7 +665,7 @@ export function summarizeToolGroup(entries: ReadonlyArray<WorkLogPresentationEnt
   >();
   const sources = new Map<string, ToolActivitySource>();
   for (const entry of entries) {
-    const upcodeAction = resolveT3McpToolDefinition(workEntryToolName(entry))?.summaryAction ?? null;
+    const upcodeAction = resolveUPCodeMcpToolDefinition(workEntryToolName(entry))?.summaryAction ?? null;
     if (entry.toolSource && upcodeAction === null) {
       sources.set(entry.toolSource.key, entry.toolSource);
       continue;
@@ -681,7 +681,7 @@ export function summarizeToolGroup(entries: ReadonlyArray<WorkLogPresentationEnt
     count: group.entries.length,
     priority: summaryActionPriority(action),
     ...(group.upcodeAction
-      ? summarizeT3ToolCalls(group.upcodeAction, group.entries.map(upcodeToolSummaryCall))
+      ? summarizeUPCodeToolCalls(group.upcodeAction, group.entries.map(upcodeToolSummaryCall))
       : {
           label: toolGroupActionLabel(
             group.action,
@@ -712,7 +712,7 @@ export function summarizeToolGroup(entries: ReadonlyArray<WorkLogPresentationEnt
   const sourcedCount = entries.filter(
     (entry) =>
       entry.toolSource !== undefined &&
-      resolveT3McpToolDefinition(workEntryToolName(entry)) === null,
+      resolveUPCodeMcpToolDefinition(workEntryToolName(entry)) === null,
   ).length;
   const remainingCount =
     entries.length - sourcedCount - selected.reduce((count, group) => count + group.count, 0);

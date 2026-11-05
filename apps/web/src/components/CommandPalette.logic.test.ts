@@ -77,12 +77,12 @@ describe("buildCommandPaletteProjectMetadata", () => {
         {
           environmentId: localEnvironmentId,
           title: "UPCode",
-          workspaceRoot: "/Users/theo/Projects/t3code",
+          workspaceRoot: "/Users/theo/Projects/upcode",
         },
         {
           environmentId: remoteEnvironmentId,
           title: "upcode",
-          workspaceRoot: "/srv/t3code",
+          workspaceRoot: "/srv/upcode",
         },
       ],
       locationByEnvironmentId: locations,
@@ -90,10 +90,10 @@ describe("buildCommandPaletteProjectMetadata", () => {
 
     expect(metadata.searchTerms).toEqual([
       "UPCode",
-      "/Users/theo/Projects/t3code",
+      "/Users/theo/Projects/upcode",
       "Local",
       "upcode",
-      "/srv/t3code",
+      "/srv/upcode",
       "Build box",
     ]);
     expect(metadata.environmentLabels).toEqual(["Local", "Build box"]);
@@ -123,12 +123,12 @@ describe("buildCommandPaletteProjectMetadata", () => {
         {
           environmentId: remoteEnvironmentId,
           title: "UPCode",
-          workspaceRoot: "/srv/t3code",
+          workspaceRoot: "/srv/upcode",
         },
         {
           environmentId: remoteEnvironmentId,
           title: "UPCode worktree",
-          workspaceRoot: "/srv/t3code-feature",
+          workspaceRoot: "/srv/upcode-feature",
         },
       ],
       locationByEnvironmentId: locations,
@@ -144,12 +144,12 @@ describe("buildCommandPaletteProjectMetadata", () => {
         {
           environmentId: remoteEnvironmentId,
           title: "UPCode",
-          workspaceRoot: "/srv/t3code",
+          workspaceRoot: "/srv/upcode",
         },
         {
           environmentId: secondRemoteEnvironmentId,
           title: "UPCode mirror",
-          workspaceRoot: "/srv/mirror/t3code",
+          workspaceRoot: "/srv/mirror/upcode",
         },
       ],
       locationByEnvironmentId: new Map([
@@ -167,7 +167,7 @@ describe("buildCommandPaletteProjectMetadata", () => {
         {
           environmentId: remoteEnvironmentId,
           title: "UPCode",
-          workspaceRoot: "/srv/t3code",
+          workspaceRoot: "/srv/upcode",
         },
       ],
       locationByEnvironmentId: new Map(),
@@ -783,8 +783,8 @@ describe("filterPinnedBrowseEntries", () => {
 it.each([
   "#10839",
   "10839",
-  "pingdotgg/t3code#10839",
-  "https://github.com/pingdotgg/t3code/pull/10839",
+  "SergioUP/UPCode#10839",
+  "https://github.com/SergioUP/UPCode/pull/10839",
 ])("finds linked threads from PR query %s", (query) => {
   const items = buildThreadActionItems({
     threads: [
@@ -793,9 +793,9 @@ it.each([
         pullRequests: [
           {
             host: "github.com",
-            repository: "pingdotgg/t3code",
+            repository: "SergioUP/UPCode",
             number: 10839,
-            url: "https://github.com/pingdotgg/t3code/pull/10839",
+            url: "https://github.com/SergioUP/UPCode/pull/10839",
             source: "manual",
             linkedAt: "2026-09-08T00:00:00Z",
             snapshot: null,

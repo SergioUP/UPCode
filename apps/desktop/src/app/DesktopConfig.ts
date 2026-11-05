@@ -40,7 +40,7 @@ export const DesktopConfig = Config.all({
   upcodeHome: trimmedString("UPCODE_HOME"),
   devServerUrl: Config.URL("VITE_DEV_SERVER_URL").pipe(Config.option),
   appUserModelIdOverride: trimmedString("UPCODE_DESKTOP_APP_USER_MODEL_ID"),
-  devRemoteT3ServerEntryPath: trimmedString("UPCODE_DEV_REMOTE_UPCODE_SERVER_ENTRY_PATH"),
+  devRemoteUPCodeServerEntryPath: trimmedString("UPCODE_DEV_REMOTE_UPCODE_SERVER_ENTRY_PATH"),
   configuredBackendPort: Config.Port("UPCODE_PORT").pipe(Config.option),
   commitHashOverride: trimmedString("UPCODE_COMMIT_HASH"),
   desktopLanHostOverride: trimmedString("UPCODE_DESKTOP_LAN_HOST"),

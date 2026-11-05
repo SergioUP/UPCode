@@ -99,13 +99,13 @@ const NODE_SCRIPT = {
 
 describe("ssh tunnel scripts", () => {
   it("installs and runs the release archive without Node, npm, or npx", () => {
-    const script = SshTunnel.buildRemoteT3RunnerScript(ARCHIVE);
+    const script = SshTunnel.buildRemoteUPCodeRunnerScript(ARCHIVE);
 
     assert.include(script, "UPCODE_ARCHIVE_VERSION='1.2.3-preview.20260911.4'");
     assert.include(script, "UPCODE_NODE_SCRIPT_PATH=''");
     assert.include(
       script,
-      "UPCODE_RELEASE_BASE_URL='https://github.com/pingdotgg/t3code/releases/download'",
+      "UPCODE_RELEASE_BASE_URL='https://github.com/SergioUP/UPCode/releases/download'",
     );
     assert.include(script, 'UPCODE_RUNTIME_DIR="$HOME/.upcode/runtime/versions/$UPCODE_ARCHIVE_VERSION"');
     assert.include(script, 'UPCODE_ARCHIVE="upcode-$UPCODE_ARCHIVE_VERSION-$UPCODE_PLATFORM-$UPCODE_ARCH.tar.gz"');
@@ -171,14 +171,14 @@ describe("ssh tunnel scripts", () => {
       "v1.2.3",
     ]) {
       assert.throws(
-        () => SshTunnel.buildRemoteT3RunnerScript({ archiveVersion }),
+        () => SshTunnel.buildRemoteUPCodeRunnerScript({ archiveVersion }),
         SshTunnel.SshInvalidArchiveVersionError,
         undefined,
         archiveVersion,
       );
     }
     assert.include(
-      SshTunnel.buildRemoteT3RunnerScript(ARCHIVE),
+      SshTunnel.buildRemoteUPCodeRunnerScript(ARCHIVE),
       "UPCODE_ARCHIVE_VERSION='1.2.3-preview.20260911.4'",
     );
   });
@@ -186,7 +186,7 @@ describe("ssh tunnel scripts", () => {
   it("refuses to build a runner with neither an archive version nor a node script", () => {
     for (const input of [undefined, {}, { archiveVersion: "  " }, { nodeScriptPath: null }]) {
       assert.throws(
-        () => SshTunnel.buildRemoteT3RunnerScript(input),
+        () => SshTunnel.buildRemoteUPCodeRunnerScript(input),
         SshTunnel.SshMissingRunnerError,
       );
     }
@@ -194,14 +194,14 @@ describe("ssh tunnel scripts", () => {
   });
 
   it("does not hard-code a remote node engine range", () => {
-    const script = SshTunnel.buildRemoteT3RunnerScript(NODE_SCRIPT);
+    const script = SshTunnel.buildRemoteUPCodeRunnerScript(NODE_SCRIPT);
 
     assert.include(script, "UPCODE_NODE_ENGINE_RANGE=''");
     assert.notInclude(script, TEST_NODE_ENGINE_RANGE);
   });
 
   it("builds the remote upcode runner with a node script override", () => {
-    const script = SshTunnel.buildRemoteT3RunnerScript({
+    const script = SshTunnel.buildRemoteUPCodeRunnerScript({
       ...NODE_SCRIPT,
       nodeEngineRange: TEST_NODE_ENGINE_RANGE,
     });
@@ -233,7 +233,7 @@ describe("ssh tunnel scripts", () => {
   });
 
   it("embeds the runner in the launch script byte for byte", () => {
-    const runner = SshTunnel.buildRemoteT3RunnerScript(ARCHIVE);
+    const runner = SshTunnel.buildRemoteUPCodeRunnerScript(ARCHIVE);
     assert.include(runner, 'printf \'%s\\n\' "$$" > "$UPCODE_LOCK/pid.tmp"');
     assert.include(SshTunnel.buildRemoteLaunchScript(ARCHIVE), runner);
   });
@@ -767,7 +767,7 @@ describe("archive runner script", () => {
         const runner = `${root}/run-upcode.sh`;
         yield* fs.writeFileString(
           runner,
-          SshTunnel.buildRemoteT3RunnerScript({ archiveVersion, releaseBaseUrl }),
+          SshTunnel.buildRemoteUPCodeRunnerScript({ archiveVersion, releaseBaseUrl }),
         );
         const home = `${root}/home`;
         yield* fs.makeDirectory(home, { recursive: true });

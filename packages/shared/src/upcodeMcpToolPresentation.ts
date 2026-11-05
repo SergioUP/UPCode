@@ -340,7 +340,7 @@ const UPCODE_MCP_TOOLS: Readonly<Record<string, UPCodeMcpToolDefinition>> = {
  */
 export const UPCODE_MCP_TOOL_NAMES: ReadonlySet<string> = new Set(Object.keys(UPCODE_MCP_TOOLS));
 
-function normalizeT3McpToolLabel(value: string): string {
+function normalizeUPCodeMcpToolLabel(value: string): string {
   return value.replace(/\s+(?:complete|completed)\s*$/i, "").trim();
 }
 
@@ -351,8 +351,10 @@ function normalizeT3McpToolLabel(value: string): string {
  * agents. The prefix match is deliberately loose because the display-name
  * inventory is the real gate; unknown tools stay on the generic renderer.
  */
-function resolveT3McpToolName(value: string): string | null {
-  const label = normalizeT3McpToolLabel(value);
+function resolveUPCodeMcpToolName(value: string): string | null {
+  const label = normalizeUPCodeMcpToolLabel(value);
+  // Bare tool names win: `upcode_thread_read` is a tool, not a `upcode_` namespace.
+  if (Object.hasOwn(UPCODE_MCP_TOOLS, label)) return label;
   const mcpMatch = /^mcp__(?<server>.+?)__(?<tool>.+)$/i.exec(label);
   if (mcpMatch?.groups) {
     const { server, tool } = mcpMatch.groups;
@@ -363,18 +365,17 @@ function resolveT3McpToolName(value: string): string | null {
       : null;
   }
 
-  const namespaceMatch = /^(?<server>upcode|upcode_code|upcode)(?:[.:/]|\s*·\s*)(?<tool>.+)$/i.exec(
+  const namespaceMatch = /^(?<server>upcode|upcode_code)(?:[.:/]|\s*·\s*)(?<tool>.+)$/i.exec(
     label,
   );
   if (namespaceMatch?.groups) {
     return namespaceMatch.groups.tool ?? null;
   }
 
-  const prefixed = /^(?:mcp[-_]{1,2})?upcode[-_ ]?code(?:__|[-_.:/ ])(?<tool>.+)$/i.exec(label);
+  const prefixed = /^(?:mcp[-_]{1,2})?upcode(?:[-_ ]code)?(?:__|[-_.:/ ])(?<tool>.+)$/i.exec(label);
   const candidate = prefixed?.groups?.tool ?? label;
   if (Object.hasOwn(UPCODE_MCP_TOOLS, candidate)) return candidate;
-  // OpenCode 2 registers one server per thread, `upcode-<thread>`, and joins
-  // it to the tool with `_`. Thread ids can hold `_` too, so take the longest
+  // OpenCode 2 registers one server per thread, `upcode-<thread>`, and joins  // it to the tool with `_`. Thread ids can hold `_` too, so take the longest
   // known tool name that ends the label.
   if (!/^upcode-/i.test(label)) return null;
   let longest: string | null = null;
@@ -385,27 +386,27 @@ function resolveT3McpToolName(value: string): string | null {
 }
 
 /** The bare UPCode tool name (`html_render`) for any provider's spelling of it. */
-export function resolveT3McpToolId(toolName: string | null | undefined): string | null {
-  const name = toolName == null ? null : resolveT3McpToolName(toolName);
+export function resolveUPCodeMcpToolId(toolName: string | null | undefined): string | null {
+  const name = toolName == null ? null : resolveUPCodeMcpToolName(toolName);
   return name !== null && Object.hasOwn(UPCODE_MCP_TOOLS, name) ? name : null;
 }
 
-export function resolveT3McpToolDefinition(
+export function resolveUPCodeMcpToolDefinition(
   toolName: string | null | undefined,
 ): UPCodeMcpToolDefinition | null {
-  const name = toolName == null ? null : resolveT3McpToolName(toolName);
+  const name = toolName == null ? null : resolveUPCodeMcpToolName(toolName);
   return name !== null && Object.hasOwn(UPCODE_MCP_TOOLS, name) ? UPCODE_MCP_TOOLS[name]! : null;
 }
 
-export function resolveT3McpToolPresentation(
+export function resolveUPCodeMcpToolPresentation(
   toolName: string | null | undefined,
 ): UPCodeMcpToolPresentation | null {
-  const definition = resolveT3McpToolDefinition(toolName);
+  const definition = resolveUPCodeMcpToolDefinition(toolName);
   return definition === null ? null : { displayName: definition.displayName, logo: "upcode" };
 }
 
-export function resolveT3McpToolSummaryAction(
+export function resolveUPCodeMcpToolSummaryAction(
   toolName: string | null | undefined,
 ): UPCodeMcpToolSummaryAction | null {
-  return resolveT3McpToolDefinition(toolName)?.summaryAction ?? null;
+  return resolveUPCodeMcpToolDefinition(toolName)?.summaryAction ?? null;
 }

@@ -33,7 +33,7 @@ import * as HostProcess from "@upcode/shared/HostProcess";
 import { compactTraceAttributes } from "@upcode/shared/observability";
 import { decodeJsonResult } from "@upcode/shared/schemaJson";
 import { resolveSpawnCommand } from "@upcode/shared/shell";
-import { parseT3ProjectFile } from "@upcode/shared/t3ProjectFile";
+import { parseUPCodeProjectFile } from "@upcode/shared/upcodeProjectFile";
 import { resolveProjectFileBackedSetting } from "@upcode/shared/projectSettings";
 import { gitCommandDuration, gitCommandsTotal, withMetrics } from "../observability/Metrics.ts";
 import * as GitVcsDriver from "./GitVcsDriver.ts";
@@ -3518,7 +3518,7 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
             ? null
             : yield* fileSystem.readFileString(path.join(worktreePath, UPCODE_PROJECT_FILE_NAME)).pipe(
                 Effect.flatMap((contents) => {
-                  const file = parseT3ProjectFile(contents);
+                  const file = parseUPCodeProjectFile(contents);
                   return file === null
                     ? Effect.logWarning("upcode.json is invalid; initializing submodules recursively", {
                         worktreePath,
@@ -3675,7 +3675,7 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
         yield* executeGit(
           "GitVcsDriver.refreshCheckedOutBranch.keepPrevious",
           input.cwd,
-          ["update-ref", "refs/t3code/pre-refresh", headCommit],
+          ["update-ref", "refs/upcode/pre-refresh", headCommit],
           { fallbackErrorDetail: "git failed to record the previous checkout commit" },
         );
       }

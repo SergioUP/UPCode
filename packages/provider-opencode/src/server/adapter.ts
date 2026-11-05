@@ -969,9 +969,9 @@ export const makeOpenCodeAdapterV2 = Effect.fn("makeOpenCodeAdapterV2")(function
         });
 
         const mcpSession = yield* mcpSessions.read(input.threadId);
-        const hasT3Mcp = mcpSession !== undefined && !connection.external;
-        const orchestrationSystemPrompt = upcodeOrchestrationSystemPrompt(hasT3Mcp);
-        if (hasT3Mcp) {
+        const hasUPCodeMcp = mcpSession !== undefined && !connection.external;
+        const orchestrationSystemPrompt = upcodeOrchestrationSystemPrompt(hasUPCodeMcp);
+        if (hasUPCodeMcp) {
           yield* OpenCodeRuntime.runOpenCodeSdk("mcp.add", () =>
             client.mcp.add({
               name: "upcode",

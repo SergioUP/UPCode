@@ -17,7 +17,7 @@
 # instead of fetching the release again.
 set -eu
 
-repo="pingdotgg/t3code"
+repo="SergioUP/UPCode"
 base_url="${UPCODE_RELEASE_BASE_URL:-https://github.com/${repo}/releases/download}"
 upcode_home="${UPCODE_HOME:-$HOME/.upcode}"
 bin_dir="${UPCODE_INSTALL_BIN_DIR:-$HOME/.local/bin}"

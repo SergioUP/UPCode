@@ -93,7 +93,7 @@ import {
 } from "./rpc.ts";
 import {
   buildPiRpcLaunch,
-  materializePiT3McpExtension,
+  materializePiUPCodeMcpExtension,
   resolvePiLaunchArgs,
 } from "./mcpInjection.ts";
 import { PI_FILE_CHANGE_TOOLS } from "./mcpExtensionSource.ts";
@@ -534,7 +534,7 @@ export const makePiAdapterV2 = Effect.fn("makePiAdapterV2")(function* (
       // hook. Materialize it even when this session has no MCP credential so
       // Supervised never silently degrades to unrestricted tool execution.
       const extensionPath = yield* provideCacheFs(
-        materializePiT3McpExtension(host.paths.providerStatusCacheDir),
+        materializePiUPCodeMcpExtension(host.paths.providerStatusCacheDir),
       );
       const resolvedLaunchArgs = resolvePiLaunchArgs(options.settings.launchArgs);
       if (!resolvedLaunchArgs.ok) {

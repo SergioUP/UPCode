@@ -58,7 +58,7 @@ const remoteStatusWithPr: VcsStatusRemoteResult = {
   pr: {
     number: 2978,
     title: "[codex] Rewrite client connection architecture",
-    url: "https://github.com/pingdotgg/t3code/pull/2978",
+    url: "https://github.com/SergioUP/UPCode/pull/2978",
     baseRef: "main",
     headRef: "codex/connection-state-audit",
     state: "open",

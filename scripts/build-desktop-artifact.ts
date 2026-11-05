@@ -2913,7 +2913,7 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
       // AppStream consumers associate this metadata with our upcode.desktop entry.
       fpm: [
         `${path.join(repoRoot, "apps/desktop/resources/linux/com.upango.upcode.metainfo.xml")}=/usr/share/metainfo/com.upango.upcode.metainfo.xml`,
-        `${path.join(repoRoot, "LICENSE")}=/usr/share/doc/t3code/copyright`,
+        `${path.join(repoRoot, "LICENSE")}=/usr/share/doc/upcode/copyright`,
       ],
       // Electron's runtime libraries. Debian 13 and Ubuntu 24.04 renamed some
       // for 64-bit time; the old name is the fallback for older releases.

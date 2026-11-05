@@ -132,7 +132,7 @@ function layerTest(input?: {
           revokeForUser: () => Effect.succeed(false),
         }),
         Layer.succeed(EnvironmentCredentials.EnvironmentCredentials, {
-          create: () => Effect.succeed("t3env_credential_secret"),
+          create: () => Effect.succeed("upcodeenv_credential_secret"),
           authenticate: () => Effect.succeedNone,
           revokeForEnvironmentPublicKey: () => Effect.succeed(false),
         }),
@@ -164,7 +164,7 @@ describe("EnvironmentLinker", () => {
       const linker = yield* EnvironmentLinker.EnvironmentLinker;
       const result = yield* linker.link({ userId: "user_123", request });
       expect(result.environmentId).toBe(payload.environmentId);
-      expect(result.environmentCredential).toBe("t3env_credential_secret");
+      expect(result.environmentCredential).toBe("upcodeenv_credential_secret");
       expect(persistedEnvironmentId).toBe(payload.environmentId);
     }).pipe(
       Effect.provide(
@@ -229,7 +229,7 @@ describe("EnvironmentLinker", () => {
       } satisfies RelayEnvironmentLinkRequest;
       const linker = yield* EnvironmentLinker.EnvironmentLinker;
       const result = yield* linker.link({ userId: "user_123", request });
-      expect(result.environmentCredential).toBe("t3env_credential_secret");
+      expect(result.environmentCredential).toBe("upcodeenv_credential_secret");
       expect(result.endpointRuntime).toBeNull();
       expect(persistedEndpoint).toBe("http://127.0.0.1:3773/");
       // Downgrading from a managed link must release the previously provisioned

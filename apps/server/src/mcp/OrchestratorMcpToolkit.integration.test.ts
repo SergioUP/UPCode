@@ -2185,9 +2185,9 @@ describe("orchestrator MCP toolkit", () => {
               threadId: emptyThread.threadId,
               action: "link_pull_request",
               pullRequest: {
-                repository: "pingdotgg/t3code",
+                repository: "SergioUP/UPCode",
                 number: 8689,
-                url: "https://github.com/pingdotgg/t3code/pull/8689",
+                url: "https://github.com/SergioUP/UPCode/pull/8689",
               },
               clientRequestId: "metadata-link-1",
             });
@@ -2196,9 +2196,9 @@ describe("orchestrator MCP toolkit", () => {
             );
             expect(linked.linkedPullRequest).toEqual({
               projectId,
-              repository: "pingdotgg/t3code",
+              repository: "SergioUP/UPCode",
               number: 8689,
-              url: "https://github.com/pingdotgg/t3code/pull/8689",
+              url: "https://github.com/SergioUP/UPCode/pull/8689",
             });
             const metadataReadCall = yield* invoke("upcode_thread_read", {
               threadId: emptyThread.threadId,

@@ -265,9 +265,9 @@ describe("mobile SQLite environment cache store", () => {
       );
       const link: ThreadPullRequestLink = {
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "SergioUP/UPCode",
         number: 42,
-        url: "https://github.com/pingdotgg/t3code/pull/42",
+        url: "https://github.com/SergioUP/UPCode/pull/42",
         source: "agent",
         linkedAt: "2026-07-29T12:00:00.000Z",
         snapshot: null,
@@ -299,9 +299,9 @@ describe("mobile SQLite environment cache store", () => {
       );
       const link: ThreadPullRequestLink = {
         host: "github.com",
-        repository: "pingdotgg/t3code",
+        repository: "SergioUP/UPCode",
         number: 5,
-        url: "https://github.com/pingdotgg/t3code/pull/5",
+        url: "https://github.com/SergioUP/UPCode/pull/5",
         source: "agent",
         linkedAt: "2026-07-29T12:00:00.000Z",
         snapshot: null,

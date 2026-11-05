@@ -2,7 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { ThreadId, TurnItemId, type OrchestrationV2TurnItem } from "@upcode/contracts";
 import * as DateTime from "effect/DateTime";
-import { UPCODE_MCP_TOOL_NAMES } from "@upcode/shared/t3McpToolPresentation";
+import { UPCODE_MCP_TOOL_NAMES } from "@upcode/shared/upcodeMcpToolPresentation";
 
 import {
   commandDetailRepeatsCommand,
@@ -471,7 +471,7 @@ describe("resolveWorkEntryToolPresentation", () => {
   });
   it.each([
     "mcp__upcode__preview_click",
-    "mcp__t3_code__preview_click",
+    "mcp__upcode_code__preview_click",
     "mcp__upcode__preview_click",
     "upcode.preview_click",
     "upcode · preview_click completed",
@@ -579,7 +579,7 @@ describe("resolveWorkEntryToolPresentation", () => {
   it("keeps UPCode branding for non-browser tools and falls back to the original tool label", () => {
     expect(
       resolveWorkEntryToolPresentation({
-        label: "mcp__t3_code__task_status",
+        label: "mcp__upcode_code__task_status",
         toolTitle: "Check the child task",
       }),
     ).toEqual({ displayName: "Getting delegated task status", icon: "upcode" });
@@ -664,7 +664,7 @@ describe("browser group summaries", () => {
         {
           ...browserEntry,
           command: "node inspect-page.js",
-          toolData: { toolName: "mcp__t3_code__preview_evaluate" },
+          toolData: { toolName: "mcp__upcode_code__preview_evaluate" },
         },
       ]),
     ).toBe("Used browser 1 time");
@@ -905,7 +905,7 @@ describe("resolveViewedImageAsset", () => {
 describe("pull request tool presentation", () => {
   it.each([
     "mcp__upcode__link_pull_request",
-    "mcp__t3_code__link_pull_request",
+    "mcp__upcode_code__link_pull_request",
     "upcode · link_pull_request",
     "upcode/link_pull_request",
     "link_pull_request",
@@ -1026,7 +1026,7 @@ describe("device group summaries", () => {
   it("recognizes Claude tool names and preserves screenshot previews", () => {
     const entry = {
       ...deviceEntry("device_screenshot"),
-      toolData: { toolName: "mcp__t3_code__device_screenshot" },
+      toolData: { toolName: "mcp__upcode_code__device_screenshot" },
       viewedImagePath: "/workspace/device.png",
     };
     expect(summarizeToolGroup([entry]).summary).toBe("Used device controls 1 time");

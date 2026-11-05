@@ -11,15 +11,15 @@ import { fromLenientJson } from "./schemaJson.ts";
  */
 export const UPCodeProjectFileFromJson = fromLenientJson(UPCodeProjectFile);
 
-const decodeT3ProjectFile = Schema.decodeExit(UPCodeProjectFileFromJson);
+const decodeUPCodeProjectFile = Schema.decodeExit(UPCodeProjectFileFromJson);
 
 /**
  * Decode raw `upcode.json` contents, treating invalid or malformed files as
  * absent. Clients use this to read optional defaults (scripts, thread env
  * mode) without surfacing decode errors to the user.
  */
-export function parseT3ProjectFile(contents: string): UPCodeProjectFile | null {
-  const decoded = decodeT3ProjectFile(contents);
+export function parseUPCodeProjectFile(contents: string): UPCodeProjectFile | null {
+  const decoded = decodeUPCodeProjectFile(contents);
   return Exit.isSuccess(decoded) ? decoded.value : null;
 }
 
@@ -29,7 +29,7 @@ export function parseT3ProjectFile(contents: string): UPCodeProjectFile | null {
  * Served from the marketing site at {@link UPCODE_PROJECT_FILE_SCHEMA_URL} so
  * editors get LSP support via a `$schema` reference.
  */
-export function buildT3ProjectFileJsonSchema(): Record<string, unknown> {
+export function buildUPCodeProjectFileJsonSchema(): Record<string, unknown> {
   // Closed objects, as before effect rc.113 changed the generator default;
   // editors then flag unknown keys in upcode.json.
   const document = Schema.toJsonSchemaDocument(UPCodeProjectFile, { onExcessProperty: "error" });
