@@ -1,5 +1,5 @@
-import { runRanAfter } from "@t3tools/shared/orchestrationV2ThreadError";
-import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
+import { runRanAfter } from "@upcode/shared/orchestrationV2ThreadError";
+import { resolveProjectSettings } from "@upcode/shared/projectSettings";
 import {
   CommandId,
   latestProviderTurnForAttempt,
@@ -7,7 +7,7 @@ import {
   type OrchestrationV2Run,
   type RunId,
   type ThreadId,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import type { ProjectionRuntimeRecoveryState } from "./ProjectionStore.ts";
@@ -253,8 +253,8 @@ export const continueRestartedRun = Effect.fn("RestartContinuation.continueResta
           source: { kind: "system" },
           outcome: "updated",
           summary: note.settled
-            ? "T3 Code restarted and stopped background work"
-            : "T3 Code restarted and resumed this turn",
+            ? "UPCode restarted and stopped background work"
+            : "UPCode restarted and resumed this turn",
           detail: text,
         },
         attachments: [],

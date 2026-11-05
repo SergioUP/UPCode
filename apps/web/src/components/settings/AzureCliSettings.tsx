@@ -1,4 +1,4 @@
-import type { EnvironmentId } from "@t3tools/contracts";
+import type { EnvironmentId } from "@upcode/contracts";
 import { CircleCheckIcon, CircleXIcon, TerminalIcon } from "lucide-react";
 import { useState } from "react";
 

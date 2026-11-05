@@ -5,12 +5,12 @@ import {
   type ProviderOptionSelection,
   type ScopedThreadRef,
   type ServerProviderModel,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import {
   buildProviderOptionSelectionsFromDescriptors,
   getProviderOptionCurrentValue,
   getProviderOptionDescriptors,
-} from "@t3tools/shared/model";
+} from "@upcode/shared/model";
 import { useCallback } from "react";
 
 import { type DraftId, useComposerDraftStore } from "../../composerDraftStore";
@@ -41,7 +41,7 @@ export function resolveContextWindowDescriptor(input: {
 
 /**
  * Context-window size picker for the composer's context meter. Only models that
- * publish a window choice get one: Codex's own ladder (T3-side, because
+ * publish a window choice get one: Codex's own ladder (UPCode-side, because
  * `model/list` reports no sizes) and Claude's standard/expanded.
  */
 export function ContextWindowSelector(props: {

@@ -1,0 +1,35 @@
+{
+  "name": "@upcode/mobile-source-text",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "ios",
+    "src",
+    "index.ts",
+    "LICENSE",
+    "UPSTREAM.md",
+    "UPCodeSourceText.podspec",
+    "react-native.config.js"
+  ],
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "react-native": "./index.ts",
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "codegenConfig": {
+    "name": "UPCodeSourceTextSpec",
+    "type": "components",
+    "jsSrcsDir": "src",
+    "ios": {
+      "componentProvider": {
+        "UPCodeSourceText": "UPCodeSourceText",
+        "UPCodeSourceTextRun": "UPCodeSourceTextRun"
+      }
+    },
+    "outputDir": {
+      "ios": "ios/generated"
+    }
+  }
+}

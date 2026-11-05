@@ -95,9 +95,9 @@ export const AzureDevOpsRepository = Schema.Struct({
 export const AzureDevOpsPullRequest = Schema.Struct({
   id: Schema.Int,
   repositoryId: Schema.String,
-  /** Repository folder name, used to match the pull request to a local T3 project. */
+  /** Repository folder name, used to match the pull request to a local UPCode project. */
   repositoryName: Schema.optionalKey(Schema.String),
-  /** Repository remote URL, used to match the pull request to a local T3 project. */
+  /** Repository remote URL, used to match the pull request to a local UPCode project. */
   repositoryRemoteUrl: Schema.optionalKey(Schema.String),
   title: Schema.String,
   status: Schema.String,

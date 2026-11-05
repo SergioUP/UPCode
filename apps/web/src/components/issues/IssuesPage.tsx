@@ -1,5 +1,5 @@
-import { azureDevOpsIssueKey, type EnvironmentId } from "@t3tools/contracts";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import { azureDevOpsIssueKey, type EnvironmentId } from "@upcode/contracts";
+import { squashAtomCommandFailure } from "@upcode/client-runtime/state/runtime";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowLeftIcon,

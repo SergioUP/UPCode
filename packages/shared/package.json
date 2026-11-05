@@ -1,5 +1,5 @@
 {
-  "name": "@t3tools/shared",
+  "name": "@upcode/shared",
   "private": true,
   "type": "module",
   "exports": {
@@ -155,9 +155,9 @@
       "types": "./src/projectSettings.ts",
       "import": "./src/projectSettings.ts"
     },
-    "./t3ProjectFile": {
-      "types": "./src/t3ProjectFile.ts",
-      "import": "./src/t3ProjectFile.ts"
+    "./upcodeProjectFile": {
+      "types": "./src/upcodeProjectFile.ts",
+      "import": "./src/upcodeProjectFile.ts"
     },
     "./orchestrationTiming": {
       "types": "./src/orchestrationTiming.ts",
@@ -383,9 +383,9 @@
       "types": "./src/orchestrationV2Timeline.ts",
       "import": "./src/orchestrationV2Timeline.ts"
     },
-    "./t3McpToolPresentation": {
-      "types": "./src/t3McpToolPresentation.ts",
-      "import": "./src/t3McpToolPresentation.ts"
+    "./upcodeMcpToolPresentation": {
+      "types": "./src/upcodeMcpToolPresentation.ts",
+      "import": "./src/upcodeMcpToolPresentation.ts"
     },
     "./Array": {
       "types": "./src/Array.ts",
@@ -495,7 +495,7 @@
   "dependencies": {
     "@noble/curves": "catalog:",
     "@noble/hashes": "catalog:",
-    "@t3tools/contracts": "workspace:*",
+    "@upcode/contracts": "workspace:*",
     "effect": "catalog:",
     "jose": "catalog:",
     "mdast-util-directive": "catalog:",

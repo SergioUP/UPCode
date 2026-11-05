@@ -1,5 +1,5 @@
-import { WS_METHODS } from "@t3tools/contracts";
-import { createEnvironmentRpcCommand } from "@t3tools/client-runtime/state/runtime";
+import { WS_METHODS } from "@upcode/contracts";
+import { createEnvironmentRpcCommand } from "@upcode/client-runtime/state/runtime";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 

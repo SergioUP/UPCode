@@ -1,4 +1,4 @@
-import type { ConfirmDialogOptions, ConfirmDialogVariant } from "@t3tools/contracts";
+import type { ConfirmDialogOptions, ConfirmDialogVariant } from "@upcode/contracts";
 
 export type ConfirmDialogState =
   | { readonly status: "idle" }

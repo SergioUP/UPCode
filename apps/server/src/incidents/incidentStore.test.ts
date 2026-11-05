@@ -49,7 +49,7 @@ it.effect("persists incidents, evidence and summary on the state dir", () =>
     assert.strictEqual((yield* store.list()).length, 0);
   }).pipe(
     Effect.provide(
-      ServerConfig.layerTest(process.cwd(), { prefix: "t3-incidents-test-" }).pipe(
+      ServerConfig.layerTest(process.cwd(), { prefix: "upcode-incidents-test-" }).pipe(
         Layer.provideMerge(NodeServices.layer),
       ),
     ),

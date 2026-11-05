@@ -1,8 +1,8 @@
-import { fileBasename } from "@t3tools/shared/path";
-import type { ThreadId } from "@t3tools/contracts";
+import { fileBasename } from "@upcode/shared/path";
+import type { ThreadId } from "@upcode/contracts";
 import { resolveMarkdownLinkPresentation } from "../../lib/markdownLinks";
 import type { MarkdownFileContextMenu } from "../../native/SelectableMarkdownText.types";
-import { hostPreviewMimeTypeFromExtension } from "@t3tools/shared/filePreview";
+import { hostPreviewMimeTypeFromExtension } from "@upcode/shared/filePreview";
 
 import {
   isAbsolutePath,

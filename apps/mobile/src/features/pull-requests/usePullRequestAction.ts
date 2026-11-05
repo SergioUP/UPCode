@@ -1,10 +1,10 @@
 import { useAtomRefresh } from "@effect/atom-react";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import { squashAtomCommandFailure } from "@upcode/client-runtime/state/runtime";
 import type {
   PullRequestAction,
   PullRequestDetail,
   PullRequestUpdateMethod,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import { useRef, useState } from "react";
 import { Alert } from "react-native";
 import { composerPullRequests } from "../../state/pull-requests";

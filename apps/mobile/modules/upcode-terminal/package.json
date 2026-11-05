@@ -1,0 +1,17 @@
+{
+  "name": "@upcode/mobile-terminal-native",
+  "version": "0.0.0",
+  "private": true,
+  "expo-module": {
+    "ios": {
+      "modules": [
+        "UPCodeTerminalModule"
+      ]
+    },
+    "android": {
+      "modules": [
+        "expo.modules.upcodeterminal.UPCodeTerminalModule"
+      ]
+    }
+  }
+}

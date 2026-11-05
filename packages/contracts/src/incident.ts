@@ -1,7 +1,7 @@
 import * as Schema from "effect/Schema";
 
 /**
- * Incident Center is a read-only investigation workspace built on top of T3
+ * Incident Center is a read-only investigation workspace built on top of UPCode
  * threads. An incident owns one conversation plus the evidence the agent saves
  * while investigating; the app itself persists all of it locally.
  */

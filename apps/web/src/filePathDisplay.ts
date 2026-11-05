@@ -2,8 +2,8 @@ import {
   fileBasename,
   stripSlashPrefixedWindowsDrive,
   isWindowsAbsolutePath,
-} from "@t3tools/shared/path";
-import { formatFilePathPosition, splitFilePathPosition } from "@t3tools/shared/fileLinks";
+} from "@upcode/shared/path";
+import { formatFilePathPosition, splitFilePathPosition } from "@upcode/shared/fileLinks";
 
 function normalizePathSeparators(path: string): string {
   return path.replaceAll("\\", "/");

@@ -6,8 +6,8 @@ import {
   type DesktopUpdateChannel,
   type DesktopUpdateCheckResult,
   type DesktopUpdateState,
-} from "@t3tools/contracts";
-import { errorTag } from "@t3tools/shared/observability";
+} from "@upcode/contracts";
+import { errorTag } from "@upcode/shared/observability";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -189,7 +189,7 @@ export class DesktopUpdates extends Context.Service<
       expectedVersion: string,
     ) => Effect.Effect<DesktopPreparedUpdateInstallResult>;
   }
->()("@t3tools/desktop/updates/DesktopUpdates") {}
+>()("@upcode/desktop/updates/DesktopUpdates") {}
 
 const {
   logInfo: logUpdaterInfo,
@@ -304,12 +304,14 @@ function shouldBroadcastDownloadProgress(
 }
 
 /**
- * The fork ships its own installer, so the one feed it must never poll is T3's:
- * installing a T3 build over UPCode would replace the app. Any other feed is the
- * one its own build published, so it is allowed — refusing anything that is not
- * hardcoded here would silently stop updates again the day the repository moves.
+ * The fork ships its own installer, so the one feed it must never poll is the
+ * upstream app's: installing an upstream build over UPCode would replace it. Any
+ * other feed is the one its own build published, so it is allowed — refusing
+ * anything that is not hardcoded here would silently stop updates again the day
+ * the repository moves. The slug is an external repository identity, not our brand,
+ * so it intentionally keeps its original spelling.
  */
-const T3_UPDATE_FEED = { owner: "pingdotgg", repo: "t3code" } as const;
+const UPSTREAM_UPDATE_FEED = { owner: "pingdotgg", repo: "t3code" } as const;
 
 function getAutoUpdateDisabledReason(args: {
   isDevelopment: boolean;
@@ -327,10 +329,10 @@ function getAutoUpdateDisabledReason(args: {
     return "Automatic updates are only available in packaged production builds.";
   }
   if (args.disabledByEnv) {
-    return "Automatic updates are disabled by the T3CODE_DISABLE_AUTO_UPDATE setting.";
+    return "Automatic updates are disabled by the UPCODE_DISABLE_AUTO_UPDATE setting.";
   }
-  if (isT3UpdateFeed(args.updateFeed.value)) {
-    return "This build carries T3's update feed, so it does not update itself.";
+  if (isUpstreamUpdateFeed(args.updateFeed.value)) {
+    return "This build carries the upstream update feed, so it does not update itself.";
   }
   if (args.platform === "linux" && !args.appImage && !args.isDebPackage) {
     return "Automatic updates on Linux require the AppImage or the .deb package.";
@@ -338,10 +340,10 @@ function getAutoUpdateDisabledReason(args: {
   return null;
 }
 
-function isT3UpdateFeed(feed: AppUpdateYmlConfig): boolean {
+function isUpstreamUpdateFeed(feed: AppUpdateYmlConfig): boolean {
   return (
-    feed.owner?.trim().toLowerCase() === T3_UPDATE_FEED.owner &&
-    feed.repo?.trim().toLowerCase() === T3_UPDATE_FEED.repo
+    feed.owner?.trim().toLowerCase() === UPSTREAM_UPDATE_FEED.owner &&
+    feed.repo?.trim().toLowerCase() === UPSTREAM_UPDATE_FEED.repo
   );
 }
 

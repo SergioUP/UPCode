@@ -1,4 +1,4 @@
-import type { AzureDevOpsWorkItem } from "@t3tools/contracts";
+import type { AzureDevOpsWorkItem } from "@upcode/contracts";
 
 /**
  * The Issues section exists for one thing in UPANGO's process: the `Sub Tarea`

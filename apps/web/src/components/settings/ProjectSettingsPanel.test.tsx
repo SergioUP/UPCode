@@ -2,7 +2,7 @@ import { RegistryContext } from "@effect/atom-react";
 import type {
   DeleteProjectInput,
   UpdateProjectInput,
-} from "@t3tools/client-runtime/state/projects";
+} from "@upcode/client-runtime/state/projects";
 import {
   AuthOrchestrationOperateScope,
   AuthSettingsWriteScope,
@@ -15,9 +15,9 @@ import {
   type AuthSessionState,
   type ResolvedKeybindingsConfig,
   type ServerProvider,
-} from "@t3tools/contracts";
-import { DEFAULT_CLIENT_SETTINGS } from "@t3tools/contracts/settings";
-import { DEFAULT_RESOLVED_KEYBINDINGS } from "@t3tools/shared/keybindings";
+} from "@upcode/contracts";
+import { DEFAULT_CLIENT_SETTINGS } from "@upcode/contracts/settings";
+import { DEFAULT_RESOLVED_KEYBINDINGS } from "@upcode/shared/keybindings";
 import * as Cause from "effect/Cause";
 import { AsyncResult, Atom, AtomRegistry } from "effect/reactivity";
 import { cloneElement, type ReactElement, type ReactNode } from "react";
@@ -59,7 +59,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("~/connection/runtime", () => ({ connectionAtomRuntime: undefined }));
-vi.mock("@t3tools/client-runtime/state/session", () => ({
+vi.mock("@upcode/client-runtime/state/session", () => ({
   createEnvironmentSessionAtoms: () => ({
     sessionStateAtom: (id: EnvironmentId) => state.sessions.get(id)!,
   }),
@@ -101,8 +101,8 @@ vi.mock("~/hooks/useSettings", () => ({
   usePrimarySettings: () => DEFAULT_SERVER_SETTINGS,
   useEnvironmentSettings: () => DEFAULT_SERVER_SETTINGS,
 }));
-vi.mock("~/hooks/useT3ProjectFileScripts", () => ({
-  useT3ProjectFileState: () => ({
+vi.mock("~/hooks/useUPCodeProjectFileScripts", () => ({
+  useUPCodeProjectFileState: () => ({
     status: "valid",
     file: null,
     scripts: [{ name: "Imported", command: "vp test" }],
@@ -220,7 +220,7 @@ const session = (scopes: ReadonlyArray<AuthEnvironmentScope>): AuthSessionState 
     policy: "remote-reachable",
     bootstrapMethods: ["one-time-token"],
     sessionMethods: ["bearer-access-token"],
-    sessionCookieName: "t3_session",
+    sessionCookieName: "upcode_session",
   },
 });
 const writable = () => AsyncResult.success(session([AuthOrchestrationOperateScope]));

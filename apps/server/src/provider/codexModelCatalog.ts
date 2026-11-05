@@ -9,20 +9,20 @@ import type {
   ProviderOptionDescriptor,
   ServerProviderModel,
   ServerProviderUpdateRequiredModel,
-} from "@t3tools/contracts";
-import * as ModelCatalog from "@t3tools/provider-core/server/ModelCatalog";
-import type { ServerProviderDraft } from "@t3tools/provider-core/server/snapshotProbe";
-import { codexModelFamily, createModelCapabilities } from "@t3tools/shared/model";
-import { compareSemverVersions, parseSemver } from "@t3tools/shared/semver";
+} from "@upcode/contracts";
+import * as ModelCatalog from "@upcode/provider-core/server/ModelCatalog";
+import type { ServerProviderDraft } from "@upcode/provider-core/server/snapshotProbe";
+import { codexModelFamily, createModelCapabilities } from "@upcode/shared/model";
+import { compareSemverVersions, parseSemver } from "@upcode/shared/semver";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import { TrimmedNonEmptyString } from "@t3tools/contracts";
+import { TrimmedNonEmptyString } from "@upcode/contracts";
 
 /** Dated Codex builds match their base model's catalog entry. */
 const CODEX_MATCHING: ModelCatalog.CatalogMatching = { family: codexModelFamily };
 
 /**
- * Context-window sizes T3 offers for Codex models. Codex's `model/list` reports
+ * Context-window sizes UPCode offers for Codex models. Codex's `model/list` reports
  * no window size, so the choice is ours: the value travels to the thread as
  * `model_context_window` and Codex uses it for token accounting and automatic
  * compaction. `default` omits the override and leaves Codex's own value alone,

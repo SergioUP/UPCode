@@ -14,7 +14,7 @@ import type {
   AzureDevOpsWorkItemStateOption,
   AzureDevOpsWorkspaceError,
   TrackerProvider,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import * as Effect from "effect/Effect";
 
 import * as AzureDevOpsWorkspace from "./azureDevOpsWorkspace.ts";

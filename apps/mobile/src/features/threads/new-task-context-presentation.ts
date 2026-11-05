@@ -1,5 +1,5 @@
-import { sanitizeNewRefName } from "@t3tools/shared/git";
-import { parseChangeRequestUrl } from "@t3tools/shared/changeRequestUrl";
+import { sanitizeNewRefName } from "@upcode/shared/git";
+import { parseChangeRequestUrl } from "@upcode/shared/changeRequestUrl";
 
 type WorkspaceMode = "local" | "worktree";
 

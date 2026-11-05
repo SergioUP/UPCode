@@ -13,7 +13,7 @@
  * @module brain/graphTheme
  */
 
-import type { VaultGraphNode } from "@t3tools/contracts";
+import type { VaultGraphNode } from "@upcode/contracts";
 
 /** Pure black: the nodes are the light, not the backdrop. */
 export const BRAIN_BACKGROUND = "#000000";

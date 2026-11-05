@@ -1,4 +1,4 @@
-import { EnvironmentId, MessageId, ThreadId } from "@t3tools/contracts";
+import { EnvironmentId, MessageId, ThreadId } from "@upcode/contracts";
 import { expect, it } from "vite-plus/test";
 import { serializeAssistantCitation } from "./assistantCitations.ts";
 import { searchableMessageSegments } from "./threadFindText.ts";
@@ -30,7 +30,7 @@ it("excludes structured context chips without joining text across them", () => {
     searchableMessageSegments({
       role: "user",
       streaming: false,
-      text: "before[hidden label](t3-context://v1/terminal/terminal_1)after",
+      text: "before[hidden label](upcode-context://v1/terminal/terminal_1)after",
       context: { version: 1, records: [] },
     }),
   ).toEqual(["before", "after"]);
@@ -55,9 +55,9 @@ it("keeps context reference syntax inside code searchable", () => {
     searchableMessageSegments({
       role: "user",
       streaming: false,
-      text: "`[label](t3-context://v1/terminal/terminal_1)`",
+      text: "`[label](upcode-context://v1/terminal/terminal_1)`",
     }),
-  ).toEqual(["[label](t3-context://v1/terminal/terminal_1)"]);
+  ).toEqual(["[label](upcode-context://v1/terminal/terminal_1)"]);
 });
 
 it("excludes repeated legacy attachments containing literal context tags", () => {
@@ -130,12 +130,12 @@ it("indexes skill labels in prose but leaves links and code literal", () => {
       {
         role: "assistant",
         streaming: false,
-        text: "Use $test-t3-app now.\n\n`$test-t3-app`\n\n[$test-t3-app](https://example.com)",
+        text: "Use $test-upcode-app now.\n\n`$test-upcode-app`\n\n[$test-upcode-app](https://example.com)",
       },
       undefined,
-      [{ name: "test-t3-app", displayName: "T3 App Testing" }],
+      [{ name: "test-upcode-app", displayName: "UPCode App Testing" }],
     ),
-  ).toEqual(["Use T3 App Testing now.", "$test-t3-app", "$test-t3-app"]);
+  ).toEqual(["Use UPCode App Testing now.", "$test-upcode-app", "$test-upcode-app"]);
 });
 
 it("indexes the citation chip label instead of its link text", () => {

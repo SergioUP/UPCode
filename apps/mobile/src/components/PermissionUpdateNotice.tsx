@@ -1,5 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
-import { sessionHasLegacyPermissions } from "@t3tools/contracts";
+import { sessionHasLegacyPermissions } from "@upcode/contracts";
 import { Atom } from "effect/reactivity";
 import * as SecureStore from "expo-secure-store";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -8,7 +8,7 @@ import { Alert } from "react-native";
 import { useEnvironments } from "../state/environments";
 import { environmentSession } from "../state/session";
 
-const storageKey = "t3code.permission-update.v1";
+const storageKey = "upcode.permission-update.v1";
 const dismissedThisLaunch = new Set<string>();
 const shownThisLaunch = new Set<string>();
 

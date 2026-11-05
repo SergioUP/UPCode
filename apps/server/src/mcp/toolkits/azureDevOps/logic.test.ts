@@ -1,4 +1,4 @@
-import type { AzureDevOpsWorkItem } from "@t3tools/contracts";
+import type { AzureDevOpsWorkItem } from "@upcode/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import { findProjectForWorkItem, isActiveState, plainText, summarizeWorkItem } from "./logic.ts";

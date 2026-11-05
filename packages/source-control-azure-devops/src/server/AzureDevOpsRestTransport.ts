@@ -1,8 +1,8 @@
 // @effect-diagnostics globalFetch:off globalTimers:off -- This isolated REST adapter uses native fetch so its PAT never enters the subprocess environment.
 import * as Effect from "effect/Effect";
 import { ChildProcessSpawner } from "effect/process";
-import { readSourceControlHostSettings } from "@t3tools/source-control-core/client/definition";
-import type * as SourceControlHost from "@t3tools/source-control-core/server/SourceControlHost";
+import { readSourceControlHostSettings } from "@upcode/source-control-core/client/definition";
+import type * as SourceControlHost from "@upcode/source-control-core/server/SourceControlHost";
 import { settings as azureSettings } from "../client/definition.ts";
 
 const API_VERSION = "7.1";

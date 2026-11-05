@@ -20,7 +20,7 @@ import {
   type ProviderInstanceEnvironment,
   type ProviderReplayTranscript,
   type ProviderReplayEntry as ProviderReplayEntryType,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -30,12 +30,12 @@ import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
-import * as TestProviderHost from "@t3tools/provider-testing/TestProviderHost";
-import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
-import { ProviderAdapterDriverCreateError } from "@t3tools/provider-core/server/adapterDriver";
+import * as TestProviderHost from "@upcode/provider-testing/TestProviderHost";
+import * as IdAllocator from "@upcode/provider-core/server/IdAllocator";
+import { ProviderAdapterDriverCreateError } from "@upcode/provider-core/server/adapterDriver";
 import * as ProviderAdapterRegistry from "../ProviderAdapterRegistry.ts";
 import type { OrchestratorV2ProviderReplayHarness } from "../testkit/ProviderReplayHarness.ts";
-import { PI_PROVIDER, PiAdapterV2Driver } from "@t3tools/provider-pi/server";
+import { PI_PROVIDER, PiAdapterV2Driver } from "@upcode/provider-pi/server";
 
 export const PI_RPC_REPLAY_PROTOCOL = "pi.rpc-jsonl";
 export const PI_REPLAY_ANY = "<any>";
@@ -129,8 +129,8 @@ function replayValueMatches(expected: unknown, actual: unknown): boolean {
   return Object.is(expected, actual);
 }
 
-/** PiRpc numbers its correlated requests `t3-N` per process. */
-const ADAPTER_REQUEST_ID = /^t3-\d+$/u;
+/** PiRpc numbers its correlated requests `upcode-N` per process. */
+const ADAPTER_REQUEST_ID = /^upcode-\d+$/u;
 
 function adapterRequestId(frame: unknown): string | undefined {
   const id = isRecord(frame) ? frame.id : undefined;

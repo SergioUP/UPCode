@@ -1,4 +1,4 @@
-import { OrchestratorMcpFailure, SubagentId, TrimmedNonEmptyString } from "@t3tools/contracts";
+import { OrchestratorMcpFailure, SubagentId, TrimmedNonEmptyString } from "@upcode/contracts";
 import * as Schema from "effect/Schema";
 import * as Tool from "effect/ai/Tool";
 
