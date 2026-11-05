@@ -337,114 +337,25 @@ jobs:
         run: vp run --filter upcode test --shard ${{ matrix.shard }}/${{ strategy.job-total }}
 
   relay_public_config:
-    name: Resolve UPCode Connect public config
-    # Consumes only the release commit, not preflight's resolved version, so it
-    # runs alongside preflight instead of after it. The condition mirrors preflight's.
+    name: Resolve public config
+    # Public identifiers baked into every bundle. They are repository variables,
+    # not secrets, so the release no longer reads them out of a deployed stack.
     needs: [resolve_commit]
     if: |
       needs.resolve_commit.result == 'success' &&
       (github.event_name != 'schedule' || needs.resolve_commit.outputs.has_changes == 'true')
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     timeout-minutes: 5
-    environment:
-      name: production
     outputs:
-      clerk_publishable_key: ${{ steps.public_config.outputs.clerk_publishable_key }}
-      clerk_jwt_template: ${{ steps.public_config.outputs.clerk_jwt_template }}
-      clerk_cli_oauth_client_id: ${{ steps.public_config.outputs.clerk_cli_oauth_client_id }}
-      relay_url: ${{ steps.public_config.outputs.relay_url }}
-    env:
-      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      RELAY_DOMAIN: ${{ vars.RELAY_DOMAIN }}
-      RELAY_API_ZONE_NAME: ${{ vars.RELAY_API_ZONE_NAME }}
-      CLERK_PUBLISHABLE_KEY: ${{ vars.CLERK_PUBLISHABLE_KEY }}
-      CLERK_JWT_TEMPLATE: ${{ vars.CLERK_JWT_TEMPLATE }}
-      CLERK_CLI_OAUTH_CLIENT_ID: ${{ vars.CLERK_CLI_OAUTH_CLIENT_ID }}
+      clerk_publishable_key: ${{ vars.CLERK_PUBLISHABLE_KEY }}
+      clerk_jwt_template: ${{ vars.CLERK_JWT_TEMPLATE }}
+      clerk_cli_oauth_client_id: ${{ vars.CLERK_CLI_OAUTH_CLIENT_ID }}
+      relay_url: ${{ vars.RELAY_URL }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ needs.resolve_commit.outputs.ref }}
-          sparse-checkout: |
-            /*
-            !/.repos/
-          sparse-checkout-cone-mode: false
-
-      - name: Setup Vite+
-        uses: voidzero-dev/setup-vp@v1
-        with:
-          node-version-file: package.json
-          cache: true
-          run-install: |
-            args:
-              - --filter=upcode-relay...
-
-      # The deployed stack's outputs, read from Alchemy's state store without
-      # planning or applying. Select the backend explicitly to avoid loading
-      # the stack's unrelated provider credentials; suppress informational logs
-      # and strip the credential-refresh progress prefix before parsing JSON.
-      # Redacted values are persisted as
-      # {"__redacted__": "<value>"}; the token is masked before it is written.
-      - name: Read production relay tracing config
-        shell: bash
-        working-directory: infra/relay
+      - name: Report resolved public identifiers
         run: |
-          set -euo pipefail
-          output="$(npx alchemy state read UPCodeRelay/prod/output --backend cloudflare --log-level error --no-input | sed -n '/^{/,$p')"
-          field() {
-            jq -er --arg key "$1" '.[$key] | if type == "object" then .__redacted__ else . end | select(. != null and . != "")' <<<"$output" \
-              || { echo "Relay stack output is missing $1" >&2; exit 1; }
-          }
-          url="$(field clientTracingUrl)"
-          dataset="$(field clientTracingDataset)"
-          token="$(field clientTracingToken)"
-          echo "::add-mask::$token"
-          {
-            echo "UPCODE_RELAY_CLIENT_OTLP_TRACES_URL=$url"
-            echo "UPCODE_RELAY_CLIENT_OTLP_TRACES_DATASET=$dataset"
-            echo "UPCODE_RELAY_CLIENT_OTLP_TRACES_TOKEN=$token"
-          } > "$RUNNER_TEMP/relay-client-tracing.env"
-
-      - name: Upload relay client tracing config
-        uses: actions/upload-artifact@v7
-        with:
-          name: relay-client-tracing-config
-          path: ${{ runner.temp }}/relay-client-tracing.env
-          if-no-files-found: error
-          retention-days: 1
-
-      - id: public_config
-        name: Resolve production relay public config
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          relay_domain="${RELAY_DOMAIN:-}"
-          if [[ -z "$relay_domain" && -n "${RELAY_API_ZONE_NAME:-}" ]]; then
-            relay_domain="relay.$RELAY_API_ZONE_NAME"
-          fi
-          required=(
-            relay_domain
-            CLERK_PUBLISHABLE_KEY
-            CLERK_JWT_TEMPLATE
-            CLERK_CLI_OAUTH_CLIENT_ID
-          )
-          missing=()
-          for name in "${required[@]}"; do
-            if [[ -z "${!name:-}" ]]; then
-              missing+=("$name")
-            fi
-          done
-          if (( ${#missing[@]} > 0 )); then
-            printf 'Missing required relay deployment configuration: %s\n' "${missing[*]}" >&2
-            exit 1
-          fi
-
-          echo "clerk_publishable_key=$CLERK_PUBLISHABLE_KEY" >> "$GITHUB_OUTPUT"
-          echo "clerk_jwt_template=$CLERK_JWT_TEMPLATE" >> "$GITHUB_OUTPUT"
-          echo "clerk_cli_oauth_client_id=$CLERK_CLI_OAUTH_CLIENT_ID" >> "$GITHUB_OUTPUT"
-          echo "relay_url=https://$relay_domain" >> "$GITHUB_OUTPUT"
+          echo "Clerk publishable key configured: ${{ vars.CLERK_PUBLISHABLE_KEY != '' }}"
+          echo "Relay URL configured: ${{ vars.RELAY_URL != '' }}"
 
   # The platform-independent JS (server bundle, web client, Electron main) is
   # built exactly once here and handed to every platform job as `js-bundle`.
