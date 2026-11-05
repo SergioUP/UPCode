@@ -1,4 +1,4 @@
-import type { AzureDevOpsWorkItem, AzureDevOpsWorkItemStateOption } from "@t3tools/contracts";
+import type { AzureDevOpsWorkItem, AzureDevOpsWorkItemStateOption } from "@upcode/contracts";
 import { useState, type CSSProperties } from "react";
 
 import { IssueCard } from "./IssueCard";

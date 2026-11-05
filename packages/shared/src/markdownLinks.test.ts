@@ -190,7 +190,7 @@ describe("workspaceRelativeFilePath", () => {
     ["C:/", "c:/", "."],
     ["/repo/project/src/main.ts", "/repo/project", "src/main.ts"],
     ["/repo/project/src/main.ts", "/repo/project/", "src/main.ts"],
-    ["C:\\Users\\mike\\t3code\\apps\\web\\a.ts", "C:/Users/mike/t3code", "apps/web/a.ts"],
+    ["C:\\Users\\mike\\upcode\\apps\\web\\a.ts", "C:/Users/mike/t3code", "apps/web/a.ts"],
     ["/C:/Users/mike/t3code/apps/web/a.ts", "C:/Users/mike/t3code", "apps/web/a.ts"],
     ["/Repo/Project/src/main.ts", "/repo/project", null],
     ["/tmp/case/project/probe.txt", "/tmp/case/Project", null],

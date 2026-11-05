@@ -23,14 +23,14 @@ import {
   ThreadId,
   TurnItemId,
   type ThreadPullRequestLink,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 import * as Tracer from "effect/Tracer";
 import * as SqlClient from "effect/sql/SqlClient";
-import { projectThreadAwarenessV2 } from "@t3tools/shared/agentAwareness";
+import { projectThreadAwarenessV2 } from "@upcode/shared/agentAwareness";
 
 import * as SqlitePersistence from "../persistence/Sqlite.ts";
 import { CodexProviderCapabilitiesV2 } from "./Adapters/CodexAdapterV2.ts";
@@ -3442,7 +3442,7 @@ it.layer(layerTest)("ProjectionStoreV2", (it) => {
         const nodeId = NodeId.make("node:checkpoint-context");
         const scopeId = CheckpointScopeId.make("scope:checkpoint-context");
         const checkpointId = CheckpointId.make("checkpoint:checkpoint-context");
-        const ref = CheckpointRef.make("refs/t3/checkpoint-context/1");
+        const ref = CheckpointRef.make("refs/upcode/checkpoint-context/1");
         yield* projectionStore.apply({
           id: EventId.make("event:checkpoint-context:thread"),
           type: "thread.created",

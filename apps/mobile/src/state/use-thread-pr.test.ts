@@ -1,5 +1,5 @@
-import { SourceControlProviderKind } from "@t3tools/contracts";
-import { ProjectId, type ThreadPullRequestLink, type VcsStatusResult } from "@t3tools/contracts";
+import { SourceControlProviderKind } from "@upcode/contracts";
+import { ProjectId, type ThreadPullRequestLink, type VcsStatusResult } from "@upcode/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -55,7 +55,7 @@ function linkedPr(
 ): ThreadPullRequestLink {
   return {
     host: "github.com",
-    repository: "t3tools/t3code",
+    repository: "upango/t3code",
     number,
     url: `https://github.com/t3tools/t3code/pull/${number}`,
     source: "manual",
@@ -159,7 +159,7 @@ describe("presentThreadLinkedPullRequests", () => {
 describe("resolveThreadPrSource compatibility", () => {
   const legacyRef = {
     projectId: ProjectId.make("project"),
-    repository: "t3tools/t3code",
+    repository: "upango/t3code",
     number: 1,
     url: "https://github.com/t3tools/t3code/pull/1",
   };

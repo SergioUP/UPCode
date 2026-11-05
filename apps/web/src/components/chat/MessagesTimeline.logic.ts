@@ -1,18 +1,18 @@
-import { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
-export { worktreeSetupAgentStarted } from "@t3tools/client-runtime/worktree-setup";
-import { isLiveSubagentTurnItem } from "@t3tools/client-runtime/state/subagentRuntime";
+import { worktreeSetupAgentStarted } from "@upcode/client-runtime/worktree-setup";
+export { worktreeSetupAgentStarted } from "@upcode/client-runtime/worktree-setup";
+import { isLiveSubagentTurnItem } from "@upcode/client-runtime/state/subagentRuntime";
 import * as DateTime from "effect/DateTime";
 import * as Equal from "effect/Equal";
 import {
   assistantCitationLabel,
   collectAssistantCitations,
-} from "@t3tools/shared/assistantCitations";
+} from "@upcode/shared/assistantCitations";
 import { shallow } from "zustand/vanilla/shallow";
-import { renderCodexDirectivesForCopy } from "@t3tools/shared/codexMarkdownDirectives";
+import { renderCodexDirectivesForCopy } from "@upcode/shared/codexMarkdownDirectives";
 import {
   commandDisplayText,
   commandProgramName,
-} from "@t3tools/client-runtime/work-log/command-label";
+} from "@upcode/client-runtime/work-log/command-label";
 import {
   liveActivityToolStatus,
   normalizeCompactToolLabel,
@@ -21,11 +21,11 @@ import {
   toolGroupAction,
   toolGroupSummaryKind,
   type ToolGroupSummaryKind,
-} from "@t3tools/client-runtime/work-log/presentation";
+} from "@upcode/client-runtime/work-log/presentation";
 export {
   normalizeCompactToolLabel,
   toolGroupAction,
-} from "@t3tools/client-runtime/work-log/presentation";
+} from "@upcode/client-runtime/work-log/presentation";
 import {
   deriveRevertTurnCountByUserMessageId,
   formatDuration,
@@ -53,24 +53,24 @@ import {
   RunId,
   type ThreadId,
   type TurnItemId,
-} from "@t3tools/contracts";
-import type { ThreadRunSummary } from "@t3tools/client-runtime/state/shell";
+} from "@upcode/contracts";
+import type { ThreadRunSummary } from "@upcode/client-runtime/state/shell";
 import {
   resolveT3McpToolDefinition,
   resolveT3McpToolPresentation,
-  type T3McpToolPresentation,
-} from "@t3tools/shared/t3McpToolPresentation";
-import { compactDynamicToolOutput } from "@t3tools/shared/toolOutput";
-import { htmlRenderReferencesEqual, type HtmlRenderReference } from "@t3tools/shared/htmlRender";
-import { mcpAppReferencesEqual, type McpAppReference } from "@t3tools/shared/mcpApp";
-import { dynamicToolTitle } from "@t3tools/shared/toolActivity";
+  type UPCodeMcpToolPresentation,
+} from "@upcode/shared/t3McpToolPresentation";
+import { compactDynamicToolOutput } from "@upcode/shared/toolOutput";
+import { htmlRenderReferencesEqual, type HtmlRenderReference } from "@upcode/shared/htmlRender";
+import { mcpAppReferencesEqual, type McpAppReference } from "@upcode/shared/mcpApp";
+import { dynamicToolTitle } from "@upcode/shared/toolActivity";
 import { formatWorkspaceRelativePath } from "../../filePathDisplay";
 import {
   collectToolFilePaths,
   formatReadToolLabel,
   formatSearchToolLabel,
-} from "@t3tools/shared/toolActivity";
-import { isWindowsAbsolutePath } from "@t3tools/shared/path";
+} from "@upcode/shared/toolActivity";
+import { isWindowsAbsolutePath } from "@upcode/shared/path";
 
 function timelineEntryRunId(entry: TimelineEntry): RunId | null {
   if (entry.kind === "message") {
@@ -181,7 +181,7 @@ export function workEntryDisplayLabel(entry: WorkLogEntry, workspaceRoot: string
   return `${heading.charAt(0).toUpperCase()}${heading.slice(1)}`;
 }
 
-/** The trimmed thread id a `t3_thread_read` call targets, or null for any other entry. */
+/** The trimmed thread id a `upcode_thread_read` call targets, or null for any other entry. */
 export function threadReadTargetId(entry: Pick<WorkLogEntry, "structuredPayload">) {
   const item = entry.structuredPayload;
   if (item?.type !== "dynamic_tool") return null;
@@ -192,7 +192,7 @@ export function threadReadTargetId(entry: Pick<WorkLogEntry, "structuredPayload"
   return typeof threadId === "string" && threadId.trim().length > 0 ? threadId.trim() : null;
 }
 
-const THREAD_READ_OBJECT = " a T3 thread";
+const THREAD_READ_OBJECT = " a UPCode thread";
 
 export function threadReadTargetTitle(
   shell: Pick<ThreadShell, "title" | "archivedAt" | "deletedAt"> | null,
@@ -202,7 +202,7 @@ export function threadReadTargetTitle(
 }
 
 /**
- * Names the read thread in place of the generic object ("Read a T3 thread" becomes
+ * Names the read thread in place of the generic object ("Read a UPCode thread" becomes
  * `Read thread “Title”`), keeping the label's tense. Null keeps the generic label.
  */
 export function threadReadLabelPrefix(label: string) {
@@ -571,7 +571,7 @@ type MessagesTimelineRowContent =
       summaryKind: ToolGroupSummaryKind;
       toolSurface?: WorkLogEntry["toolSurface"];
       toolIcon?: WorkLogEntry["toolIcon"];
-      summaryToolIcon?: "browser" | "device" | "t3-code" | "pull-request";
+      summaryToolIcon?: "browser" | "device" | "upcode" | "pull-request";
       hasFailure: boolean;
     }
   | {
@@ -678,7 +678,7 @@ function workGroupId(timelineEntryId: string): string {
   return `work-group:${timelineEntryId}`;
 }
 
-export type TimelineToolPresentation = T3McpToolPresentation;
+export type TimelineToolPresentation = UPCodeMcpToolPresentation;
 export const resolveTimelineToolPresentation = resolveT3McpToolPresentation;
 
 function expandedWorkGroupRow(

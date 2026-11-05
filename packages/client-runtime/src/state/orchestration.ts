@@ -1,4 +1,4 @@
-import { ORCHESTRATION_V2_WS_METHODS } from "@t3tools/contracts";
+import { ORCHESTRATION_V2_WS_METHODS } from "@upcode/contracts";
 import { Atom } from "effect/reactivity";
 
 import {

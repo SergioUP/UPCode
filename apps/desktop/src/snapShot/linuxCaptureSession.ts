@@ -1,7 +1,7 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Reads portal-owned screenshot files at the native boundary.
 import * as NodeFSP from "node:fs/promises";
 import * as NodeURL from "node:url";
-import type { SnapShotKeyChord } from "@t3tools/contracts";
+import type { SnapShotKeyChord } from "@upcode/contracts";
 import { nativeImage } from "electron";
 
 // Linux helpers that need no D-Bus. Keep this module free of dbus-next so the main
@@ -9,7 +9,7 @@ import { nativeImage } from "electron";
 
 export const HYPRLAND_CAPTURE_ACTION = "capture-window";
 export const NIRI_CAPTURE_PATH = "/com/t3tools/SnapShot";
-export const NIRI_CAPTURE_INTERFACE = "com.t3tools.SnapShot";
+export const NIRI_CAPTURE_INTERFACE = "com.upango.SnapShot";
 
 function isDesktopSession(env: NodeJS.ProcessEnv, desktop: string): boolean {
   return (

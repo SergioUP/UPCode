@@ -1,4 +1,4 @@
-import { formatProviderSkillDisplayName } from "@t3tools/shared/inlineSkills";
+import { formatProviderSkillDisplayName } from "@upcode/shared/inlineSkills";
 import { useComposerTypingGuard } from "./useComposerTypingGuard";
 import { DESKTOP_PASTE_AS_TEXT_EVENT } from "../../lib/desktopPasteAsText";
 import { runtimeModeConfig, runtimeModeOptions as runtimeModes } from "./runtimeModeConfig";
@@ -8,7 +8,7 @@ import { useRightPanelStore } from "~/rightPanelStore";
 import { AttachmentFilePreview } from "../files/AttachmentFilePreview";
 import { ComposerProviderLimit } from "./ComposerProviderLimit";
 import { Dialog, DialogPopup, DialogTitle } from "../ui/dialog";
-import { filterComposerPullRequestMatches } from "@t3tools/shared/composerPullRequestMatches";
+import { filterComposerPullRequestMatches } from "@upcode/shared/composerPullRequestMatches";
 import { importPastedComposerText, readPastedComposerContext } from "../composerInlineTokenPaste";
 import { elementContextToPreviewAnnotation } from "../../lib/elementContext";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
@@ -39,7 +39,7 @@ import type {
   ServerProvider,
   ThreadId,
   SnapShotSource,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import {
   AuthOrchestrationOperateScope,
   ProviderDriverKind,
@@ -48,18 +48,18 @@ import {
   PROVIDER_SEND_TURN_MAX_IMAGE_BYTES,
   PROVIDER_SEND_TURN_MAX_INPUT_CHARS,
   PROVIDER_WORKSPACE_SNAPSHOT_TTL_MS,
-} from "@t3tools/contracts";
-import type { EnvironmentConnectionPresentation } from "@t3tools/client-runtime/connection";
+} from "@upcode/contracts";
+import type { EnvironmentConnectionPresentation } from "@upcode/client-runtime/connection";
 import {
   isPasteAsTextShortcut,
   nextPastedTextFileName,
   pastedTextDisposition,
   wouldTextPasteExceedLimit,
-} from "@t3tools/client-runtime/text-paste";
-import { serializeComposerFileLink } from "@t3tools/shared/composerTrigger";
+} from "@upcode/client-runtime/text-paste";
+import { serializeComposerFileLink } from "@upcode/shared/composerTrigger";
 import { folderDropTarget, resolveDroppedFolderPath } from "./folderDrop";
-import { createModelSelection, normalizeModelSlug } from "@t3tools/shared/model";
-import { USAGE_LIMITS_COMMAND } from "@t3tools/shared/usageLimits";
+import { createModelSelection, normalizeModelSlug } from "@upcode/shared/model";
+import { USAGE_LIMITS_COMMAND } from "@upcode/shared/usageLimits";
 import {
   memo,
   type ComponentProps,
@@ -159,7 +159,7 @@ import { compressImageForStash, prepareImageForAttachment } from "../../lib/imag
 import {
   fileAttachmentTooLargeMessage,
   formatAttachmentSize,
-} from "@t3tools/client-runtime/state/attachments";
+} from "@upcode/client-runtime/state/attachments";
 import {
   attachmentsToReleaseOnUploadCapabilityLoss,
   composerOtherFilesForPresentation,
@@ -193,7 +193,7 @@ import {
   type TerminalContextSelection,
 } from "../../lib/terminalContext";
 import { useComposerPathSearch } from "../../lib/composerPathSearchState";
-import { replaceComposerContextReferences } from "@t3tools/shared/composerContextReferences";
+import { replaceComposerContextReferences } from "@upcode/shared/composerContextReferences";
 import {
   getRestingComposerImagePreviewCounts,
   resolveRestingComposerControlsLayout,
@@ -244,12 +244,12 @@ import {
   threadContextRecord,
   threadContextReference,
 } from "~/lib/composerContextRecords";
-import { matchComposerThreadItems } from "@t3tools/client-runtime/composerThreadItems";
+import { matchComposerThreadItems } from "@upcode/client-runtime/composerThreadItems";
 import { THREAD_CONTEXT_DROP_EVENT, threadContextDropTargetProps } from "./threadContextDrag";
 import { readThreadShell, useThreadShells } from "~/state/entities";
 import { requestConfirmDialog } from "~/confirmDialog";
-import { encodeComposerContextFragment } from "@t3tools/shared/composerContextClipboard";
-import type { ComposerContextClipboardFragment, ComposerContextRecord } from "@t3tools/contracts";
+import { encodeComposerContextFragment } from "@upcode/shared/composerContextClipboard";
+import type { ComposerContextClipboardFragment, ComposerContextRecord } from "@upcode/contracts";
 import { resolveAssetUrl } from "~/assets/assetUrls";
 import { assetEnvironment } from "~/state/assets";
 import { readPreparedConnection } from "~/state/session";
@@ -1093,7 +1093,7 @@ import {
   ShieldIcon,
   XIcon,
 } from "lucide-react";
-import { proposedPlanTitle } from "@t3tools/shared/proposedPlanText";
+import { proposedPlanTitle } from "@upcode/shared/proposedPlanText";
 import { hasProviderSetup } from "./ProviderStatusBanner";
 import {
   applyProviderInstanceSettings,
@@ -1103,7 +1103,7 @@ import {
   type ProviderInstanceEntry,
 } from "../../providerInstances";
 import { type AppModelOption, getAppModelOptionsForInstance } from "../../modelSelection";
-import type { UnifiedSettings } from "@t3tools/contracts/settings";
+import type { UnifiedSettings } from "@upcode/contracts/settings";
 import {
   isVideoAttachment,
   type ChatMessage,
@@ -1126,7 +1126,7 @@ import type {
 import {
   resolveComposerDispatchMode,
   type ComposerDispatchMode,
-} from "@t3tools/client-runtime/state/composer-dispatch";
+} from "@upcode/client-runtime/state/composer-dispatch";
 import type { ContextWindowSnapshot } from "../../lib/contextWindow";
 import {
   getProviderSlashCommandsForSlashMenu,
@@ -1135,7 +1135,7 @@ import {
   hasCurrentProviderWorkspaceSnapshot,
   resolveProviderSkillsForCwd,
   resolveProviderSlashCommandsForCwd,
-} from "@t3tools/client-runtime/providerSkills";
+} from "@upcode/client-runtime/providerSkills";
 import { searchProviderSkills } from "../../providerSkillSearch";
 import { useDelayedStatus } from "../../hooks/useDelayedStatus";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
@@ -1552,7 +1552,7 @@ export interface ChatComposerProps {
   onToggleKeepFullHistory: () => void;
   /** Picking /usage-limits from the menu is the action itself; the draft keeps nothing of it. */
   onUsageLimitsCommand?: (() => void) | undefined;
-  providerUsageLimits?: import("@t3tools/contracts").ServerProviderUsageLimits | undefined;
+  providerUsageLimits?: import("@upcode/contracts").ServerProviderUsageLimits | undefined;
   onOpenProviderUsageLimits?: (() => void) | undefined;
   environmentUnavailable: {
     readonly label: string;
@@ -6171,7 +6171,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       return;
     }
 
-    // Copied T3 chips need the structured importer to bring their records and files along.
+    // Copied UPCode chips need the structured importer to bring their records and files along.
     if ((readPastedComposerContext(event.clipboardData)?.records.length ?? 0) > 0) return;
     if (!foldPastedText(plainText, bypassAutoAttachment)) {
       return;

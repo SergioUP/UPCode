@@ -5,7 +5,7 @@ import {
   type ProjectListEntriesResult,
   ProjectReadFileError,
   type ProjectReadFileResult,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -171,7 +171,7 @@ describe("project query refresh", () => {
     }
   });
 
-  it("keeps t3.json and the file tree loading until the file grant arrives", () => {
+  it("keeps upcode.json and the file tree loading until the file grant arrives", () => {
     authorizationMocks.sessionAtom = Atom.make(AsyncResult.initial());
     const registry = AtomRegistry.make();
     atomHooks.registry = registry;
@@ -183,11 +183,11 @@ describe("project query refresh", () => {
       Atom.make(AsyncResult.success(file(JSON.stringify(config)))),
     );
     projectMocks.listEntries.mockReturnValue(
-      Atom.make(AsyncResult.success(projectEntries(["t3.json"]))),
+      Atom.make(AsyncResult.success(projectEntries(["upcode.json"]))),
     );
     projectMocks.optimisticFile.mockReturnValue(Atom.make(null));
     try {
-      expect(useProjectFileQuery(environmentId, "/repo", "t3.json")).toMatchObject({
+      expect(useProjectFileQuery(environmentId, "/repo", "upcode.json")).toMatchObject({
         data: null,
         error: null,
         isPending: true,
@@ -210,7 +210,7 @@ describe("project query refresh", () => {
         scripts: config.scripts,
       });
       expect(useProjectEntriesQuery(environmentId, "/repo")).toMatchObject({
-        data: projectEntries(["t3.json"]),
+        data: projectEntries(["upcode.json"]),
         error: null,
         isPending: false,
       });
@@ -221,7 +221,7 @@ describe("project query refresh", () => {
   });
 
   it.each(["connected", "offline"] as const)(
-    "preserves cached t3.json defaults and scripts during a granted refresh while %s",
+    "preserves cached upcode.json defaults and scripts during a granted refresh while %s",
     (phase) => {
       authorizationMocks.phase = phase;
       authorizationMocks.sessionAtom = Atom.make(
@@ -241,7 +241,7 @@ describe("project query refresh", () => {
       );
       projectMocks.optimisticFile.mockReturnValue(Atom.make(null));
       try {
-        expect(useProjectFileQuery(environmentId, "/repo", "t3.json")).toMatchObject({
+        expect(useProjectFileQuery(environmentId, "/repo", "upcode.json")).toMatchObject({
           error: null,
           isPending: true,
         });
@@ -297,7 +297,7 @@ describe("project query refresh", () => {
     atomHooks.registry = registry;
     projectMocks.optimisticFile.mockReturnValue(Atom.make(null));
     try {
-      expect(useProjectFileQuery(environmentId, "/repo", "t3.json", false)).toMatchObject({
+      expect(useProjectFileQuery(environmentId, "/repo", "upcode.json", false)).toMatchObject({
         data: null,
         error: null,
         isPending: false,

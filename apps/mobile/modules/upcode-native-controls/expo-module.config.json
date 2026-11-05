@@ -1,0 +1,17 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["UPCodeNativeControlsModule", "UPCodeKeyboardCommandsModule"],
+    "appDelegateSubscribers": [
+      "UPCodeWorkspaceOrientationSubscriber",
+      "UPCodeMenuDismissTouchGateSubscriber"
+    ]
+  },
+  "android": {
+    "modules": [
+      "expo.modules.upcodenativecontrols.UPCodeNativeControlsModule",
+      "expo.modules.upcodenativecontrols.UPCodeWorkspaceNavigationModule",
+      "expo.modules.upcodenativecontrols.UPCodeKeyboardCommandsModule"
+    ]
+  }
+}

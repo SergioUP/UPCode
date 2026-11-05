@@ -6,8 +6,8 @@ import {
   type DesktopUpdateChannel,
   type DesktopUpdateCheckResult,
   type DesktopUpdateState,
-} from "@t3tools/contracts";
-import { errorTag } from "@t3tools/shared/observability";
+} from "@upcode/contracts";
+import { errorTag } from "@upcode/shared/observability";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -189,7 +189,7 @@ export class DesktopUpdates extends Context.Service<
       expectedVersion: string,
     ) => Effect.Effect<DesktopPreparedUpdateInstallResult>;
   }
->()("@t3tools/desktop/updates/DesktopUpdates") {}
+>()("@upcode/desktop/updates/DesktopUpdates") {}
 
 const {
   logInfo: logUpdaterInfo,
@@ -304,12 +304,12 @@ function shouldBroadcastDownloadProgress(
 }
 
 /**
- * The fork ships its own installer, so the one feed it must never poll is T3's:
- * installing a T3 build over UPCode would replace the app. Any other feed is the
+ * The fork ships its own installer, so the one feed it must never poll is UPCode's:
+ * installing a UPCode build over UPCode would replace the app. Any other feed is the
  * one its own build published, so it is allowed — refusing anything that is not
  * hardcoded here would silently stop updates again the day the repository moves.
  */
-const T3_UPDATE_FEED = { owner: "pingdotgg", repo: "t3code" } as const;
+const UPCODE_UPDATE_FEED = { owner: "pingdotgg", repo: "upcode" } as const;
 
 function getAutoUpdateDisabledReason(args: {
   isDevelopment: boolean;
@@ -327,10 +327,10 @@ function getAutoUpdateDisabledReason(args: {
     return "Automatic updates are only available in packaged production builds.";
   }
   if (args.disabledByEnv) {
-    return "Automatic updates are disabled by the T3CODE_DISABLE_AUTO_UPDATE setting.";
+    return "Automatic updates are disabled by the UPCODE_DISABLE_AUTO_UPDATE setting.";
   }
   if (isT3UpdateFeed(args.updateFeed.value)) {
-    return "This build carries T3's update feed, so it does not update itself.";
+    return "This build carries UPCode's update feed, so it does not update itself.";
   }
   if (args.platform === "linux" && !args.appImage && !args.isDebPackage) {
     return "Automatic updates on Linux require the AppImage or the .deb package.";
@@ -340,8 +340,8 @@ function getAutoUpdateDisabledReason(args: {
 
 function isT3UpdateFeed(feed: AppUpdateYmlConfig): boolean {
   return (
-    feed.owner?.trim().toLowerCase() === T3_UPDATE_FEED.owner &&
-    feed.repo?.trim().toLowerCase() === T3_UPDATE_FEED.repo
+    feed.owner?.trim().toLowerCase() === UPCODE_UPDATE_FEED.owner &&
+    feed.repo?.trim().toLowerCase() === UPCODE_UPDATE_FEED.repo
   );
 }
 

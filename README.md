@@ -11,13 +11,13 @@
   <a href="https://github.com/SergioUP/UPCode/releases/latest"><img alt="Última versión" src="https://img.shields.io/github/v/release/SergioUP/UPCode?label=release&color=4c9aff"></a>
   <img alt="Windows" src="https://img.shields.io/badge/instalador-Windows%20x64-0078D6">
   <a href="LICENSE"><img alt="Licencia" src="https://img.shields.io/badge/licencia-MIT-green"></a>
-  <img alt="Fork de T3 Code" src="https://img.shields.io/badge/fork%20de-T3%20Code-6e7681">
+  <img alt="Fork de UPCode" src="https://img.shields.io/badge/fork%20de-UPCode%20Code-6e7681">
   <img alt="Azure DevOps" src="https://img.shields.io/badge/Azure%20DevOps-work%20items%20%7C%20PRs-0078D7">
 </p>
 
 ---
 
-**UPCode** es un fork de [T3 Code](https://github.com/pingdotgg/t3code) con una capa de trabajo encima pensada para un equipo que hace integraciones: **ERP/PIM → Shopify**, migraciones y apaños de catálogo. La idea es sencilla: que cada conversación con un agente esté pegada a la tarea real de Azure DevOps y no a la memoria de nadie.
+**UPCode** es un fork de [UPCode](https://github.com/pingdotgg/t3code) con una capa de trabajo encima pensada para un equipo que hace integraciones: **ERP/PIM → Shopify**, migraciones y apaños de catálogo. La idea es sencilla: que cada conversación con un agente esté pegada a la tarea real de Azure DevOps y no a la memoria de nadie.
 
 No es un orquestador de flotas de agentes ni un tablero para cincuenta sesiones. Es una mesa de control: pocos agentes a la vez, el trabajo a la vista y el contexto donde tiene que estar.
 
@@ -95,12 +95,12 @@ Lista y detalle de PRs de los hosts que ya soporta la base: **Azure DevOps, GitH
 
 ## Agentes de IA
 
-UPCode no trae modelos: **usa las suscripciones que ya tienes**. Hereda de T3 Code el soporte de Codex, Claude Code, Cursor, Grok Build, OpenCode y Antigravity, y los agentes que hablen **ACP**.
+UPCode no trae modelos: **usa las suscripciones que ya tienes**. Hereda de UPCode el soporte de Codex, Claude Code, Cursor, Grok Build, OpenCode y Antigravity, y los agentes que hablen **ACP**.
 
 - Cada proyecto tiene su carpeta y sus worktrees: un hilo por rama, sin pisarse.
 - Modos de permisos (lectura, edición, acceso total) por hilo.
 - Uso y consumo por proveedor en la sección **Usage**.
-- Acceso remoto al servidor desde otro dispositivo (heredado de T3 Code; ver [`docs/`](./docs)).
+- Acceso remoto al servidor desde otro dispositivo (heredado de UPCode; ver [`docs/`](./docs)).
 
 ## Capturas
 
@@ -142,9 +142,9 @@ UPCode no trae modelos: **usa las suscripciones que ya tienes**. Hereda de T3 Co
 | Azure responde 401/403                       | PAT caducado o sin permisos de Work Items/Code. Regenera y vuelve a pegarlo en **Source control**             |
 | Los avatares de Azure salen como iniciales   | Es a propósito: la imagen necesita el PAT y no se expone al navegador                                         |
 | No aparece el aviso de actualización         | Estás en una versión anterior a la 0.1.2. Instala esa a mano una vez                                          |
-| La app no arranca tras actualizar            | Borra la caché del actualizador (`%LOCALAPPDATA%\t3code-updater`) y vuelve a abrir                            |
+| La app no arranca tras actualizar            | Borra la caché del actualizador (`%LOCALAPPDATA%\upcode-updater`) y vuelve a abrir                            |
 | La sesión del navegador caduca en desarrollo | El token de emparejamiento es de un solo uso: vuelve a abrir la URL de emparejamiento que imprime el servidor |
-| Se instala en una carpeta llamada `t3code`   | Sí, es herencia del fork. Los datos van aparte, en `.upcode`                                                  |
+| Se instala en una carpeta llamada `upcode`   | Sí, es herencia del fork. Los datos van aparte, en `.upcode`                                                  |
 
 ## Desarrollo
 
@@ -189,12 +189,12 @@ El workflow **UPCode Windows release** (`.github/workflows/upcode-windows-releas
 ## Límites conocidos y lo que viene
 
 - 🛍️ **Herramientas de Shopify** (perfil del proyecto, diff de esquemas, tabla de mapping, simulación sin llamar a Shopify): diseñadas, **no implementadas**. Hoy el trabajo de integración se hace con el agente y el repositorio.
-- 📱 **La app móvil** sigue con la marca de T3 y no tiene las vistas de Azure DevOps.
-- 🧹 **Caché del actualizador compartida** con T3 Code (`t3code-updater`): inofensivo, pero conviene separarla.
+- 📱 **La app móvil** sigue con la marca de UPCode y no tiene las vistas de Azure DevOps.
+- 🧹 **Caché del actualizador compartida** con UPCode (`upcode-updater`): inofensivo, pero conviene separarla.
 - 🗣️ Parte del texto de la interfaz sigue en inglés: es un fork y se traduce a medida que se toca.
 
 ## Créditos y licencia
 
-UPCode es un **fork de [T3 Code](https://github.com/pingdotgg/t3code)**, de T3 Tools Inc., publicado bajo licencia **MIT** (ver [LICENSE](LICENSE)). Este fork no está afiliado a T3 Tools ni cuenta con su respaldo: los aciertos de la base son suyos, y los inventos de encima, nuestros.
+UPCode es un **fork de [UPCode](https://github.com/pingdotgg/t3code)**, de UPCode Tools Inc., publicado bajo licencia **MIT** (ver [LICENSE](LICENSE)). Este fork no está afiliado a UPCode Tools ni cuenta con su respaldo: los aciertos de la base son suyos, y los inventos de encima, nuestros.
 
-Se mantiene la licencia MIT y la atribución original. Si vienes de T3 Code y echas algo en falta, está casi todo: la diferencia es la capa de Azure DevOps y la marca.
+Se mantiene la licencia MIT y la atribución original. Si vienes de UPCode y echas algo en falta, está casi todo: la diferencia es la capa de Azure DevOps y la marca.

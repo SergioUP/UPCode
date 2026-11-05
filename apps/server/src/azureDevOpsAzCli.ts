@@ -1,6 +1,6 @@
 // @effect-diagnostics nodeBuiltinImport:off globalTimers:off -- A local CLI probe owns its own child process and hard timeout.
 import * as Effect from "effect/Effect";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@upcode/shared/HostProcess";
 import * as NodeChildProcess from "node:child_process";
 
 type RunResult = { readonly code: number | null; readonly stdout: string; readonly stderr: string };

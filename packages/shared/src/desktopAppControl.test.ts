@@ -12,7 +12,7 @@ describe("resolveDesktopAppControlAddress", () => {
       joinPath: (...segments) => segments.join("/"),
     });
     const second = resolveDesktopAppControlAddress({
-      stateDir: "/home/user/.t3/other/userdata",
+      stateDir: "/home/user/.upcode/other/userdata",
       platform: "linux",
       tempDir: "/tmp",
       userId: 1000,
@@ -26,7 +26,7 @@ describe("resolveDesktopAppControlAddress", () => {
 
   it("uses a Windows named pipe", () => {
     const result = resolveDesktopAppControlAddress({
-      stateDir: "C:\\Users\\user\\.t3\\userdata",
+      stateDir: "C:\\Users\\user\\.upcode\\userdata",
       platform: "win32",
       tempDir: "C:\\Temp",
       userId: undefined,
@@ -34,6 +34,6 @@ describe("resolveDesktopAppControlAddress", () => {
     });
 
     expect(result.directory).toBeNull();
-    expect(result.address).toMatch(/^\\\\\.\\pipe\\t3code-app-[a-f0-9]{24}$/);
+    expect(result.address).toMatch(/^\\\\\.\\pipe\\upcode-app-[a-f0-9]{24}$/);
   });
 });

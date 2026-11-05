@@ -1,7 +1,7 @@
 "use client";
 
-import type { VaultGraphSnapshot } from "@t3tools/contracts";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import type { VaultGraphSnapshot } from "@upcode/contracts";
+import { squashAtomCommandFailure } from "@upcode/client-runtime/state/runtime";
 import {
   ArrowLeftIcon,
   BrainIcon,

@@ -1,10 +1,10 @@
-import { SourceControlProviderKind } from "@t3tools/contracts";
+import { SourceControlProviderKind } from "@upcode/contracts";
 import { describe, expect, it } from "@effect/vitest";
 import {
   OrchestrationDispatchCommandError,
   ProjectId,
   SourceControlRepositoryError,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
@@ -19,7 +19,7 @@ import { parseGitCloneProgressLine } from "./gitCloneProgress.ts";
 const projectId = ProjectId.make("project-1");
 const startInput = {
   projectId,
-  title: "t3code",
+  title: "upcode",
   createdAt: "2026-01-01T00:00:00.000Z",
   remoteUrl: "git@github.com:octocat/t3code.git",
   destinationPath: "/workspace/t3code",
@@ -298,7 +298,7 @@ describe("parseGitCloneProgressLine", () => {
       percent: null,
       detail: null,
     });
-    expect(parseGitCloneProgressLine("Cloning into 't3code'...")).toBeNull();
+    expect(parseGitCloneProgressLine("Cloning into 'upcode'...")).toBeNull();
     expect(parseGitCloneProgressLine("fatal: repository not found")).toBeNull();
   });
 });

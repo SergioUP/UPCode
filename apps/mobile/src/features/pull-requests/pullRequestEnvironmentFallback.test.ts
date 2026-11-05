@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { EnvironmentProject } from "@t3tools/client-runtime/state/models";
+import type { EnvironmentProject } from "@upcode/client-runtime/state/models";
 import { pullRequestFallbackEnvironment } from "./pullRequestEnvironmentFallback";
 
 const project = (environmentId: string, id: string, canonicalKey: string) =>
@@ -10,13 +10,13 @@ const project = (environmentId: string, id: string, canonicalKey: string) =>
   }) as unknown as EnvironmentProject;
 
 const projects = [
-  project("laptop", "t3", "github.com/pingdotgg/t3code"),
+  project("laptop", "upcode", "github.com/pingdotgg/t3code"),
   project("desktop", "other", "github.com/pingdotgg/other"),
-  project("server", "t3-copy", "github.com/pingdotgg/t3code"),
+  project("server", "upcode-copy", "github.com/pingdotgg/t3code"),
 ];
 const target = {
   environmentId: "laptop",
-  projectId: "t3",
+  projectId: "upcode",
   repository: "pingdotgg/t3code",
   host: "github.com",
 };
@@ -25,7 +25,7 @@ describe("pullRequestFallbackEnvironment", () => {
   it("moves to a connected copy of the repository when the original is down", () => {
     expect(
       pullRequestFallbackEnvironment(target, projects, new Set(["desktop", "server"])),
-    ).toEqual({ environmentId: "server", projectId: "t3-copy" });
+    ).toEqual({ environmentId: "server", projectId: "upcode-copy" });
   });
 
   it("stays put while the original is connected or nothing else holds the repository", () => {
@@ -39,7 +39,7 @@ describe("pullRequestFallbackEnvironment", () => {
     const { host: _host, ...hostless } = target;
     expect(pullRequestFallbackEnvironment(hostless, projects, new Set(["server"]))).toEqual({
       environmentId: "server",
-      projectId: "t3-copy",
+      projectId: "upcode-copy",
     });
   });
 });

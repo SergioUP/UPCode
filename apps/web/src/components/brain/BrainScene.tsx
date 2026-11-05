@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import type { VaultGraphLink, VaultGraphNode } from "@t3tools/contracts";
+import type { VaultGraphLink, VaultGraphNode } from "@upcode/contracts";
 import { useEffect, useMemo, useRef } from "react";
 import ForceGraph3D, { type ForceGraphMethods, type NodeObject } from "react-force-graph-3d";
 import * as THREE from "three";

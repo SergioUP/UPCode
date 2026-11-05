@@ -5,13 +5,13 @@ import * as NodePath from "node:path";
 import * as NodeURL from "node:url";
 
 import { describe, expect, it, vi } from "@effect/vitest";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@upcode/shared/HostProcess";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Scope from "effect/Scope";
 
-import * as AcpSessionRuntime from "@t3tools/provider-acp/server/AcpSessionRuntime";
+import * as AcpSessionRuntime from "@upcode/provider-acp/server/AcpSessionRuntime";
 
 const threadSpawnHelperSource = NodeURL.fileURLToPath(
   new URL("../../../scripts/acp-thread-spawn-helper.c", import.meta.url),
@@ -97,7 +97,7 @@ describe("terminatePosixOwnedProcessTree", () => {
     ).toHaveLength(2);
   });
 
-  it.live("sweeps empty t3-acp sibling leases owned by dead pids only", () =>
+  it.live("sweeps empty upcode-acp sibling leases owned by dead pids only", () =>
     Effect.sync(() => {
       const scratchRoot = NodePath.join(process.cwd(), "tmp");
       NodeFS.mkdirSync(scratchRoot, { recursive: true });
@@ -115,10 +115,10 @@ describe("terminatePosixOwnedProcessTree", () => {
       const deadPid = 2_147_483_646;
       // Synthetic live foreign pid (not this process, still reported alive by the probe).
       const liveForeignPid = 2_147_483_645;
-      const staleEmpty = writeSibling(`t3-acp-${deadPid}-aaaa`, "0");
-      const currentPidSibling = writeSibling(`t3-acp-${process.pid}-bbbb`, "0");
-      const liveForeignSibling = writeSibling(`t3-acp-${liveForeignPid}-cccc`, "0");
-      const stalePopulated = writeSibling(`t3-acp-${deadPid}-dddd`, "1");
+      const staleEmpty = writeSibling(`upcode-acp-${deadPid}-aaaa`, "0");
+      const currentPidSibling = writeSibling(`upcode-acp-${process.pid}-bbbb`, "0");
+      const liveForeignSibling = writeSibling(`upcode-acp-${liveForeignPid}-cccc`, "0");
+      const stalePopulated = writeSibling(`upcode-acp-${deadPid}-dddd`, "1");
       const unrelated = writeSibling("other-lease", "0");
       const isProcessAlive = (pid: number) => pid === process.pid || pid === liveForeignPid;
       try {
@@ -136,7 +136,7 @@ describe("terminatePosixOwnedProcessTree", () => {
         expect(NodeFS.existsSync(stalePopulated)).toBe(true);
         expect(NodeFS.existsSync(unrelated)).toBe(true);
         // Missing populated state must not remove a sibling.
-        writeSibling(`t3-acp-${deadPid}-eeee`, null);
+        writeSibling(`upcode-acp-${deadPid}-eeee`, null);
         AcpSessionRuntime.sweepStaleLinuxCgroupSiblings(parent, {
           isProcessAlive,
           readPopulated: (path) => populatedByPath.get(path),
@@ -145,7 +145,7 @@ describe("terminatePosixOwnedProcessTree", () => {
             NodeFS.rmdirSync(path);
           },
         });
-        expect(NodeFS.existsSync(NodePath.join(parent, `t3-acp-${deadPid}-eeee`))).toBe(true);
+        expect(NodeFS.existsSync(NodePath.join(parent, `upcode-acp-${deadPid}-eeee`))).toBe(true);
         expect(NodeFS.existsSync(currentPidSibling)).toBe(true);
       } finally {
         NodeFS.rmSync(parent, { recursive: true, force: true });
@@ -161,7 +161,7 @@ describe("terminatePosixOwnedProcessTree", () => {
       const scratchRoot = NodePath.join(process.cwd(), "tmp");
       NodeFS.mkdirSync(scratchRoot, { recursive: true });
       const scratch = NodeFS.mkdtempSync(NodePath.join(scratchRoot, "acp-cgroup-wrapper-"));
-      const linkedNode = NodePath.join(scratch, "T3 Code AppImage 'quoted'");
+      const linkedNode = NodePath.join(scratch, "UPCode AppImage 'quoted'");
       const bareGrok = NodePath.join(scratch, "grok");
       const relativeBin = NodePath.join(scratch, "relative-bin");
       const directoryBin = NodePath.join(scratch, "directory-bin");
@@ -203,7 +203,7 @@ describe("terminatePosixOwnedProcessTree", () => {
         "fs.writeFileSync(process.argv[1], JSON.stringify({",
         "  args: process.argv.slice(2),",
         "  electron: process.env.ELECTRON_RUN_AS_NODE,",
-        "  wrapper: process.env.T3_ACP_CGROUP_WRAPPER,",
+        "  wrapper: process.env.UPCODE_ACP_CGROUP_WRAPPER,",
         "}));",
       ].join("\n");
       const wrapped = AcpSessionRuntime.wrapCommandForLinuxCgroup(lease, linkedNode, [
@@ -220,7 +220,7 @@ describe("terminatePosixOwnedProcessTree", () => {
           env: {
             ...process.env,
             ELECTRON_RUN_AS_NODE: "1",
-            T3_ACP_CGROUP_WRAPPER: "1",
+            UPCODE_ACP_CGROUP_WRAPPER: "1",
           },
         });
         expect(result.status, result.stderr).toBe(0);
@@ -260,7 +260,7 @@ describe("terminatePosixOwnedProcessTree", () => {
     try {
       const wrapped = AcpSessionRuntime.wrapCommandForLinuxCgroup(lease, "/bin/sh", [
         "-c",
-        'printf "%s\\n" "$0" "$1" "$2" "$3" "${ELECTRON_RUN_AS_NODE-}" "${T3_ACP_CGROUP_WRAPPER-}" > "$4"',
+        'printf "%s\\n" "$0" "$1" "$2" "$3" "${ELECTRON_RUN_AS_NODE-}" "${UPCODE_ACP_CGROUP_WRAPPER-}" > "$4"',
         "packaged-target",
         "space value",
         "single'quote",
@@ -272,7 +272,7 @@ describe("terminatePosixOwnedProcessTree", () => {
         env: {
           ...process.env,
           ELECTRON_RUN_AS_NODE: "1",
-          T3_ACP_CGROUP_WRAPPER: "1",
+          UPCODE_ACP_CGROUP_WRAPPER: "1",
         },
       });
       expect(result.status, result.stderr).toBe(0);
@@ -297,7 +297,7 @@ describe("terminatePosixOwnedProcessTree", () => {
 
       const missingTarget = AcpSessionRuntime.wrapCommandForLinuxCgroup(
         lease,
-        "/nonexistent-t3-probe",
+        "/nonexistent-upcode-probe",
         [],
       );
       const missingTargetResult = NodeChildProcess.spawnSync(
@@ -357,7 +357,7 @@ describe("terminatePosixOwnedProcessTree", () => {
       ]);
       const provider = NodeChildProcess.spawn(wrapped.command, wrapped.args, {
         detached: true,
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", T3_ACP_CGROUP_WRAPPER: "1" },
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", UPCODE_ACP_CGROUP_WRAPPER: "1" },
         stdio: "ignore",
       });
       provider.unref();
@@ -431,8 +431,8 @@ describe("terminatePosixOwnedProcessTree", () => {
       const lease: AcpSessionRuntime.AcpLinuxCgroupLease = {
         contains: () => false,
         exists: () => exists,
-        path: "/test/t3-acp-repopulation",
-        relativePath: "/test/t3-acp-repopulation",
+        path: "/test/upcode-acp-repopulation",
+        relativePath: "/test/upcode-acp-repopulation",
         kill: () => {
           killCalls += 1;
           populated = false;
@@ -472,8 +472,8 @@ describe("terminatePosixOwnedProcessTree", () => {
       const lease: AcpSessionRuntime.AcpLinuxCgroupLease = {
         contains: () => false,
         exists: () => true,
-        path: "/test/t3-acp-busy",
-        relativePath: "/test/t3-acp-busy",
+        path: "/test/upcode-acp-busy",
+        relativePath: "/test/upcode-acp-busy",
         kill: () => undefined,
         populated: () => false,
         remove: () => {
@@ -482,7 +482,7 @@ describe("terminatePosixOwnedProcessTree", () => {
       };
 
       const error = yield* Effect.flip(AcpSessionRuntime.terminateLinuxCgroupLease(lease));
-      expect(error.detail).toBe("Failed to remove ACP cgroup /test/t3-acp-busy");
+      expect(error.detail).toBe("Failed to remove ACP cgroup /test/upcode-acp-busy");
       expect(error.cause).toBe(removeError);
     }),
   );
@@ -503,8 +503,8 @@ describe("terminatePosixOwnedProcessTree", () => {
     const lease: AcpSessionRuntime.AcpLinuxCgroupLease = {
       contains: () => true,
       exists: () => true,
-      path: "/test/t3-acp-root",
-      relativePath: "/test/t3-acp-root",
+      path: "/test/upcode-acp-root",
+      relativePath: "/test/upcode-acp-root",
       kill: () => undefined,
       populated: () => true,
       remove: () => undefined,
@@ -880,7 +880,7 @@ describe("terminatePosixOwnedProcessTree", () => {
     }),
   );
 
-  it.live("re-admits a still-owned child after PID reuse and never signals the T3 session", () =>
+  it.live("re-admits a still-owned child after PID reuse and never signals the UPCode session", () =>
     Effect.gen(function* () {
       const reused = identity(110, 100, 110, 110, "reused");
       const fixture = makeController({

@@ -8,7 +8,7 @@ import {
   ProjectId,
   RunId,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import {
   act,
   createRef,
@@ -482,7 +482,7 @@ function buildSnapShotTimelineEntry(previewUrl?: string) {
             kind: "snap-shot" as const,
             capturedAt: "2026-03-17T19:12:28.000Z",
             appName: "Terminal",
-            windowTitle: "t3code — Tests",
+            windowTitle: "upcode — Tests",
             appIconDataUrl: "data:image/png;base64,aWNvbg==",
           },
         },
@@ -1305,7 +1305,7 @@ describe("MessagesTimeline", () => {
     );
 
     expect(markup).toContain("Terminal");
-    expect(markup).toContain("t3code — Tests");
+    expect(markup).toContain("upcode — Tests");
     expect(markup).toContain('src="data:image/png;base64,aWNvbg=="');
     expect(onAnchorReady).toHaveBeenCalledOnce();
     expect(onAnchorReady).toHaveBeenCalledWith(firstEntry.message.id, 0);
@@ -1318,7 +1318,7 @@ describe("MessagesTimeline", () => {
 
     expect(markup).toContain("screenshot.png");
     expect(markup).not.toContain("Terminal");
-    expect(markup).not.toContain("t3code — Tests");
+    expect(markup).not.toContain("upcode — Tests");
     expect(markup).not.toContain('src="data:image/png;base64,aWNvbg=="');
     expect(markup).not.toContain("h-28 w-52 max-w-full");
   });
@@ -2517,11 +2517,11 @@ describe("MessagesTimeline", () => {
     expect(markup).toContain("Received 1 update and ran 1 command");
   });
 
-  it("renders T3 MCP dynamic tools with the product logo and pretty name", async () => {
+  it("renders UPCode MCP dynamic tools with the product logo and pretty name", async () => {
     activityTestState.expanded = true;
     const { MessagesTimeline } = await import("./MessagesTimeline");
     const item = {
-      id: "tool-t3-thread-read",
+      id: "tool-upcode-thread-read",
       threadId: "thread-source",
       runId: null,
       nodeId: null,
@@ -2536,7 +2536,7 @@ describe("MessagesTimeline", () => {
       completedAt: null,
       updatedAt: {},
       type: "dynamic_tool",
-      toolName: "mcp__t3-code__t3_thread_read",
+      toolName: "mcp__upcode__t3_thread_read",
       input: { threadId: "thread-child" },
       output: { messages: [] },
     } as const;
@@ -2586,10 +2586,10 @@ describe("MessagesTimeline", () => {
       />,
     );
 
-    // The T3 wordmark replaces the generic tool icon for T3 MCP calls.
+    // The UPCode wordmark replaces the generic tool icon for UPCode MCP calls.
     expect(markup).toContain('viewBox="15.5309 37 94.3941 56.96"');
-    expect(markup).toContain("Read a T3 thread");
-    expect(markup).not.toContain("mcp__t3-code__t3_thread_read");
+    expect(markup).toContain("Read a UPCode thread");
+    expect(markup).not.toContain("mcp__upcode__t3_thread_read");
   });
 
   it("formats changed file paths from the workspace root", async () => {
@@ -2629,7 +2629,7 @@ describe("MessagesTimeline", () => {
       />,
     );
 
-    expect(markup).toContain("t3code/apps/web/src/session-logic.ts");
+    expect(markup).toContain("upcode/apps/web/src/session-logic.ts");
     expect(markup).not.toContain("C:/Users/mike/dev-stuff/t3code/apps/web/src/session-logic.ts");
   });
 

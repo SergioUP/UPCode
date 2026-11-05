@@ -1,5 +1,5 @@
 import { SessionPermissions } from "./SessionPermissions";
-import { AUTH_SCOPE_OPTIONS as PAIRING_SCOPE_OPTIONS } from "@t3tools/shared/authScopeOptions";
+import { AUTH_SCOPE_OPTIONS as PAIRING_SCOPE_OPTIONS } from "@upcode/shared/authScopeOptions";
 import {
   ChevronRightIcon,
   ChevronsLeftRightEllipsisIcon,
@@ -45,18 +45,18 @@ import {
   type DesktopWslState,
   type EnvironmentId,
   resolveEnvironmentMachineKind,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import {
   RelayConnectionRegistration,
   RelayConnectionTarget,
   connectionRoutes,
   connectionStatusText,
   environmentMcpUrl,
-} from "@t3tools/client-runtime/connection";
+} from "@upcode/client-runtime/connection";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+} from "@upcode/client-runtime/state/runtime";
 import * as DateTime from "effect/DateTime";
 import * as Option from "effect/Option";
 
@@ -1532,7 +1532,7 @@ function SavedBackendListRow({
       toastManager.add({
         type: "success",
         title: "MCP URL copied",
-        description: `Add it to an agent, e.g. claude mcp add --transport http t3 ${url}`,
+        description: `Add it to an agent, e.g. claude mcp add --transport http upcode ${url}`,
       });
     },
     onError: (error) => {
@@ -1551,7 +1551,7 @@ function SavedBackendListRow({
     serverUpdateState.status === "running" && serverUpdateState.stage === "resuming";
   const status = savedBackendStatus(environment);
   const serverVersion = environment.serverConfig?.environment.serverVersion ?? null;
-  // A saved T3 Connect machine this device has never reached (unsupported,
+  // A saved UPCode Connect machine this device has never reached (unsupported,
   // or not yet connected) still has a descriptor from relay discovery, so
   // it can wear its detected glyph instead of the generic server. Discovery
   // empties its map on every refresh, so hold the last descriptor seen or
@@ -1797,7 +1797,7 @@ function CloudLinkSwitch({
   disabled,
   disabledReason,
   onCheckedChange,
-  ariaLabel = "Enable T3 Connect",
+  ariaLabel = "Enable UPCode Connect",
 }: {
   readonly checked: boolean;
   readonly disabled: boolean;
@@ -1838,9 +1838,9 @@ function ConfiguredCloudLinkRow({ canManageRelay }: { readonly canManageRelay: b
   const [isUpdatingPreference, setIsUpdatingPreference] = useState(false);
 
   const disabledReason = !isSignedIn
-    ? "Sign in to T3 Connect to manage this environment."
+    ? "Sign in to UPCode Connect to manage this environment."
     : !canManageRelay
-      ? "Your session does not have permission to manage T3 Connect access."
+      ? "Your session does not have permission to manage UPCode Connect access."
       : null;
   const isBusy = isUpdating || isUpdatingPreference;
 
@@ -1858,15 +1858,15 @@ function ConfiguredCloudLinkRow({ canManageRelay }: { readonly canManageRelay: b
       toastManager.add({
         type: "success",
         title: enabled
-          ? "T3 Connect linked"
+          ? "UPCode Connect linked"
           : publishAgentActivity
-            ? "T3 Connect tunnel disabled"
-            : "T3 Connect unlinked",
+            ? "UPCode Connect tunnel disabled"
+            : "UPCode Connect unlinked",
         description: enabled
-          ? "This environment is available through T3 Connect."
+          ? "This environment is available through UPCode Connect."
           : publishAgentActivity
             ? "The managed tunnel was removed. Agent activity publishing stays on."
-            : "This environment is no longer available through T3 Connect.",
+            : "This environment is no longer available through UPCode Connect.",
       });
     }
     setIsUpdating(false);
@@ -1904,7 +1904,7 @@ function ConfiguredCloudLinkRow({ canManageRelay }: { readonly canManageRelay: b
         type: "success",
         title: enabled ? "Webhooks held while offline" : "Webhooks no longer held",
         description: enabled
-          ? "T3 Connect keeps webhook requests for up to 24 hours while this environment is offline."
+          ? "UPCode Connect keeps webhook requests for up to 24 hours while this environment is offline."
           : "Requests to an offline environment now fail. Anything already held is still delivered.",
       });
     }
@@ -1915,11 +1915,11 @@ function ConfiguredCloudLinkRow({ canManageRelay }: { readonly canManageRelay: b
     <>
       {window.desktopBridge ? (
         <SettingsRow
-          title={searchableSetting("t3-connect").title}
+          title={searchableSetting("upcode-connect").title}
           description={
             managedTunnelActive
-              ? "This environment is available to your other devices through T3 Connect."
-              : "Make this environment available to your other devices through T3 Connect."
+              ? "This environment is available to your other devices through UPCode Connect."
+              : "Make this environment available to your other devices through UPCode Connect."
           }
           status={operationError ?? primaryCloudLinkState.error}
           control={
@@ -1940,7 +1940,7 @@ function ConfiguredCloudLinkRow({ canManageRelay }: { readonly canManageRelay: b
       ) : null}
       <SettingsRow
         title={searchableSetting("publish-agent-activity").title}
-        description="Send activity to mobile notifications and Live Activities without T3 Connect."
+        description="Send activity to mobile notifications and Live Activities without UPCode Connect."
         control={
           <CloudLinkSwitch
             ariaLabel="Publish agent activity to mobile clients"
@@ -1960,7 +1960,7 @@ function ConfiguredCloudLinkRow({ canManageRelay }: { readonly canManageRelay: b
       {managedTunnelActive ? (
         <SettingsRow
           title={searchableSetting("hold-webhooks-while-offline").title}
-          description="Keep webhook requests for up to 24 hours while this environment is offline, then deliver them. Off: T3 Connect only forwards requests and stores nothing."
+          description="Keep webhook requests for up to 24 hours while this environment is offline, then deliver them. Off: UPCode Connect only forwards requests and stores nothing."
           control={
             <CloudLinkSwitch
               ariaLabel="Hold webhook requests while this environment is offline"
@@ -1987,7 +1987,7 @@ function CloudLinkRow({
   if (!canReadRelay) {
     return (
       <SettingsRow
-        title="T3 Connect"
+        title="UPCode Connect"
         description="To edit these settings, pair this connection with both View relay and Manage relay permissions."
       />
     );
@@ -2005,7 +2005,7 @@ function EmptyRemoteEnvironments({ cloudEnabled = true }: { readonly cloudEnable
         <EmptyTitle>No saved remote environments</EmptyTitle>
         <EmptyDescription>
           {cloudEnabled
-            ? "Click “Add environment” to pair another environment, or connect one from T3 Connect."
+            ? "Click “Add environment” to pair another environment, or connect one from UPCode Connect."
             : "Click “Add environment” to pair another environment."}
         </EmptyDescription>
       </EmptyHeader>
@@ -2806,7 +2806,7 @@ export function ConnectionsSettings() {
 
   // Removing forgets the pairing, credentials, and cached threads on this
   // device. Switching off is the reversible path, so removal always confirms.
-  // T3 Connect environments get their own dialog: removing one here leaves its
+  // UPCode Connect environments get their own dialog: removing one here leaves its
   // account registration, so it points to where that can be deregistered.
   const [pendingT3ConnectRemoval, setPendingT3ConnectRemoval] =
     useState<EnvironmentPresentation | null>(null);
@@ -2951,7 +2951,7 @@ export function ConnectionsSettings() {
       </div>
     </div>
   );
-  // T3 Connect is offered as a route when this account can reach the machine
+  // UPCode Connect is offered as a route when this account can reach the machine
   // through it and it is not one of the machine's routes yet.
   const relayRouteOffer =
     routeTarget !== null &&
@@ -2982,7 +2982,7 @@ export function ConnectionsSettings() {
     toastManager.add({
       type: "success",
       title: "Route added",
-      description: `${routeTarget.label} falls back to T3 Connect when its other routes are unreachable.`,
+      description: `${routeTarget.label} falls back to UPCode Connect when its other routes are unreachable.`,
     });
   };
   const renderRemoteModeBody = () => (
@@ -2990,7 +2990,7 @@ export function ConnectionsSettings() {
       {relayRouteOffer !== null ? (
         <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
           <p className="text-xs text-muted-foreground">
-            This machine is on your T3 Connect account. Use it as a fallback route.
+            This machine is on your UPCode Connect account. Use it as a fallback route.
           </p>
           <Button
             size="xs"
@@ -2998,7 +2998,7 @@ export function ConnectionsSettings() {
             disabled={isAddingSavedBackend}
             onClick={() => void addRelayRoute()}
           >
-            Add T3 Connect
+            Add UPCode Connect
           </Button>
         </div>
       ) : null}
@@ -3469,7 +3469,7 @@ export function ConnectionsSettings() {
         {desktopWslState.enabled ? (
           <SettingsRow
             title="WSL only"
-            description="Run only the WSL backend. T3 Code restarts when this changes."
+            description="Run only the WSL backend. UPCode restarts when this changes."
             className="bg-muted/20 pl-7 sm:pl-8"
             control={
               <Switch
@@ -3794,8 +3794,8 @@ export function ConnectionsSettings() {
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   {pendingDesktopServerExposureMode === "network-accessible"
-                    ? "Let your other devices connect to T3 Code over the network. Pair devices to give them access. T3 Code will restart."
-                    : "Devices connected over your local network will disconnect. Existing tunnels, such as T3 Connect or Tailscale HTTPS, keep working. T3 Code will restart."}
+                    ? "Let your other devices connect to UPCode over the network. Pair devices to give them access. UPCode will restart."
+                    : "Devices connected over your local network will disconnect. Existing tunnels, such as UPCode Connect or Tailscale HTTPS, keep working. UPCode will restart."}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -3851,15 +3851,15 @@ export function ConnectionsSettings() {
                 <AlertDialogDescription>
                   {pendingWslChange?.kind === "disable"
                     ? pendingWslChange.wasWslOnly
-                      ? "T3 Code will restart on the Windows backend. Threads and projects opened against WSL stay safe inside the distro and become available again when you re-enable WSL."
-                      : "The WSL backend will stop. Threads and projects opened against WSL stay safe inside the distro, but they'll be unavailable in T3 Code until you re-enable WSL."
+                      ? "UPCode will restart on the Windows backend. Threads and projects opened against WSL stay safe inside the distro and become available again when you re-enable WSL."
+                      : "The WSL backend will stop. Threads and projects opened against WSL stay safe inside the distro, but they'll be unavailable in UPCode until you re-enable WSL."
                     : pendingWslChange?.kind === "distro"
-                      ? "T3 Code will restart the WSL backend on the new distro. Sessions still running on the current distro will be interrupted."
+                      ? "UPCode will restart the WSL backend on the new distro. Sessions still running on the current distro will be interrupted."
                       : pendingWslChange?.kind === "enable"
                         ? "Run the WSL backend alongside the Windows one, or stop the Windows backend and use only WSL? You can change this later from Settings."
                         : pendingWslChange?.nextValue
-                          ? "T3 Code will restart and start only the WSL backend. Your Windows-side projects won't be accessible until you turn this off again."
-                          : "T3 Code will restart and bring the Windows backend back up alongside WSL."}
+                          ? "UPCode will restart and start only the WSL backend. Your Windows-side projects won't be accessible until you turn this off again."
+                          : "UPCode will restart and bring the Windows backend back up alongside WSL."}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -3945,7 +3945,7 @@ export function ConnectionsSettings() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Disable Tailscale HTTPS?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  T3 Code will restart the local backend without Tailscale Serve.
+                  UPCode will restart the local backend without Tailscale Serve.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -3983,7 +3983,7 @@ export function ConnectionsSettings() {
               <DialogHeader>
                 <DialogTitle>Set up Tailscale HTTPS?</DialogTitle>
                 <DialogDescription>
-                  T3 Code will restart the local backend with Tailscale Serve enabled and ask
+                  UPCode will restart the local backend with Tailscale Serve enabled and ask
                   Tailscale to proxy HTTPS traffic to this backend.
                 </DialogDescription>
               </DialogHeader>

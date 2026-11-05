@@ -1,4 +1,4 @@
-import { ProviderInstanceId, ThreadId } from "@t3tools/contracts";
+import { ProviderInstanceId, ThreadId } from "@upcode/contracts";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Crypto from "effect/Crypto";
@@ -11,7 +11,7 @@ import * as NetAddress from "effect/net/NetAddress";
 import * as ServerEnvironment from "../environment/ServerEnvironment.ts";
 import * as McpInvocationContext from "./McpInvocationContext.ts";
 import { isIncidentConversation } from "../incidents/incidentContext.ts";
-import * as McpProviderSession from "@t3tools/provider-core/server/mcpSession";
+import * as McpProviderSession from "@upcode/provider-core/server/mcpSession";
 
 export interface McpCredentialRequest {
   readonly threadId: ThreadId;
@@ -48,7 +48,7 @@ export interface McpSessionRegistryShape {
 export class McpSessionRegistry extends Context.Service<
   McpSessionRegistry,
   McpSessionRegistryShape
->()("t3/mcp/McpSessionRegistry") {}
+>()("upcode/mcp/McpSessionRegistry") {}
 
 /** Registry credentials always belong to a provider session, so their scope has a thread. */
 interface CredentialRecord {
@@ -78,7 +78,7 @@ export interface McpSessionRegistryOptions {
  *
  * The bound matters because `/mcp` is mounted outside the environment auth
  * stack and is reachable on whatever host the server binds to, so this token is
- * the only thing guarding the `t3-code` toolkits on a remote-reachable server.
+ * the only thing guarding the `upcode` toolkits on a remote-reachable server.
  */
 const DEFAULT_LIVENESS_WINDOW_MS = 24 * 60 * 60 * 1_000;
 
@@ -146,7 +146,7 @@ const makeWithOptions = Effect.fn("McpSessionRegistry.make")(function* (
           // The Vault tools gate every call on the server's own `agentAccess`.
           "ssh",
           ...(request.capabilities ?? (browserToolsAvailable ? (["preview"] as const) : [])),
-          // Incident Center is opt-in per conversation: a normal T3 thread
+          // Incident Center is opt-in per conversation: a normal UPCode thread
           // never gets this capability, so the incident tools refuse every call.
           ...(isIncidentConversation(request.threadId) ? (["incident"] as const) : []),
         ]),

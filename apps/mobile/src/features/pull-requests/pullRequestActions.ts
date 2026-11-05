@@ -1,10 +1,10 @@
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { sourceControlClients } from "@upcode/client-runtime/source-control-clients";
 import type {
   PullRequestAction,
   PullRequestDetail,
   PullRequestMergeMethod,
   SourceControlProviderKind,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import type { AppSymbolName } from "../../components/AppSymbol";
 
 type ActionDetail = Pick<

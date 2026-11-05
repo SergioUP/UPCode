@@ -1,9 +1,9 @@
 // @effect-diagnostics nodeBuiltinImport:off globalFetchInEffect:off - Hosted handoff test uses a real localhost listener without an OpenAI account.
 import * as NodeHttp from "node:http";
 import * as NodePath from "@effect/platform-node/NodePath";
-import { codexAuthHandoffUrl, readCodexAuthDelivery } from "@t3tools/shared/codexAuthHandoff";
-import { EnvironmentId, ProviderInstanceId } from "@t3tools/contracts";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import { codexAuthHandoffUrl, readCodexAuthDelivery } from "@upcode/shared/codexAuthHandoff";
+import { EnvironmentId, ProviderInstanceId } from "@upcode/contracts";
+import * as HostProcess from "@upcode/shared/HostProcess";
 import { assert, describe, it } from "@effect/vitest";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
@@ -59,7 +59,7 @@ const layerDesktopClerk = (
   },
 ) => {
   const environment = DesktopEnvironment.DesktopEnvironment.of({
-    stateDir: "/tmp/t3-state",
+    stateDir: "/tmp/upcode-state",
     isDevelopment,
     appDataDirectory: "/tmp/app-data",
     platform,
@@ -108,7 +108,7 @@ describe("DesktopClerk", () => {
           {
             storage: storageAdapter,
             passkeys: true,
-            renderer: { scheme: "t3code-dev", host: "app" },
+            renderer: { scheme: "upcode-dev", host: "app" },
           },
         ],
       ]);
@@ -146,7 +146,7 @@ describe("DesktopClerk", () => {
       });
       // runSync throws if the layer ever suspends, which would let Electron emit
       // ready before the bridge exists. main.ts provides the same FileSystem.
-      // oxlint-disable-next-line t3code/no-manual-effect-runtime-in-tests -- The assertion IS that the layer builds synchronously; it.effect would mask a regression to async.
+      // oxlint-disable-next-line upcode/no-manual-effect-runtime-in-tests -- The assertion IS that the layer builds synchronously; it.effect would mask a regression to async.
       Effect.runSync(
         Effect.scoped(
           Layer.build(
@@ -170,12 +170,12 @@ describe("DesktopClerk", () => {
       const error = yield* Effect.scoped(Layer.build(layerDesktopClerk())).pipe(Effect.flip);
 
       assert.instanceOf(error, DesktopClerk.DesktopClerkBridgeInitializationError);
-      assert.equal(error.stateDir, "/tmp/t3-state");
+      assert.equal(error.stateDir, "/tmp/upcode-state");
       assert.equal(error.isDevelopment, true);
       assert.strictEqual(error.cause, cause);
       assert.equal(
         error.message,
-        'Failed to initialize the desktop Clerk bridge for state directory "/tmp/t3-state" (development: true).',
+        'Failed to initialize the desktop Clerk bridge for state directory "/tmp/upcode-state" (development: true).',
       );
     });
   });
@@ -196,12 +196,12 @@ describe("DesktopClerk", () => {
       if (exit._tag === "Failure") {
         const error = Cause.squash(exit.cause);
         assert.instanceOf(error, DesktopClerk.DesktopClerkBridgeCleanupError);
-        assert.equal(error.stateDir, "/tmp/t3-state");
+        assert.equal(error.stateDir, "/tmp/upcode-state");
         assert.equal(error.isDevelopment, false);
         assert.strictEqual(error.cause, cause);
         assert.equal(
           error.message,
-          'Failed to clean up the desktop Clerk bridge for state directory "/tmp/t3-state" (development: false).',
+          'Failed to clean up the desktop Clerk bridge for state directory "/tmp/upcode-state" (development: false).',
         );
       }
     });
@@ -289,19 +289,19 @@ it.effect(
       const clerk = yield* DesktopClerk.DesktopClerk;
       yield* clerk.configure;
       const event = { preventDefault: vi.fn() };
-      listeners.get("open-url")!(event, "t3code-dev://app/auth/callback?code=clerk-code");
-      listeners.get("open-url")!(event, "t3code://app/welcome");
+      listeners.get("open-url")!(event, "upcode-dev://app/auth/callback?code=clerk-code");
+      listeners.get("open-url")!(event, "upcode://app/welcome");
       assert.equal(loadURL.mock.calls.length, 0);
       assert.equal(event.preventDefault.mock.calls.length, 0);
       listeners.get("second-instance")!({}, [
-        "t3",
-        "t3code-dev://app/settings/providers?instanceId=work&code=never-forward",
+        "upcode",
+        "upcode-dev://app/settings/providers?instanceId=work&code=never-forward",
       ]);
       yield* Effect.promise(() => revealed.promise);
       assert.deepEqual(loadURL.mock.calls, [
-        ["t3code-dev://app/settings/providers?instanceId=work"],
+        ["upcode-dev://app/settings/providers?instanceId=work"],
       ]);
-      listeners.get("open-url")!(event, "t3code-dev://app/welcome#agents:machine-id");
+      listeners.get("open-url")!(event, "upcode-dev://app/welcome#agents:machine-id");
       assert.equal(event.preventDefault.mock.calls.length, 1);
     }).pipe(
       Effect.scoped,
@@ -338,7 +338,7 @@ it.effect.each(["startup", "open-url"] as const)(
       }).toString();
       const request = {
         authorizationUrl: authorize.toString(),
-        returnUrl: "https://app.t3.codes/welcome#agents:remote-one",
+        returnUrl: "https://app.upcode.codes/welcome#agents:remote-one",
         environmentId: EnvironmentId.make("remote-one"),
         instanceId: ProviderInstanceId.make("work"),
         flowId: "flow-one",
@@ -385,7 +385,7 @@ it.effect.each(["startup", "open-url"] as const)(
         assert.strictEqual(delivery?.returnUrl, request.returnUrl);
       }).pipe(
         Effect.provide(layerDesktopClerk(true, [], "darwin", undefined, shell)),
-        Effect.provideService(HostProcess.Arguments, entry === "startup" ? ["t3", link] : ["t3"]),
+        Effect.provideService(HostProcess.Arguments, entry === "startup" ? ["upcode", link] : ["upcode"]),
         Effect.provideService(ElectronApp.ElectronApp, electronApp),
         Effect.provideService(
           ElectronWindow.ElectronWindow,
@@ -421,21 +421,21 @@ it.effect("hands web and app links to the renderer and leaves other links alone"
       assert.strictEqual(open("https://example.com/page"), 1);
       assert.strictEqual(open("http://localhost:3000/"), 1);
       // Prompt and thread links ride the same queue; the renderer routes them in the app.
-      assert.strictEqual(open("t3code://new?prompt=hi"), 1);
-      assert.strictEqual(open("t3code://threads/env-1/thread-1"), 1);
+      assert.strictEqual(open("upcode://new?prompt=hi"), 1);
+      assert.strictEqual(open("upcode://threads/env-1/thread-1"), 1);
       // Anything else is not a web page; Electron keeps its own handling.
       assert.strictEqual(open("mailto:hello@example.com"), 0);
-      assert.strictEqual(open("t3code://somewhere-else"), 0);
+      assert.strictEqual(open("upcode://somewhere-else"), 0);
       yield* Effect.yieldNow;
       assert.deepStrictEqual(received, [
         "https://example.com/page",
         "http://localhost:3000/",
-        "t3code://new?prompt=hi",
-        "t3code://threads/env-1/thread-1",
+        "upcode://new?prompt=hi",
+        "upcode://threads/env-1/thread-1",
       ]);
     }).pipe(
       Effect.provide(layerDesktopClerk(true, [], "darwin")),
-      Effect.provideService(HostProcess.Arguments, ["t3"]),
+      Effect.provideService(HostProcess.Arguments, ["upcode"]),
       Effect.provideService(ElectronApp.ElectronApp, electronApp),
       Effect.provideService(
         ElectronWindow.ElectronWindow,

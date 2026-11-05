@@ -1,4 +1,4 @@
-import { SourceControlProviderKind } from "@t3tools/contracts";
+import { SourceControlProviderKind } from "@upcode/contracts";
 import { assert, it, vi } from "@effect/vitest";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import * as ConfigProvider from "effect/ConfigProvider";
@@ -11,8 +11,8 @@ import * as Schema from "effect/Schema";
 import * as TestClock from "effect/testing/TestClock";
 import { HttpClient, HttpClientError, HttpClientRequest, HttpClientResponse } from "effect/http";
 
-import { GitCommandError } from "@t3tools/contracts";
-import * as BitbucketApi from "@t3tools/source-control-bitbucket/server/BitbucketApi";
+import { GitCommandError } from "@upcode/contracts";
+import * as BitbucketApi from "@upcode/source-control-bitbucket/server/BitbucketApi";
 import * as ServerSettings from "../serverSettings.ts";
 import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
 import * as VcsDriverRegistry from "../vcs/VcsDriverRegistry.ts";
@@ -160,9 +160,9 @@ function makeLayer(input: {
       ConfigProvider.layer(
         ConfigProvider.fromEnv({
           env: input.env ?? {
-            T3CODE_BITBUCKET_API_BASE_URL: "https://api.test.local/2.0",
-            T3CODE_BITBUCKET_EMAIL: "user@example.com",
-            T3CODE_BITBUCKET_API_TOKEN: "token",
+            UPCODE_BITBUCKET_API_BASE_URL: "https://api.test.local/2.0",
+            UPCODE_BITBUCKET_EMAIL: "user@example.com",
+            UPCODE_BITBUCKET_API_TOKEN: "token",
           },
         }),
       ),
@@ -354,7 +354,7 @@ it.effect.each([false, true])(
 
     return Effect.gen(function* () {
       const bitbucket = yield* BitbucketApi.BitbucketApi;
-      for (const repository of ["t3code", "", " \t "]) {
+      for (const repository of ["upcode", "", " \t "]) {
         const error = yield* bitbucket
           .getRepositoryCloneUrls({
             cwd: "/repo",
@@ -678,7 +678,7 @@ it.effect("never puts a saved token that is unsafe for an HTTP header on the wir
 it.effect("reports saved credentials as configured when Bitbucket cannot confirm them", () => {
   const { layer } = makeLayer({
     response: () => new Response(null, { status: 401 }),
-    env: { T3CODE_BITBUCKET_API_BASE_URL: "https://api.test.local/2.0" },
+    env: { UPCODE_BITBUCKET_API_BASE_URL: "https://api.test.local/2.0" },
   });
 
   return Effect.gen(function* () {
@@ -975,17 +975,17 @@ it.effect("checks out fork pull requests through an ensured fork remote", () => 
       cwd: "/repo",
       remoteName: "octocat",
       remoteBranch: "main",
-      localBranch: "t3code/pr-42/main",
+      localBranch: "upcode/pr-42/main",
     });
     assert.deepStrictEqual(git.setBranchUpstream.mock.calls[0]?.[0], {
       cwd: "/repo",
-      branch: "t3code/pr-42/main",
+      branch: "upcode/pr-42/main",
       remoteName: "octocat",
       remoteBranch: "main",
     });
     assert.deepStrictEqual(git.switchRef.mock.calls[0]?.[0], {
       cwd: "/repo",
-      refName: "t3code/pr-42/main",
+      refName: "upcode/pr-42/main",
     });
   }).pipe(Effect.provide(layer));
 });

@@ -10,8 +10,8 @@ import {
   pullRequestCandidateUrlFromReferenceAutolink,
   shouldOpenPullRequestExternally,
 } from "./openPullRequestLink";
-import { ProjectId, type RepositoryIdentity } from "@t3tools/contracts";
-import { normalizeGitRemoteUrl } from "@t3tools/shared/git";
+import { ProjectId, type RepositoryIdentity } from "@upcode/contracts";
+import { normalizeGitRemoteUrl } from "@upcode/shared/git";
 
 function repositoryIdentity(
   provider: string,
@@ -166,7 +166,7 @@ describe("matchesLinkedPullRequestUrl", () => {
     expect(
       matchesLinkedPullRequestUrl(
         linkedPullRequest,
-        "https://github.com/PingDotGG/T3Code/pull/42/files",
+        "https://github.com/SergioUP/UPCode/pull/42/files",
       ),
     ).toBe(true);
   });
@@ -228,9 +228,9 @@ describe("shouldOpenPullRequestExternally", () => {
 
 describe("parseChangeRequestUrl", () => {
   it("reads a GitHub pull request", () => {
-    expect(parseChangeRequestUrl("https://github.com/T3Tools/T3Code/pull/123")).toEqual({
+    expect(parseChangeRequestUrl("https://github.com/UPango/UPCode/pull/123")).toEqual({
       host: "github.com",
-      repository: "t3tools/t3code",
+      repository: "upango/t3code",
       number: 123,
     });
   });
@@ -248,7 +248,7 @@ describe("parseChangeRequestUrl", () => {
       parseChangeRequestUrl("https://gitlab.com/t3tools/platform/t3code/-/merge_requests/42"),
     ).toEqual({
       host: "gitlab.com",
-      repository: "t3tools/platform/t3code",
+      repository: "upango/platform/t3code",
       number: 42,
     });
   });
@@ -291,7 +291,7 @@ describe("parseChangeRequestUrl", () => {
   it("survives trailing segments, a trailing slash and a query string", () => {
     expect(parseChangeRequestUrl("https://github.com/t3tools/t3code/pull/123/files?w=1")).toEqual({
       host: "github.com",
-      repository: "t3tools/t3code",
+      repository: "upango/t3code",
       number: 123,
     });
     expect(
@@ -302,7 +302,7 @@ describe("parseChangeRequestUrl", () => {
     ).toEqual({ host: "bitbucket.org", repository: "team/repo", number: 5 });
     expect(parseChangeRequestUrl("https://github.com/t3tools/t3code/pull/123/")).toEqual({
       host: "github.com",
-      repository: "t3tools/t3code",
+      repository: "upango/t3code",
       number: 123,
     });
   });
@@ -462,20 +462,20 @@ describe("findProjectForChangeRequest", () => {
 
   it("matches a nested GitLab group by the whole path below the host", () => {
     // The server identifies a repository by `displayName`, which keeps every group segment; the
-    // two-segment owner/name form would look for `t3tools/t3code` and find nothing.
+    // two-segment owner/name form would look for `upango/t3code` and find nothing.
     const projects = [
       project({
         canonicalKey: "gitlab.com/t3tools/platform/t3code",
         provider: "gitlab",
-        displayName: "t3tools/platform/t3code",
-        owner: "t3tools",
-        name: "t3code",
+        displayName: "upango/platform/t3code",
+        owner: "upango",
+        name: "upcode",
       }),
     ];
     expect(
       findProjectForChangeRequest(projects, {
         host: "gitlab.com",
-        repository: "t3tools/platform/t3code",
+        repository: "upango/platform/t3code",
         number: 42,
       }),
     ).toBe(projects[0]);
@@ -487,7 +487,7 @@ describe("findProjectForChangeRequest", () => {
         canonicalKey: "github.com/pingdotgg/t3code",
         provider: "github",
         owner: "pingdotgg",
-        name: "t3code",
+        name: "upcode",
       }),
     ];
     expect(
@@ -506,20 +506,20 @@ describe("findProjectForChangeRequest", () => {
     //
     // Derived from the SSH remote the way the server derives it rather than written out, so the
     // day that normalization stops reaching the web spelling this fails here too.
-    const canonicalKey = normalizeGitRemoteUrl("git@ssh.dev.azure.com:v3/T3Tools/Platform/T3Code");
+    const canonicalKey = normalizeGitRemoteUrl("git@ssh.dev.azure.com:v3/UPango/Platform/UPCode");
     const projects = [
       project({
         canonicalKey,
         provider: "azure-devops",
         displayName: canonicalKey.split("/").slice(1).join("/"),
-        owner: "t3tools",
-        name: "t3code",
+        owner: "upango",
+        name: "upcode",
       }),
     ];
     expect(
       findProjectForChangeRequest(projects, {
         host: "dev.azure.com",
-        repository: "t3tools/platform/_git/t3code",
+        repository: "upango/platform/_git/t3code",
         number: 1,
       }),
     ).toBe(projects[0]);
@@ -531,7 +531,7 @@ describe("findProjectForChangeRequest", () => {
         canonicalKey: "github.com/pingdotgg/t3code",
         provider: "github",
         owner: "pingdotgg",
-        name: "t3code",
+        name: "upcode",
       }),
     ];
     expect(

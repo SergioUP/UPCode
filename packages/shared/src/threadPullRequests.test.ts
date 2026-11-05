@@ -2,7 +2,7 @@ import {
   ProjectId,
   type ThreadPullRequestLink,
   type ThreadPullRequestSnapshot,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 
 import {
@@ -400,7 +400,7 @@ describe("chain selection and badge state", () => {
 
   it("keeps branch matching case-sensitive while ignoring repository case", () => {
     const bottom = link(1, {
-      repository: "PingDotGG/T3code",
+      repository: "SergioUP/UPCode",
       snapshot: snapshot({ headBranch: "Base" }),
     });
     const top = link(2, { snapshot: snapshot({ headBranch: "top", baseBranch: "base" }) });

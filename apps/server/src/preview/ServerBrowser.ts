@@ -41,10 +41,10 @@ import {
   ThreadId,
   SERVER_BROWSER_AUTOMATION_CLIENT_ID,
   type PreviewAppearancePreference,
-} from "@t3tools/contracts";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { normalizePreviewUrl } from "@t3tools/shared/preview";
-import { resolvePreviewViewport } from "@t3tools/shared/previewViewport";
+} from "@upcode/contracts";
+import * as HostProcess from "@upcode/shared/HostProcess";
+import { normalizePreviewUrl } from "@upcode/shared/preview";
+import { resolvePreviewViewport } from "@upcode/shared/previewViewport";
 import * as NodeCrypto from "node:crypto";
 import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
@@ -251,7 +251,7 @@ export class ServerBrowser extends Context.Service<
      */
     readonly reportProfiles: (input: PreviewReportProfilesInput) => Effect.Effect<void>;
   }
->()("t3/preview/ServerBrowser") {}
+>()("upcode/preview/ServerBrowser") {}
 
 interface ViewerState {
   readonly id: string;
@@ -1228,7 +1228,7 @@ const make = Effect.gen(function* () {
   const assertTabCapacity = (agentSessionId: string) => {
     if (atTabLimit(agentSessionId))
       throw new BrowserControlInterrupted(
-        `Too many server browser tabs are open (${AGENT_TAB_LIMIT} per agent session, ${SERVER_TAB_LIMIT} per server). Close one with t3_preview_close or reuse one from preview_status tabs.`,
+        `Too many server browser tabs are open (${AGENT_TAB_LIMIT} per agent session, ${SERVER_TAB_LIMIT} per server). Close one with upcode_preview_close or reuse one from preview_status tabs.`,
         "tabLimit",
       );
   };
@@ -2391,7 +2391,7 @@ const make = Effect.gen(function* () {
     (yield* PreviewBrowserHost.sandboxBlocked)
   ) {
     yield* Effect.logWarning(
-      `This host blocks the sandbox T3's browser runs in, so browser tabs and HTML previews will not start. Run \`${setupCommand}\` once to allow it.`,
+      `This host blocks the sandbox UPCode's browser runs in, so browser tabs and HTML previews will not start. Run \`${setupCommand}\` once to allow it.`,
     );
   }
   // The desktop took its page back (closed, swapped, crashed, or devtools opened).

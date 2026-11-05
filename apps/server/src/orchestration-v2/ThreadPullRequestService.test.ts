@@ -6,7 +6,7 @@ import {
   type OrchestrationProjectShell,
   type OrchestrationV2DomainEvent,
   type OrchestrationV2ThreadShell,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import { describe, expect, it } from "@effect/vitest";
 import * as Crypto from "effect/Crypto";
 import * as DateTime from "effect/DateTime";
@@ -57,7 +57,7 @@ describe("ThreadPullRequestServiceV2 project guard", () => {
               provider: "github" as const,
               displayName: "pingdotgg/t3code",
               owner: "pingdotgg",
-              name: "t3code",
+              name: "upcode",
             });
           },
         },

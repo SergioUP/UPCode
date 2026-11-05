@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@upcode/shared/HostProcess";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -32,7 +32,7 @@ vi.mock("electron", () => ({
     setDesktopName: setDesktopNameMock,
     getVersion: () => "0.0.37",
     isPackaged: true,
-    getAppPath: () => "/tmp/.mount_T3/resources/app.asar",
+    getAppPath: () => "/tmp/.mount_UPCode/resources/app.asar",
     commandLine: {
       appendSwitch: appendSwitchMock,
       getSwitchValue: getSwitchValueMock,
@@ -147,17 +147,17 @@ describe("DesktopPreReadyPlatform", () => {
     vi.stubEnv("XDG_DATA_HOME", "/xdg");
     vi.stubEnv("APPIMAGE", "/Applications/current.AppImage");
     getSwitchValueMock.mockReturnValue("");
-    let desktopName = "t3code.desktop";
+    let desktopName = "upcode.desktop";
     let desktopEntry = previousEntry;
     let iconInstalled = false;
     copyFileSyncMock.mockImplementation((_source: string, destination: string) => {
-      iconInstalled = destination === "/xdg/icons/com.t3tools.T3Code.desktop.png";
+      iconInstalled = destination === "/xdg/icons/com.upango.UPCode.desktop.png";
     });
     setDesktopNameMock.mockImplementation((name: string) => {
       desktopName = name;
     });
     writeFileSyncMock.mockImplementation((path: string, contents: string) => {
-      if (path === "/xdg/applications/com.t3tools.T3Code.desktop") desktopEntry = contents;
+      if (path === "/xdg/applications/com.upango.UPCode.desktop") desktopEntry = contents;
     });
 
     return Effect.scoped(
@@ -173,13 +173,13 @@ describe("DesktopPreReadyPlatform", () => {
           ),
         );
         const identity = yield* Effect.promise(() => portalIdentity);
-        assert.equal(identity.desktopName, "com.t3tools.T3Code.desktop");
+        assert.equal(identity.desktopName, "com.upango.UPCode.desktop");
         assert.include(identity.desktopEntry ?? "", 'Exec="/Applications/current.AppImage" %U');
-        assert.include(identity.desktopEntry ?? "", "Name=T3 Code (Alpha)");
+        assert.include(identity.desktopEntry ?? "", "Name=UPCode (Alpha)");
         assert.include(identity.desktopEntry ?? "", "MimeType=x-scheme-handler/t3code;");
         assert.include(
           identity.desktopEntry ?? "",
-          "Icon=/xdg/icons/com.t3tools.T3Code.desktop.png",
+          "Icon=/xdg/icons/com.upango.UPCode.desktop.png",
         );
         assert.isTrue(identity.iconInstalled);
       }),
@@ -217,7 +217,7 @@ describe("DesktopPreReadyPlatform", () => {
     () =>
       Effect.gen(function* () {
         class ClerkShaped extends Context.Service<ClerkShaped, { readonly ready: true }>()(
-          "@t3tools/desktop/app/DesktopPreReadyPlatform.test/ClerkShaped",
+          "@upcode/desktop/app/DesktopPreReadyPlatform.test/ClerkShaped",
         ) {}
 
         const events: Array<string> = [];

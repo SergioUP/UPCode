@@ -1,5 +1,5 @@
 import { revertCodexThread } from "../../provider/CodexThreadRevert.ts";
-import { historyResponseItems } from "@t3tools/provider-core/server/handoffBudget";
+import { historyResponseItems } from "@upcode/provider-core/server/handoffBudget";
 import { makeProviderTextDeltaCoalescer } from "./ProviderTextDeltaCoalescer.ts";
 import {
   mcpToolPresentation,
@@ -12,7 +12,7 @@ import {
   completeCodexTurnTokenUsage,
   type CodexTurnTokenUsageState,
 } from "../../provider/CodexTurnTokenUsage.ts";
-import type { ManagedServerProvider } from "@t3tools/provider-core/server/snapshot";
+import type { ManagedServerProvider } from "@upcode/provider-core/server/snapshot";
 import type { CodexEffectiveRuntime } from "../../provider/CodexManagedRuntime.ts";
 import {
   buildCodexInitializeParams,
@@ -31,17 +31,17 @@ import {
   OrchestrationV2ProviderGoal,
   ProviderDriverKind,
   type ProviderSetupError,
-} from "@t3tools/contracts";
-import { SKILL_MENTION_PATTERN } from "@t3tools/shared/composerInlineTokens";
-import { AgentScope } from "@t3tools/shared/AgentScope";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+} from "@upcode/contracts";
+import { SKILL_MENTION_PATTERN } from "@upcode/shared/composerInlineTokens";
+import { AgentScope } from "@upcode/shared/AgentScope";
+import * as HostProcess from "@upcode/shared/HostProcess";
 import {
   COMPUTER_USE_TOOL_SOURCE,
   dynamicToolSurface,
   dynamicToolTitle,
-} from "@t3tools/shared/toolActivity";
-import { getModelSelectionStringOptionValue, modelSelectionsEqual } from "@t3tools/shared/model";
-import { resolveSpawnCommand } from "@t3tools/shared/shell";
+} from "@upcode/shared/toolActivity";
+import { getModelSelectionStringOptionValue, modelSelectionsEqual } from "@upcode/shared/model";
+import { resolveSpawnCommand } from "@upcode/shared/shell";
 import type {
   ChatAttachment,
   OrchestrationV2AppThread,
@@ -70,7 +70,7 @@ import type {
   RuntimeMode,
   RuntimeRequestId,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import * as CodexClient from "effect-codex-app-server/client";
 import * as CodexErrors from "effect-codex-app-server/errors";
 import * as CodexSchema from "effect-codex-app-server/schema";
@@ -99,7 +99,7 @@ import {
   getCodexServiceTierOptionValue,
 } from "../../codexModelOptions.ts";
 import { ServerConfig } from "../../config.ts";
-import { expandHomePath } from "@t3tools/provider-core/server/pathExpansion";
+import { expandHomePath } from "@upcode/provider-core/server/pathExpansion";
 import {
   buildCodexAdditionalContext,
   buildCodexDeveloperInstructions,
@@ -116,42 +116,42 @@ import {
   boundProviderEventForLogging,
   shouldPersistProviderEvent,
 } from "../../provider/EventNdjsonLogger.ts";
-import * as ProviderEventLoggers from "@t3tools/provider-core/server/ProviderEventLoggers";
+import * as ProviderEventLoggers from "@upcode/provider-core/server/ProviderEventLoggers";
 import { codexAppServerArgs, resolveCodexLaunchArgs } from "../../provider/codexLaunchArgs.ts";
-import { mergeProviderInstanceEnvironment } from "@t3tools/provider-core/server/instanceEnvironment";
-import * as McpProviderSession from "@t3tools/provider-core/server/mcpSession";
-import * as McpProviderSessions from "@t3tools/provider-core/server/McpProviderSessions";
+import { mergeProviderInstanceEnvironment } from "@upcode/provider-core/server/instanceEnvironment";
+import * as McpProviderSession from "@upcode/provider-core/server/mcpSession";
+import * as McpProviderSessions from "@upcode/provider-core/server/McpProviderSessions";
 import {
   MCP_APP_EXTENSION_ID,
   MCP_APP_MIME_TYPE,
   MCP_APP_OUTPUT_KEY,
   MCP_APP_RESOURCE_SCHEME,
-} from "@t3tools/shared/mcpApp";
+} from "@upcode/shared/mcpApp";
 import { snapshotMcpApp } from "../../mcpApps/McpAppSnapshot.ts";
 import {
   ProviderAdapterDriverCreateError,
   type ProviderAdapterDriver,
   type ProviderAdapterDriverCreateInput,
-} from "@t3tools/provider-core/server/adapterDriver";
-import * as ProviderContinuationRequests from "@t3tools/provider-core/server/ProviderContinuationRequests";
-import { backgroundWorkNotification } from "@t3tools/provider-core/server/notification";
+} from "@upcode/provider-core/server/adapterDriver";
+import * as ProviderContinuationRequests from "@upcode/provider-core/server/ProviderContinuationRequests";
+import { backgroundWorkNotification } from "@upcode/provider-core/server/notification";
 import {
   makeProviderFailure,
   makeProviderFailureTurnItem,
   makeProviderRetryTurnItem,
-} from "@t3tools/provider-core/server/failure";
-import { turnScopedSelectionTransition } from "@t3tools/provider-core/server/selectionTransition";
+} from "@upcode/provider-core/server/failure";
+import { turnScopedSelectionTransition } from "@upcode/provider-core/server/selectionTransition";
 import {
   isProviderNativeImageAttachment,
   providerMessageTextWithAttachmentPaths,
-} from "@t3tools/provider-core/server/attachmentPrompt";
+} from "@upcode/provider-core/server/attachmentPrompt";
 import {
   makeSubagentChildThread,
   makeSubagentConversationArtifacts,
   subagentThreadTitle,
-} from "@t3tools/provider-core/server/subagentProjection";
-import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
-import * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
+} from "@upcode/provider-core/server/subagentProjection";
+import * as IdAllocator from "@upcode/provider-core/server/IdAllocator";
+import * as ProviderAdapter from "@upcode/provider-core/server/ProviderAdapter";
 
 const CODEX_PROVIDER = ProviderDriverKind.make("codex");
 export const CODEX_DRIVER_KIND = CODEX_PROVIDER;
@@ -764,7 +764,7 @@ export function buildCodexTurnStartParams(input: {
         { kind: "untrusted" as const, value: entry.text },
       ]),
     );
-    const t3Context =
+    const upcodeContext =
       input.hasT3Mcp === true
         ? buildCodexAdditionalContext(
             { model: input.modelSelection.model, reasoningEffort: effort ?? "medium" },
@@ -775,9 +775,9 @@ export function buildCodexTurnStartParams(input: {
           )
         : undefined;
     const additionalContext =
-      t3Context === undefined && Object.keys(appContext).length === 0
+      upcodeContext === undefined && Object.keys(appContext).length === 0
         ? undefined
-        : { ...t3Context, ...appContext };
+        : { ...upcodeContext, ...appContext };
     const collaborationMode: CodexSchema.ClientRequest__CollaborationMode | undefined =
       input.runtimePolicy.interactionMode !== "plan" && developerInstructions === undefined
         ? undefined
@@ -799,7 +799,7 @@ export function buildCodexTurnStartParams(input: {
       cwd: input.runtimePolicy.cwd,
       model: input.modelSelection.model,
       // Model catalogues can default summaries to "none". Request them on every
-      // turn, including resumed threads, for T3's reasoning timeline.
+      // turn, including resumed threads, for UPCode's reasoning timeline.
       summary: "detailed",
       // Always explicit: omitting this on resume leaves Codex's previous
       // reviewer sticky after switching away from Auto mode.
@@ -1307,11 +1307,11 @@ export interface CodexAppServerClientFactoryShape {
 export class CodexAppServerClientFactory extends Context.Service<
   CodexAppServerClientFactory,
   CodexAppServerClientFactoryShape
->()("t3/orchestration-v2/Adapters/CodexAdapterV2/CodexAppServerClientFactory") {}
+>()("upcode/orchestration-v2/Adapters/CodexAdapterV2/CodexAppServerClientFactory") {}
 
 /**
  * Config overrides sent with every `thread/start`, `thread/resume` and `thread/fork`.
- * Codex 0.152 made the `update_plan` checklist tool opt-in; T3 renders it as the
+ * Codex 0.152 made the `update_plan` checklist tool opt-in; UPCode renders it as the
  * todo list. Codex layers these above the user's and project's `config.toml`.
  */
 export const CODEX_THREAD_CONFIG = { "tools.update_plan.enabled": true } as const;
@@ -1326,7 +1326,7 @@ export function codexThreadRuntimeParams(input: {
   readonly config: Readonly<Record<string, Schema.Json>>;
 } {
   const { mcpSession } = input;
-  // T3 owns the window ladder because Codex reports no sizes; Codex then uses
+  // UPCode owns the window ladder because Codex reports no sizes; Codex then uses
   // the value for token accounting and its automatic compaction threshold.
   const modelContextWindowTokens = getCodexContextWindowTokens(input.modelSelection);
   return {
@@ -1341,7 +1341,7 @@ export function codexThreadRuntimeParams(input: {
         ? {}
         : {
             mcp_servers: {
-              "t3-code": {
+              "upcode": {
                 url: mcpSession.endpoint,
                 http_headers: {
                   Authorization: mcpSession.authorizationHeader,
@@ -1685,7 +1685,7 @@ export interface CodexAdapterV2Options {
   readonly onUsageLimits?: ManagedServerProvider["applyUsageLimits"];
   /**
    * Resolves launch settings when each session opens, replacing `settings` and
-   * `environment`. Managed ChatGPT sign-in uses it to launch the T3-installed
+   * `environment`. Managed ChatGPT sign-in uses it to launch the UPCode-installed
    * Codex with a current access token.
    */
   readonly resolveRuntime?: Effect.Effect<CodexEffectiveRuntime, ProviderSetupError, Scope.Scope>;
@@ -6379,7 +6379,7 @@ export const makeCodexAdapterV2 = Effect.fn("makeCodexAdapterV2")(function* (
           );
 
         // MCP Apps reach their server through Codex's own MCP client, so any
-        // server the user configured for Codex works without T3 connecting to it.
+        // server the user configured for Codex works without UPCode connecting to it.
         const mcpAppsError = (detail: string) => (cause: unknown) =>
           new ProviderAdapter.ProviderAdapterProtocolError({
             driver: CODEX_PROVIDER,

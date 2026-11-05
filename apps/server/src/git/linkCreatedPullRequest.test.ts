@@ -6,7 +6,7 @@ import {
   type GitRunStackedActionResult,
   type OrchestrationV2ServerCommand as OrchestrationCommand,
   type OrchestrationProjectShell,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -167,7 +167,7 @@ describe("linkCreatedPullRequest", () => {
           commandId: "server:pr-created-link:test",
           threadId: THREAD_ID,
           host: "github.com",
-          repository: "t3tools/t3code",
+          repository: "upango/t3code",
           number: 42,
           url: "https://github.com/t3tools/t3code/pull/42",
           source: "created",

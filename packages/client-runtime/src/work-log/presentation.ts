@@ -7,25 +7,25 @@ import {
   type ToolActivityIcon,
   type OrchestrationV2TurnItem,
   type ThreadId,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import {
   resolveT3McpToolDefinition,
-  type T3McpToolDefinition,
-  type T3McpToolSummaryAction,
-} from "@t3tools/shared/t3McpToolPresentation";
-import { classifyMarkdownImageSource } from "@t3tools/client-runtime/markdown-images";
-import { resolveMediaSource } from "@t3tools/client-runtime/media-source";
-import { parseChangeRequestUrl } from "@t3tools/shared/changeRequestUrl";
-import { isWorkspaceImagePreviewPath } from "@t3tools/shared/filePreview";
-import { formatTokens } from "@t3tools/shared/usageFormat";
-import { classifyToolActivity } from "@t3tools/shared/toolActivity";
-import { toolOutputIndicatesFailure } from "@t3tools/shared/toolOutput";
+  type UPCodeMcpToolDefinition,
+  type UPCodeMcpToolSummaryAction,
+} from "@upcode/shared/t3McpToolPresentation";
+import { classifyMarkdownImageSource } from "@upcode/client-runtime/markdown-images";
+import { resolveMediaSource } from "@upcode/client-runtime/media-source";
+import { parseChangeRequestUrl } from "@upcode/shared/changeRequestUrl";
+import { isWorkspaceImagePreviewPath } from "@upcode/shared/filePreview";
+import { formatTokens } from "@upcode/shared/usageFormat";
+import { classifyToolActivity } from "@upcode/shared/toolActivity";
+import { toolOutputIndicatesFailure } from "@upcode/shared/toolOutput";
 
 import {
   summarizeT3ToolCalls,
-  t3ToolResultIndicatesFailure,
-  type T3ToolSummaryCall,
-} from "@t3tools/client-runtime/t3ToolSummary";
+  upcodeToolResultIndicatesFailure,
+  type UPCodeToolSummaryCall,
+} from "@upcode/client-runtime/t3ToolSummary";
 
 export type WorkLogToolLifecycleStatus = RuntimeItemStatus | "stopped" | "idle";
 
@@ -63,7 +63,7 @@ export function contextCompactionLabel(
 }
 
 export interface WorkLogPresentationEntry {
-  readonly questionAnswer?: import("@t3tools/contracts").UserInputAttachmentAnswerPayload;
+  readonly questionAnswer?: import("@upcode/contracts").UserInputAttachmentAnswerPayload;
   readonly id: string;
   readonly createdAt: string;
   readonly label: string;
@@ -139,7 +139,7 @@ function workEntryToolOutput(
 }
 
 function resolveT3McpToolPresentation(
-  definition: T3McpToolDefinition | null,
+  definition: UPCodeMcpToolDefinition | null,
   status: string | undefined,
   data?: unknown,
 ) {
@@ -207,7 +207,7 @@ export function resolveWorkEntryToolPresentation(
   const status = entry.toolLifecycleStatus ?? fallbackStatus;
   return resolveT3McpToolPresentation(
     definition,
-    definition && t3ToolResultIndicatesFailure(workEntryToolOutput(entry)) ? "failed" : status,
+    definition && upcodeToolResultIndicatesFailure(workEntryToolOutput(entry)) ? "failed" : status,
     entry.toolData,
   );
 }
@@ -374,7 +374,7 @@ function workEntryIndicatesToolFailureFromOutput(
   if (!workLogEntryIsToolLike(entry)) return false;
   if (
     resolveT3McpToolDefinition(workEntryToolName(entry)) &&
-    t3ToolResultIndicatesFailure(workEntryToolOutput(entry))
+    upcodeToolResultIndicatesFailure(workEntryToolOutput(entry))
   ) {
     return true;
   }
@@ -577,7 +577,7 @@ function toolGroupActionLabel(action: ToolGroupAction, count: number): string {
   }
 }
 
-function t3ToolSummaryCall(entry: WorkLogPresentationEntry): T3ToolSummaryCall {
+function upcodeToolSummaryCall(entry: WorkLogPresentationEntry): UPCodeToolSummaryCall {
   const item = entry.structuredPayload;
   const data =
     entry.toolData !== null && typeof entry.toolData === "object"
@@ -600,7 +600,7 @@ function t3ToolSummaryCall(entry: WorkLogPresentationEntry): T3ToolSummaryCall {
   };
 }
 
-function summaryActionPriority(action: ToolGroupAction | T3McpToolSummaryAction): number {
+function summaryActionPriority(action: ToolGroupAction | UPCodeMcpToolSummaryAction): number {
   switch (action) {
     case "command":
     case "edit":
@@ -656,32 +656,32 @@ export function summarizeToolGroup(entries: ReadonlyArray<WorkLogPresentationEnt
   }
   entries = toolEntries;
   const groups = new Map<
-    ToolGroupAction | T3McpToolSummaryAction,
+    ToolGroupAction | UPCodeMcpToolSummaryAction,
     {
       action: ToolGroupAction;
-      t3Action: T3McpToolSummaryAction | null;
+      upcodeAction: UPCodeMcpToolSummaryAction | null;
       entries: WorkLogPresentationEntry[];
     }
   >();
   const sources = new Map<string, ToolActivitySource>();
   for (const entry of entries) {
-    const t3Action = resolveT3McpToolDefinition(workEntryToolName(entry))?.summaryAction ?? null;
-    if (entry.toolSource && t3Action === null) {
+    const upcodeAction = resolveT3McpToolDefinition(workEntryToolName(entry))?.summaryAction ?? null;
+    if (entry.toolSource && upcodeAction === null) {
       sources.set(entry.toolSource.key, entry.toolSource);
       continue;
     }
     const action = toolGroupAction(entry);
-    const key = t3Action ?? action;
+    const key = upcodeAction ?? action;
     const group = groups.get(key);
     if (group) group.entries.push(entry);
-    else groups.set(key, { action, t3Action, entries: [entry] });
+    else groups.set(key, { action, upcodeAction, entries: [entry] });
   }
   const summaries = [...groups].map(([action, group], index) => ({
     index,
     count: group.entries.length,
     priority: summaryActionPriority(action),
-    ...(group.t3Action
-      ? summarizeT3ToolCalls(group.t3Action, group.entries.map(t3ToolSummaryCall))
+    ...(group.upcodeAction
+      ? summarizeT3ToolCalls(group.upcodeAction, group.entries.map(upcodeToolSummaryCall))
       : {
           label: toolGroupActionLabel(
             group.action,

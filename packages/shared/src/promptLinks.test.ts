@@ -46,7 +46,7 @@ describe("parseNewThreadLink", () => {
       value: {
         kind: "new",
         prompt: { text: "Rate me", hiddenCharacters: 0 },
-        repository: { owner: "pingdotgg", name: "t3code" },
+        repository: { owner: "pingdotgg", name: "upcode" },
         provider: "codex",
         model: "gpt-5",
       },
@@ -63,7 +63,7 @@ describe("parseNewThreadLink", () => {
         ok: true,
         value: {
           kind: "pull-request",
-          pullRequest: { owner: "pingdotgg", name: "t3code", number: 42 },
+          pullRequest: { owner: "pingdotgg", name: "upcode", number: 42 },
           prompt: null,
         },
       });
@@ -94,7 +94,7 @@ describe("link round trips", () => {
   it("builds a link that parses back to the same prompt", () => {
     const link = buildNewThreadLink({
       prompt: "Swear count & rating?",
-      repository: { owner: "pingdotgg", name: "t3code" },
+      repository: { owner: "pingdotgg", name: "upcode" },
       provider: "claudeAgent",
       model: "opus",
     });
@@ -107,20 +107,20 @@ describe("link round trips", () => {
   });
 
   it("maps app scheme and hosted links to in-app paths, and nothing else", () => {
-    expect(promptLinkAppPath("t3code://new?prompt=hi")).toBe("/new?prompt=hi");
-    expect(promptLinkAppPath("t3code-dev://threads/env-1/thread-1")).toBe("/env-1/thread-1");
-    expect(promptLinkAppPath("https://app.t3.codes/env-1/thread-1?prompt=go")).toBe(
+    expect(promptLinkAppPath("upcode://new?prompt=hi")).toBe("/new?prompt=hi");
+    expect(promptLinkAppPath("upcode-dev://threads/env-1/thread-1")).toBe("/env-1/thread-1");
+    expect(promptLinkAppPath("https://app.upcode.codes/env-1/thread-1?prompt=go")).toBe(
       "/env-1/thread-1?prompt=go",
     );
-    expect(promptLinkAppPath("https://app.t3.codes/settings/general")).toBeNull();
+    expect(promptLinkAppPath("https://app.upcode.codes/settings/general")).toBeNull();
     expect(promptLinkAppPath("https://evil.test/new?prompt=hi")).toBeNull();
-    expect(promptLinkAppPath("t3code://app/index.html")).toBeNull();
+    expect(promptLinkAppPath("upcode://app/index.html")).toBeNull();
   });
 
   it("hands an in-app path to the installed app", () => {
-    expect(promptLinkDeepLink("/new?prompt=hi")).toBe("t3code://new?prompt=hi");
+    expect(promptLinkDeepLink("/new?prompt=hi")).toBe("upcode://new?prompt=hi");
     expect(promptLinkDeepLink("/env-1/thread-1?prompt=hi")).toBe(
-      "t3code://threads/env-1/thread-1?prompt=hi",
+      "upcode://threads/env-1/thread-1?prompt=hi",
     );
   });
 });

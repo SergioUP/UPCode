@@ -3,7 +3,7 @@ import {
   ProviderInstanceId,
   type RepositoryIdentity,
   type ThreadPullRequestLink,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -26,13 +26,13 @@ describe("findPromptLinkProject", () => {
         repositoryIdentity: identity("github.com/pingdotgg/t3code", "github.com/me/t3code"),
       },
       { id: "none", repositoryIdentity: null },
-      { id: "recent", repositoryIdentity: identity("github.com/PingDotGG/T3Code") },
+      { id: "recent", repositoryIdentity: identity("github.com/SergioUP/UPCode") },
       { id: "older", repositoryIdentity: identity("github.com/pingdotgg/t3code") },
     ];
-    expect(findPromptLinkProject(projects, { owner: "pingdotgg", name: "t3code" })?.id).toBe(
+    expect(findPromptLinkProject(projects, { owner: "pingdotgg", name: "upcode" })?.id).toBe(
       "recent",
     );
-    expect(findPromptLinkProject(projects, { owner: "me", name: "t3code" })?.id).toBe("fork");
+    expect(findPromptLinkProject(projects, { owner: "me", name: "upcode" })?.id).toBe("fork");
     expect(findPromptLinkProject(projects, { owner: "gitlab", name: "x" })).toBeUndefined();
   });
 });
@@ -61,7 +61,7 @@ describe("findPromptLinkPullRequestThread", () => {
         pullRequests: [link(7, "stack-dismissed")],
       },
     ];
-    const pullRequest = { owner: "PingDotGG", name: "t3code", number: 7 };
+    const pullRequest = { owner: "PingDotGG", name: "upcode", number: 7 };
     expect(findPromptLinkPullRequestThread(threads, pullRequest)?.id).toBe("new");
     expect(findPromptLinkPullRequestThread(threads, { ...pullRequest, number: 9 })).toBeUndefined();
   });

@@ -9,9 +9,9 @@ import {
 
 describe("parseChangeRequestUrl", () => {
   it("reads a GitHub pull request, lower-casing the repository", () => {
-    expect(parseChangeRequestUrl("https://github.com/T3Tools/T3Code/pull/123")).toEqual({
+    expect(parseChangeRequestUrl("https://github.com/UPango/UPCode/pull/123")).toEqual({
       host: "github.com",
-      repository: "t3tools/t3code",
+      repository: "upango/t3code",
       number: 123,
     });
   });
@@ -49,7 +49,7 @@ describe("parseChangeRequestUrl", () => {
   it("reads a GitLab merge request on any host, nested groups and all", () => {
     expect(
       parseChangeRequestUrl("https://gitlab.com/t3tools/platform/t3code/-/merge_requests/42"),
-    ).toEqual({ host: "gitlab.com", repository: "t3tools/platform/t3code", number: 42 });
+    ).toEqual({ host: "gitlab.com", repository: "upango/platform/t3code", number: 42 });
     expect(parseChangeRequestUrl("https://code.acme.test/team/project/-/merge_requests/9")).toEqual(
       { host: "code.acme.test", repository: "team/project", number: 9 },
     );
@@ -72,12 +72,12 @@ describe("parseChangeRequestUrl", () => {
   it("survives trailing segments, a trailing slash and a query string", () => {
     expect(parseChangeRequestUrl("https://github.com/t3tools/t3code/pull/123/files?w=1")).toEqual({
       host: "github.com",
-      repository: "t3tools/t3code",
+      repository: "upango/t3code",
       number: 123,
     });
     expect(parseChangeRequestUrl("https://github.com/t3tools/t3code/pull/123/")).toEqual({
       host: "github.com",
-      repository: "t3tools/t3code",
+      repository: "upango/t3code",
       number: 123,
     });
   });

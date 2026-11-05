@@ -1,7 +1,7 @@
 "use client";
 
-import { SETTINGS_SECRET_REDACTED, SshServer, type EnvironmentId } from "@t3tools/contracts";
-import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
+import { SETTINGS_SECRET_REDACTED, SshServer, type EnvironmentId } from "@upcode/contracts";
+import { squashAtomCommandFailure } from "@upcode/client-runtime/state/runtime";
 import {
   ArrowLeftIcon,
   KeyRoundIcon,

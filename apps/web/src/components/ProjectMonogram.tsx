@@ -1,4 +1,4 @@
-import type { ProjectIconColor } from "@t3tools/contracts";
+import type { ProjectIconColor } from "@upcode/contracts";
 import { projectIconColorClassName } from "../projectIconColors";
 import { cn } from "~/lib/utils";
 

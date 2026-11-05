@@ -79,10 +79,10 @@ test("renders baseline, impact, ceiling, and ceiling changes", () => {
   assert.match(comment, /\+9\.8 KiB \(\+4\.0%\)/);
   assert.match(comment, /This PR changes transfer ceilings/);
   assert.match(comment, /312\.5 KiB → 322\.3 KiB/);
-  assert.match(comment, /<!-- t3-thread-transfer-report -->/);
+  assert.match(comment, /<!-- upcode-thread-transfer-report -->/);
   assert.match(
     comment,
-    /<!-- t3-thread-transfer-result-sha:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb -->/,
+    /<!-- upcode-thread-transfer-result-sha:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb -->/,
   );
 });
 
@@ -132,7 +132,7 @@ test("resolves a fallback PR with a redacted head repo and exact main baseline",
   await resolve({
     github,
     context: {
-      repo: { owner: "pingdotgg", repo: "t3code" },
+      repo: { owner: "pingdotgg", repo: "upcode" },
       payload: {
         workflow_run: {
           id: 2,
@@ -190,7 +190,7 @@ test("does not guess when a fallback commit belongs to multiple PRs", async () =
       },
     },
     context: {
-      repo: { owner: "pingdotgg", repo: "t3code" },
+      repo: { owner: "pingdotgg", repo: "upcode" },
       payload: {
         workflow_run: {
           id: 2,
@@ -240,7 +240,7 @@ test("does not publish a stale result after the PR head advances", async () => {
         },
       },
     },
-    { repo: { owner: "pingdotgg", repo: "t3code" } },
+    { repo: { owner: "pingdotgg", repo: "upcode" } },
     { info: (message) => info.push(message) },
     5350,
     "old-head-sha",
@@ -261,7 +261,7 @@ test("preserves a successful result when a same-SHA rerun has no artifact", asyn
         {
           id: 1,
           user: { login: "github-actions[bot]" },
-          body: `<!-- t3-thread-transfer-report -->\n<!-- t3-thread-transfer-result-sha:${sha} -->`,
+          body: `<!-- upcode-thread-transfer-report -->\n<!-- upcode-thread-transfer-result-sha:${sha} -->`,
         },
       ],
       rest: {
@@ -279,7 +279,7 @@ test("preserves a successful result when a same-SHA rerun has no artifact", asyn
         },
       },
     },
-    { repo: { owner: "pingdotgg", repo: "t3code" } },
+    { repo: { owner: "pingdotgg", repo: "upcode" } },
     { info: () => {} },
     5350,
     sha,

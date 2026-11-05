@@ -1,10 +1,10 @@
-import { SourceControlProviderKind } from "@t3tools/contracts";
+import { SourceControlProviderKind } from "@upcode/contracts";
 import type {
   EnvironmentId,
   ProjectId,
   PullRequestAction,
   PullRequestListEntry,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -62,7 +62,7 @@ function entry(
     provider: "github",
     host: "github.com",
     projectId: "project-1",
-    projectTitle: "t3code",
+    projectTitle: "upcode",
     repository: "pingdotgg/t3code",
     title: "Add the pull requests page",
     url: `https://github.com/pingdotgg/t3code/pull/${overrides.number}`,
@@ -1132,12 +1132,12 @@ describe("the list snapshot across a reload", () => {
   it("rejects a snapshot whose rows do not decode as entries", () => {
     const storage = makeStorage();
     storage.setItem(
-      "t3.pullRequests.list:env-1",
+      "upcode.pullRequests.list:env-1",
       JSON.stringify({ scope: "s", data: { entries: [null] } }),
     );
     expect(readPullRequestListSnapshot(storage, "env-1")).toBeNull();
     storage.setItem(
-      "t3.pullRequests.list:env-1",
+      "upcode.pullRequests.list:env-1",
       JSON.stringify({ scope: "s", data: { entries: [{ host: "github.com" }] } }),
     );
     expect(readPullRequestListSnapshot(storage, "env-1")).toBeNull();
@@ -1145,7 +1145,7 @@ describe("the list snapshot across a reload", () => {
 
   it("shrugs off corrupt storage and no storage at all", () => {
     const storage = makeStorage();
-    storage.setItem("t3.pullRequests.list:env-1", "{not json");
+    storage.setItem("upcode.pullRequests.list:env-1", "{not json");
     expect(readPullRequestListSnapshot(storage, "env-1")).toBeNull();
     expect(readPullRequestListSnapshot(undefined, "env-1")).toBeNull();
   });
@@ -1239,7 +1239,7 @@ describe("remembered pull request list controls", () => {
 
   it("falls back to the default controls when storage is corrupt", () => {
     const storage = makeStorage();
-    storage.setItem("t3.pullRequests.preferences", "{not json");
+    storage.setItem("upcode.pullRequests.preferences", "{not json");
     expect(readPullRequestListPreferences(storage)).toEqual({ involvement: "all", state: "open" });
   });
 

@@ -1,4 +1,4 @@
-import type { Subagent } from "@t3tools/contracts";
+import type { Subagent } from "@upcode/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import { composeSubagentTask, findSubagent } from "./subagentLogic.ts";

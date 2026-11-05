@@ -1,4 +1,4 @@
-import { EnvironmentId, ProjectId } from "@t3tools/contracts";
+import { EnvironmentId, ProjectId } from "@upcode/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import type { EnvironmentProject } from "./models.ts";
@@ -84,9 +84,9 @@ const repositoryIdentity = {
     remoteUrl: "https://github.com/t3tools/t3code.git",
   },
   provider: "github",
-  owner: "t3tools",
-  name: "t3code",
-  displayName: "T3 Code",
+  owner: "upango",
+  name: "upcode",
+  displayName: "UPCode",
 };
 
 function makeProject(
@@ -246,18 +246,18 @@ describe("buildProjectGroups", () => {
 
   it("preserves every physical clone as a selectable member in repository modes", () => {
     const projects = [
-      makeProject("t3code", "/work/t3code"),
-      makeProject("t3code-2", "/work/t3code-2"),
-      makeProject("t3code-3", "/work/t3code-3"),
+      makeProject("upcode", "/work/t3code"),
+      makeProject("upcode-2", "/work/t3code-2"),
+      makeProject("upcode-3", "/work/t3code-3"),
     ];
 
     for (const mode of ["repository", "repository_path"] as const) {
       const groups = buildProjectGroups({ projects, settings: settings(mode) });
       expect(groups).toHaveLength(1);
       expect(groups[0]?.members.map((member) => member.project.id)).toEqual([
-        "t3code",
-        "t3code-2",
-        "t3code-3",
+        "upcode",
+        "upcode-2",
+        "upcode-3",
       ]);
       expect(groups[0]?.memberProjectRefs).toHaveLength(3);
     }
@@ -276,12 +276,12 @@ describe("buildProjectGroups", () => {
 
   it("keeps the repository label when shared titles match its repository name", () => {
     const projects = [
-      makeProject("first", "/work/t3code", { title: "t3code" }),
-      makeProject("second", "/work/t3code-2", { title: "t3code" }),
+      makeProject("first", "/work/t3code", { title: "upcode" }),
+      makeProject("second", "/work/t3code-2", { title: "upcode" }),
     ];
 
     expect(buildProjectGroups({ projects, settings: settings("repository") })[0]?.label).toBe(
-      "T3 Code",
+      "UPCode",
     );
   });
 
@@ -298,7 +298,7 @@ describe("buildProjectGroups", () => {
     const forkWorktree = makeProject("fork-2", "/work/t3code-fork-2", {
       repositoryIdentity: fork.repositoryIdentity,
     });
-    const projects = [makeProject("t3code", "/work/t3code"), fork, forkWorktree];
+    const projects = [makeProject("upcode", "/work/t3code"), fork, forkWorktree];
 
     const groups = buildProjectGroups({ projects, settings: settings("repository") });
     expect(groups.map((group) => group.key)).toEqual([
@@ -326,21 +326,21 @@ describe("buildProjectGroups", () => {
 
   it("keeps physical clones in separate groups when requested", () => {
     const projects = [
-      makeProject("t3code", "/work/t3code"),
-      makeProject("t3code-2", "/work/t3code-2"),
-      makeProject("t3code-3", "/work/t3code-3"),
+      makeProject("upcode", "/work/t3code"),
+      makeProject("upcode-2", "/work/t3code-2"),
+      makeProject("upcode-3", "/work/t3code-3"),
     ];
 
     const groups = buildProjectGroups({ projects, settings: settings("separate") });
     expect(groups).toHaveLength(3);
     expect(groups.flatMap((group) => group.members)).toHaveLength(3);
-    expect(groups.map((group) => group.label)).toEqual(["t3code", "t3code-2", "t3code-3"]);
+    expect(groups.map((group) => group.label)).toEqual(["upcode", "upcode-2", "upcode-3"]);
   });
 
   it("applies a physical-project override without dropping its siblings", () => {
-    const first = makeProject("t3code", "/work/t3code");
-    const second = makeProject("t3code-2", "/work/t3code-2");
-    const third = makeProject("t3code-3", "/work/t3code-3");
+    const first = makeProject("upcode", "/work/t3code");
+    const second = makeProject("upcode-2", "/work/t3code-2");
+    const third = makeProject("upcode-3", "/work/t3code-3");
     const groups = buildProjectGroups({
       projects: [first, second, third],
       settings: settings("repository", {
@@ -350,9 +350,9 @@ describe("buildProjectGroups", () => {
 
     expect(groups).toHaveLength(2);
     expect(groups.flatMap((group) => group.members.map((member) => member.project.id))).toEqual([
-      "t3code",
-      "t3code-3",
-      "t3code-2",
+      "upcode",
+      "upcode-3",
+      "upcode-2",
     ]);
   });
 

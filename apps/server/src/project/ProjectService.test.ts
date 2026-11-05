@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import { CommandId, type Project, ProjectId, ProviderInstanceId } from "@t3tools/contracts";
+import { CommandId, type Project, ProjectId, ProviderInstanceId } from "@upcode/contracts";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
@@ -12,7 +12,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 
 import * as ServerConfig from "../config.ts";
 import * as EventSink from "../orchestration-v2/EventSink.ts";
-import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
+import * as IdAllocator from "@upcode/provider-core/server/IdAllocator";
 import * as LegacyV1ThreadImporter from "../orchestration-v2/legacy/LegacyV1ThreadImporter.ts";
 import * as ProjectionStore from "../orchestration-v2/ProjectionStore.ts";
 import * as ProjectStore from "../orchestration-v2/ProjectStore.ts";
@@ -40,7 +40,7 @@ const layerMetadata = Layer.merge(
         locator: {
           source: "git-remote" as const,
           remoteName: "origin",
-          remoteUrl: `git@github.com:t3tools/${workspaceRoot.split("/").at(-1)}.git`,
+          remoteUrl: `git@github.com:upango/${workspaceRoot.split("/").at(-1)}.git`,
         },
         rootPath: workspaceRoot,
       }),
@@ -510,7 +510,7 @@ it.effect(
                 locator: {
                   source: "git-remote" as const,
                   remoteName: "origin",
-                  remoteUrl: "git@github.com:t3tools/slow-project.git",
+                  remoteUrl: "git@github.com:upango/slow-project.git",
                 },
                 rootPath: workspaceRoot,
               };

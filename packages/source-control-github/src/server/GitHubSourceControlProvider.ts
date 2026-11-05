@@ -1,4 +1,4 @@
-import { SourceControlProviderKind } from "@t3tools/contracts";
+import { SourceControlProviderKind } from "@upcode/contracts";
 import * as Context from "effect/Context";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
@@ -15,11 +15,11 @@ import {
   type ChangeRequest,
   type SourceControlProviderDiscoveryItem,
   type SourceControlRepositoryCloneUrls,
-} from "@t3tools/contracts";
-import { normalizeGitRemoteUrl } from "@t3tools/shared/git";
-import * as HostProcess from "@t3tools/shared/HostProcess";
-import { decodeJsonResult } from "@t3tools/shared/schemaJson";
-import { isSshRemoteUrl } from "@t3tools/shared/sourceControl";
+} from "@upcode/contracts";
+import { normalizeGitRemoteUrl } from "@upcode/shared/git";
+import * as HostProcess from "@upcode/shared/HostProcess";
+import { decodeJsonResult } from "@upcode/shared/schemaJson";
+import { isSshRemoteUrl } from "@upcode/shared/sourceControl";
 
 import * as GitHubApi from "./GitHubApi.ts";
 import * as GitHubChangeRequestTemplate from "./gitHubChangeRequestTemplate.ts";
@@ -35,14 +35,14 @@ import {
   resolveGitHubRepository,
   type GitHubRepositoryLocator,
 } from "./gitHubRepositoryResolution.ts";
-import * as SourceControlRateLimit from "@t3tools/source-control-core/server/SourceControlRateLimit";
+import * as SourceControlRateLimit from "@upcode/source-control-core/server/SourceControlRateLimit";
 import {
   effectiveGitHubAccount,
   findAuthenticatedGitHubAccount,
   parseGitHubAuthStatus,
   type GitHubAuthStatusAccount,
 } from "./gitHubAuthStatus.ts";
-import * as SourceControlProvider from "@t3tools/source-control-core/server/SourceControlProvider";
+import * as SourceControlProvider from "@upcode/source-control-core/server/SourceControlProvider";
 import {
   combinedAuthOutput,
   firstSafeAuthLine,
@@ -51,9 +51,9 @@ import {
   type SourceControlAuthProbeInput,
   type SourceControlCliDiscoverySpec,
   type SourceControlManagedCliDiscoverySpec,
-} from "@t3tools/source-control-core/server/discovery";
-import * as SourceControlHost from "@t3tools/source-control-core/server/SourceControlHost";
-import { readSourceControlHostSettings } from "@t3tools/source-control-core/client/definition";
+} from "@upcode/source-control-core/server/discovery";
+import * as SourceControlHost from "@upcode/source-control-core/server/SourceControlHost";
+import { readSourceControlHostSettings } from "@upcode/source-control-core/client/definition";
 
 import * as GitHubClient from "../client/definition.ts";
 

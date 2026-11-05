@@ -1,7 +1,7 @@
 /**
  * The servers saved in the Vault, and the only way anything reaches them.
  *
- * This is a thin layer over `@t3tools/ssh/command`: it resolves a saved server,
+ * This is a thin layer over `@upcode/ssh/command`: it resolves a saved server,
  * decides how to authenticate, and runs one non-interactive command. Three rules
  * live here rather than in the callers:
  *
@@ -26,7 +26,7 @@ import type {
   SshError,
   SshServer,
   SshServerSummary,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
@@ -34,9 +34,9 @@ import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
-import { isSshAuthFailure } from "@t3tools/ssh/auth";
-import { runSshCommand } from "@t3tools/ssh/command";
-import { SshCommandError, SshInvalidTargetError } from "@t3tools/ssh/errors";
+import { isSshAuthFailure } from "@upcode/ssh/auth";
+import { runSshCommand } from "@upcode/ssh/command";
+import { SshCommandError, SshInvalidTargetError } from "@upcode/ssh/errors";
 
 import * as ServerSettings from "../serverSettings.ts";
 import {
@@ -85,7 +85,7 @@ export interface SshServerServiceShape {
 }
 
 export class SshServerService extends Context.Service<SshServerService, SshServerServiceShape>()(
-  "t3/ssh/SshServerService",
+  "upcode/ssh/SshServerService",
 ) {}
 
 const failure = (code: SshError["code"], message: string): SshError => ({

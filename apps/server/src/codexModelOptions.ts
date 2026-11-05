@@ -1,9 +1,9 @@
-import type { ModelSelection, ProviderOptionSelections } from "@t3tools/contracts";
+import type { ModelSelection, ProviderOptionSelections } from "@upcode/contracts";
 import {
   getModelSelectionBooleanOptionValue,
   getModelSelectionStringOptionValue,
   getProviderOptionStringSelectionValue,
-} from "@t3tools/shared/model";
+} from "@upcode/shared/model";
 
 export function getCodexServiceTierOptionValue(
   modelSelection: ModelSelection | null | undefined,
@@ -22,7 +22,7 @@ const CONTEXT_WINDOW_MULTIPLIERS: Readonly<Record<string, number>> = {
 /**
  * Token count for a context-window option id such as `272k` or `1m`.
  *
- * Codex discovers no window sizes, so T3 offers its own ladder and the option id
+ * Codex discovers no window sizes, so UPCode offers its own ladder and the option id
  * is the size itself. Anything unparsable (including the `default` choice) is
  * `undefined`, which leaves Codex's own `model_context_window` in place.
  */

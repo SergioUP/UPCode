@@ -1,5 +1,5 @@
-import { ProviderDriverKind, type ServerProvider } from "@t3tools/contracts";
-import { compareSemverVersions } from "@t3tools/shared/semver";
+import { ProviderDriverKind, type ServerProvider } from "@upcode/contracts";
+import { compareSemverVersions } from "@upcode/shared/semver";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Schema from "effect/Schema";
@@ -12,9 +12,9 @@ import {
   makeProviderMaintenanceCapabilities,
   type ProviderMaintenanceCapabilities,
   type ProviderMaintenanceCapabilitiesResolver,
-} from "@t3tools/provider-core/server/maintenanceResolver";
-import * as ProviderLatestVersions from "@t3tools/provider-core/server/ProviderLatestVersions";
-import { parseGenericCliVersion } from "@t3tools/provider-core/server/snapshotProbe";
+} from "@upcode/provider-core/server/maintenanceResolver";
+import * as ProviderLatestVersions from "@upcode/provider-core/server/ProviderLatestVersions";
+import { parseGenericCliVersion } from "@upcode/provider-core/server/snapshotProbe";
 
 const DRIVER = ProviderDriverKind.make("muse");
 /** Mirrors the official launcher, which reads MUSE_CHANNEL and accepts only these two. */

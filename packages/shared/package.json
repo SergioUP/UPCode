@@ -1,5 +1,5 @@
 {
-  "name": "@t3tools/shared",
+  "name": "@upcode/shared",
   "private": true,
   "type": "module",
   "exports": {
@@ -495,7 +495,7 @@
   "dependencies": {
     "@noble/curves": "catalog:",
     "@noble/hashes": "catalog:",
-    "@t3tools/contracts": "workspace:*",
+    "@upcode/contracts": "workspace:*",
     "effect": "catalog:",
     "jose": "catalog:",
     "mdast-util-directive": "catalog:",

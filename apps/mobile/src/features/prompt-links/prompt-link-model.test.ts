@@ -1,4 +1,4 @@
-import { parseNewThreadLink } from "@t3tools/shared/promptLinks";
+import { parseNewThreadLink } from "@upcode/shared/promptLinks";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -23,7 +23,7 @@ describe("promptLinkSearchFromParams", () => {
       value: {
         kind: "new",
         prompt: { text: "Fix the bug & add tests = done?", hiddenCharacters: 0 },
-        repository: { owner: "pingdotgg", name: "t3code" },
+        repository: { owner: "pingdotgg", name: "upcode" },
         provider: "codex",
         model: null,
       },

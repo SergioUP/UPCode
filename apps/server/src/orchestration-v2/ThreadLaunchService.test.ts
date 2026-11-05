@@ -25,7 +25,7 @@ import {
   ScheduledTaskId,
   type ServerProvider,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import * as Cause from "effect/Cause";
 import * as Deferred from "effect/Deferred";
 import * as DateTime from "effect/DateTime";
@@ -53,13 +53,13 @@ import * as TextGeneration from "../textGeneration/TextGeneration.ts";
 import { CodexProviderCapabilitiesV2 } from "./Adapters/CodexAdapterV2.ts";
 import * as CommandReceiptStore from "./CommandReceiptStore.ts";
 import * as EffectOutbox from "./EffectOutbox.ts";
-import * as IdAllocator from "@t3tools/provider-core/server/IdAllocator";
+import * as IdAllocator from "@upcode/provider-core/server/IdAllocator";
 import * as ProviderAdapterRegistry from "./ProviderAdapterRegistry.ts";
 import * as ThreadLaunch from "./ThreadLaunchService.ts";
 import * as ThreadManagement from "./ThreadManagementService.ts";
 import * as ThreadTitleRegeneration from "./ThreadTitleRegenerationService.ts";
 import * as ProviderReplayHarness from "./testkit/ProviderReplayHarness.ts";
-import type * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
+import type * as ProviderAdapter from "@upcode/provider-core/server/ProviderAdapter";
 
 const projectId = ProjectId.make("project:launch-test");
 const otherProjectId = ProjectId.make("project:launch-other");
@@ -1128,7 +1128,7 @@ it.effect("names the worktree itself when the client provides no branch", () =>
       yield* waitUntil(() => Effect.sync(() => harness.createWorktree.mock.calls.length === 1));
       assert.match(
         harness.createWorktree.mock.calls[0]?.[0]?.newRefName ?? "",
-        /^t3\/[0-9a-f]{8}$/u,
+        /^upcode\/[0-9a-f]{8}$/u,
       );
       yield* waitUntil(() =>
         threads
@@ -1139,7 +1139,7 @@ it.effect("names the worktree itself when the client provides no branch", () =>
   }),
 );
 
-it.effect("renames a temporary t3/<hash> branch off the provisioning critical path", () =>
+it.effect("renames a temporary upcode/<hash> branch off the provisioning critical path", () =>
   Effect.gen(function* () {
     const branchNameStarted = yield* Deferred.make<void>();
     const allowBranchName = yield* Deferred.make<void>();
@@ -1162,11 +1162,11 @@ it.effect("renames a temporary t3/<hash> branch off the provisioning critical pa
           command: "command:launch:temp-branch",
           thread: "thread:launch:temp-branch",
           message: "Build the feature",
-          workspace: { type: "worktree", baseRef: "main", branch: "t3/abcd1234" },
+          workspace: { type: "worktree", baseRef: "main", branch: "upcode/abcd1234" },
         }),
       );
       yield* Deferred.await(branchNameStarted);
-      assert.equal(harness.createWorktree.mock.calls[0]?.[0]?.newRefName, "t3/abcd1234");
+      assert.equal(harness.createWorktree.mock.calls[0]?.[0]?.newRefName, "upcode/abcd1234");
       yield* waitUntil(() =>
         threads
           .getThreadProjection(launched.threadId)
@@ -1174,7 +1174,7 @@ it.effect("renames a temporary t3/<hash> branch off the provisioning critical pa
       );
       assert.equal(
         (yield* threads.getThreadProjection(launched.threadId)).thread.branch,
-        "t3/abcd1234",
+        "upcode/abcd1234",
       );
       yield* Deferred.succeed(allowBranchName, undefined);
       yield* waitUntil(() =>
@@ -1184,17 +1184,17 @@ it.effect("renames a temporary t3/<hash> branch off the provisioning critical pa
       );
       assert.deepEqual(harness.renameBranch.mock.calls[0]?.[0], {
         cwd: "/repo-worktrees/temp",
-        oldBranch: "t3/abcd1234",
+        oldBranch: "upcode/abcd1234",
         newBranch: "generated-branch",
       });
     }).pipe(Effect.provide(harness.layer));
   }),
 );
 
-it.effect("provisions under t3-<hash> when a plain t3 branch blocks t3/*", () =>
+it.effect("provisions under upcode-<hash> when a plain upcode branch blocks upcode/*", () =>
   Effect.gen(function* () {
     const harness = makeHarness({
-      hasCommit: (input) => Effect.succeed(input.refName === "refs/heads/t3"),
+      hasCommit: (input) => Effect.succeed(input.refName === "refs/heads/upcode"),
       createWorktree: (input) =>
         Effect.succeed({
           worktree: { path: "/repo-worktrees/temp", refName: input.newRefName, headSha: "abc" },
@@ -1208,7 +1208,7 @@ it.effect("provisions under t3-<hash> when a plain t3 branch blocks t3/*", () =>
           command: "command:launch:blocked-namespace",
           thread: "thread:launch:blocked-namespace",
           message: "Build the feature",
-          workspace: { type: "worktree", baseRef: "main", branch: "t3/abcd1234" },
+          workspace: { type: "worktree", baseRef: "main", branch: "upcode/abcd1234" },
         }),
       );
       yield* waitUntil(() =>
@@ -1216,8 +1216,8 @@ it.effect("provisions under t3-<hash> when a plain t3 branch blocks t3/*", () =>
           .getThreadProjection(launched.threadId)
           .pipe(Effect.map((projection) => projection.thread.branch === "generated-branch")),
       );
-      assert.equal(harness.createWorktree.mock.calls[0]?.[0]?.newRefName, "t3-abcd1234");
-      assert.equal(harness.renameBranch.mock.calls[0]?.[0]?.oldBranch, "t3-abcd1234");
+      assert.equal(harness.createWorktree.mock.calls[0]?.[0]?.newRefName, "upcode-abcd1234");
+      assert.equal(harness.renameBranch.mock.calls[0]?.[0]?.oldBranch, "upcode-abcd1234");
     }).pipe(Effect.provide(harness.layer));
   }),
 );
@@ -1259,11 +1259,11 @@ it.effect("keeps the temporary branch when branch generation fails", () =>
           command: "command:launch:branch-fallback",
           thread: "thread:launch:branch-fallback",
           message: "Build the feature",
-          workspace: { type: "worktree", baseRef: "main", branch: "t3/abcd1234" },
+          workspace: { type: "worktree", baseRef: "main", branch: "upcode/abcd1234" },
         }),
       );
       yield* waitUntil(() => Effect.sync(() => harness.generateBranchName.mock.calls.length === 1));
-      assert.equal(harness.createWorktree.mock.calls[0]?.[0]?.newRefName, "t3/abcd1234");
+      assert.equal(harness.createWorktree.mock.calls[0]?.[0]?.newRefName, "upcode/abcd1234");
       yield* waitUntil(() =>
         threads
           .getThreadProjection(launched.threadId)
@@ -1272,7 +1272,7 @@ it.effect("keeps the temporary branch when branch generation fails", () =>
       assert.equal(harness.renameBranch.mock.calls.length, 0);
       assert.equal(
         (yield* threads.getThreadProjection(launched.threadId)).thread.branch,
-        "t3/abcd1234",
+        "upcode/abcd1234",
       );
     }).pipe(Effect.provide(harness.layer));
   }),
@@ -1291,8 +1291,8 @@ it.effect("renames a temporary branch on an existing worktree to a generated nam
           message: "Build the feature",
           workspace: {
             type: "existing_worktree",
-            worktreePath: "/repo-worktrees/t3-abcd1234",
-            branch: "t3/abcd1234",
+            worktreePath: "/repo-worktrees/upcode-abcd1234",
+            branch: "upcode/abcd1234",
           },
         }),
       );
@@ -1302,8 +1302,8 @@ it.effect("renames a temporary branch on an existing worktree to a generated nam
           .pipe(Effect.map((projection) => projection.thread.branch === "generated-branch")),
       );
       assert.deepEqual(harness.renameBranch.mock.calls[0]?.[0], {
-        cwd: "/repo-worktrees/t3-abcd1234",
-        oldBranch: "t3/abcd1234",
+        cwd: "/repo-worktrees/upcode-abcd1234",
+        oldBranch: "upcode/abcd1234",
         newBranch: "generated-branch",
       });
     }).pipe(Effect.provide(harness.layer));
@@ -2201,7 +2201,7 @@ it.effect("creates a strong provider-thread mapping for an imported native sessi
 
 it.effect("shared intake preserves durable attachment bytes after a lost launch result", () => {
   const harness = makeHarness();
-  const layerFiles = ServerConfig.layerTest(process.cwd(), { prefix: "t3-message-intake-" }).pipe(
+  const layerFiles = ServerConfig.layerTest(process.cwd(), { prefix: "upcode-message-intake-" }).pipe(
     Layer.provideMerge(NodeServices.layer),
   );
   return Effect.gen(function* () {
@@ -2229,7 +2229,7 @@ it.effect("shared intake preserves durable attachment bytes after a lost launch 
       ...launchInput({ command: "intake-launch", thread: "intake-thread" }),
       initialMessage: {
         messageId: MessageId.make("intake-first"),
-        text: "First [file](t3-context://v1/file/intake-file)",
+        text: "First [file](upcode-context://v1/file/intake-file)",
         context: {
           version: 1 as const,
           records: [
@@ -2509,10 +2509,10 @@ it.effect.each([0, 1])("releases an async setup before its completion with exit 
 );
 
 it.effect.each([
-  { name: "is missing", baseRef: "t3/renamed", startFromOrigin: false, origin: true },
+  { name: "is missing", baseRef: "upcode/renamed", startFromOrigin: false, origin: true },
   {
     name: "has no origin to come from",
-    baseRef: "t3/renamed",
+    baseRef: "upcode/renamed",
     startFromOrigin: true,
     origin: false,
   },
@@ -2612,7 +2612,7 @@ it.effect.each([
 
 it.effect("replays an accepted send after the project disables the instance", () => {
   const harness = makeHarness();
-  const layerFiles = ServerConfig.layerTest(process.cwd(), { prefix: "t3-send-retry-" }).pipe(
+  const layerFiles = ServerConfig.layerTest(process.cwd(), { prefix: "upcode-send-retry-" }).pipe(
     Layer.provideMerge(NodeServices.layer),
   );
   return Effect.gen(function* () {
@@ -2660,7 +2660,7 @@ it.effect("replays an accepted send after the project disables the instance", ()
 
 it.effect("replays an accepted message.dispatch after the project disables the instance", () => {
   const harness = makeHarness();
-  const layerFiles = ServerConfig.layerTest(process.cwd(), { prefix: "t3-dispatch-retry-" }).pipe(
+  const layerFiles = ServerConfig.layerTest(process.cwd(), { prefix: "upcode-dispatch-retry-" }).pipe(
     Layer.provideMerge(NodeServices.layer),
   );
   return Effect.gen(function* () {

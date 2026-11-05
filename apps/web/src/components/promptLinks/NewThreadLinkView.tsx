@@ -1,20 +1,20 @@
-import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
-import { getCloneDestinationPath } from "@t3tools/client-runtime/operations/projects";
+import { scopeProjectRef, scopeThreadRef } from "@upcode/client-runtime/environment";
+import { getCloneDestinationPath } from "@upcode/client-runtime/operations/projects";
 import {
   findPromptLinkProject,
   findPromptLinkPullRequestThread,
   resolvePromptLinkModelSelection,
-} from "@t3tools/client-runtime/prompt-links";
+} from "@upcode/client-runtime/prompt-links";
 import {
   isAtomCommandInterrupted,
   squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
-import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
+} from "@upcode/client-runtime/state/runtime";
+import type { EnvironmentProject } from "@upcode/client-runtime/state/shell";
 import {
   type NewThreadLink,
   type PromptLinkRepository,
   promptLinkPullRequestUrl,
-} from "@t3tools/shared/promptLinks";
+} from "@upcode/shared/promptLinks";
 import { useAtomValue } from "@effect/atom-react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from "react";
@@ -99,7 +99,7 @@ export function NewThreadLinkView({ link }: { readonly link: NewThreadLink }) {
       replace: true,
     }).catch(() => null);
     if (opened === null) {
-      setState({ status: "failed", message: "T3 Code could not open a new thread." });
+      setState({ status: "failed", message: "UPCode could not open a new thread." });
       return;
     }
     setState({ status: "opened" });
@@ -169,7 +169,7 @@ export function NewThreadLinkView({ link }: { readonly link: NewThreadLink }) {
       setState({
         status: "failed",
         message:
-          "This machine cannot clone from a link. Update T3 Code on it, or clone the repository from the command palette.",
+          "This machine cannot clone from a link. Update UPCode on it, or clone the repository from the command palette.",
       });
       return;
     }

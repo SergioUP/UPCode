@@ -1,4 +1,4 @@
-import type { EnvironmentId, T3ProjectFileScript, ThreadId } from "@t3tools/contracts";
+import type { EnvironmentId, UPCodeProjectFileScript, ThreadId } from "@upcode/contracts";
 import { renderToStaticMarkup } from "react-dom/server";
 import { PopoverCreateHandle } from "../ui/popover";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
@@ -43,7 +43,7 @@ describe("ThreadDetailsPanel", () => {
     testState.projectScriptsControl.mockReset();
   });
 
-  it("passes checked-in t3.json scripts to the project scripts control", () => {
+  it("passes checked-in upcode.json scripts to the project scripts control", () => {
     const environmentId = "environment:thread-details" as EnvironmentId;
     const gitCwd = "/tmp/thread-details-project";
     const fileScripts = [
@@ -52,7 +52,7 @@ describe("ThreadDetailsPanel", () => {
         command: "vp check",
         icon: "test",
       },
-    ] satisfies ReadonlyArray<T3ProjectFileScript>;
+    ] satisfies ReadonlyArray<UPCodeProjectFileScript>;
     testState.useT3ProjectFileScripts.mockReturnValue(fileScripts);
 
     const props: ThreadDetailsPanelProps = {
