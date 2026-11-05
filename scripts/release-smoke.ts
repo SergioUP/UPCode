@@ -21,7 +21,6 @@ const workspaceFiles = [
   "apps/mobile/modules/upcode-review-diff/package.json",
   "apps/mobile/modules/upcode-terminal/package.json",
   "apps/marketing/package.json",
-  "infra/relay/package.json",
   "oxlint-plugin-upcode/package.json",
   "packages/client-runtime/package.json",
   "packages/contracts/package.json",
