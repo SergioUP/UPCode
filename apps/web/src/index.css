@@ -2386,12 +2386,12 @@ code {
 }
 
 /* ---------------------------------------------------------------------------
-   Redi: the cindy.app theme.
-   The palette lives in packages/shared/src/themePalettes.ts (REDI_THEME); this
-   block carries what a palette cannot: the typefaces, rounded glass surfaces, and
-   the display face the site sets its headings in.
-   Anton and Geist ship in apps/web/public/fonts so the theme looks the same
-   offline; both are open-licensed (SIL OFL).
+   Redi and Bludi: the cindy.app theme, once in ink-red and once in ink-blue.
+   The palettes live in packages/shared/src/themePalettes.ts (REDI_THEME and
+   BLUDI_THEME); this block carries what a palette cannot: the typefaces, the
+   rounded glass surfaces, and the artwork each theme paints behind the chat.
+   Anton, Geist and Great Vibes ship in apps/web/public/fonts so both themes look
+   the same offline; all three are open-licensed (SIL OFL).
    --------------------------------------------------------------------------- */
 @font-face {
   font-family: "Anton";
@@ -2417,7 +2417,8 @@ code {
   src: url("/fonts/great-vibes.woff2") format("woff2");
 }
 
-html[data-theme-id="redi"] {
+html[data-theme-id="redi"],
+html[data-theme-id="bludi"] {
   /* Unset font preferences remove their inline override, so the theme owns the
      faces unless the reader picked one in Settings -> Appearance. */
   --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
@@ -2425,15 +2426,35 @@ html[data-theme-id="redi"] {
   --font-script: "Great Vibes", "Segoe Script", cursive;
   --radius: 1rem;
 
-  /* Pigments the palette has no role for: the three weights of red the chrome
-     borrows from the artwork. Everything derives from the accent, so a
-     recoloured Redi stays consistent. */
-  --redi-red: var(--app-theme-accent);
-  --redi-red-mist: color-mix(in oklab, var(--app-theme-accent) 14%, transparent);
-  --redi-red-veil: color-mix(in oklab, var(--app-theme-accent) 26%, transparent);
+  /* The chrome only needs three weights of the accent, so every surface derives
+     from it and a recoloured theme stays consistent. */
+  --theme-accent: var(--app-theme-accent);
+  --theme-accent-mist: color-mix(in oklab, var(--app-theme-accent) 14%, transparent);
+  --theme-accent-veil: color-mix(in oklab, var(--app-theme-accent) 26%, transparent);
+
+  --theme-glass-card: color-mix(
+    in oklab,
+    var(--app-theme-surface) var(--glass-opacity),
+    transparent
+  );
+  --theme-glass-edge: color-mix(in oklab, var(--app-theme-accent) 44%, var(--border));
+  --theme-glass-top: color-mix(in oklab, var(--foreground) 6%, transparent);
+  --theme-sheen: linear-gradient(165deg, var(--theme-glass-top), transparent 48%);
+  --theme-card-gradient: linear-gradient(145deg, var(--theme-accent-mist), transparent 65%);
 }
 
-html[data-theme-id="redi"] h1 {
+html[data-theme-id="redi"] {
+  --theme-hero-art: url("/themes/redi/hero-programmer.webp");
+  --theme-initial: "R";
+}
+
+html[data-theme-id="bludi"] {
+  --theme-hero-art: url("/themes/bludi/hero-programmer.webp");
+  --theme-initial: "B";
+}
+
+html[data-theme-id="redi"] h1,
+html[data-theme-id="bludi"] h1 {
   font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: 0.01em;
@@ -2442,39 +2463,33 @@ html[data-theme-id="redi"] h1 {
 /* Paint the wallpaper once across the workspace, including the composer and
    header. A palette-coloured veil keeps both appearances readable without
    changing the opacity of text, controls or floating panels. */
-html[data-theme-id="redi"] [data-chat-workspace] {
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-chat-workspace] {
   background-image:
     linear-gradient(
       105deg,
       color-mix(in oklab, var(--background) 90%, transparent),
       color-mix(in oklab, var(--background) 76%, transparent)
     ),
-    url("/themes/redi/hero-programmer.webp");
+    var(--theme-hero-art);
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center right;
 }
 
-html[data-theme-id="redi"] [data-chat-surface],
-html[data-theme-id="redi"] [data-chat-surface] > .bg-background,
-html[data-theme-id="redi"] [data-chat-workspace] [data-chat-header] {
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-chat-surface],
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-chat-surface] > .bg-background,
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-chat-workspace] [data-chat-header] {
   background-color: transparent;
 }
 
-/* The sidebar carries the same red only as a haze: a wash under the toolbar and
-   a script initial behind the footer, both below any interactive row. */
-html[data-theme-id="redi"] [data-slot="sidebar"] {
+/* The sidebar carries the accent only as a haze: a wash under the toolbar and a
+   script initial behind the footer, both below any interactive row. */
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-slot="sidebar"] {
   position: relative;
-  background-image: linear-gradient(
-    180deg,
-    var(--redi-red-mist) 0%,
-    transparent 18rem,
-    transparent 100%
-  );
 }
 
-html[data-theme-id="redi"] [data-slot="sidebar"]::after {
-  content: "R";
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-slot="sidebar"]::after {
+  content: var(--theme-initial);
   position: absolute;
   inset-block-end: 0.25rem;
   inset-inline-start: -1.5rem;
@@ -2482,7 +2497,7 @@ html[data-theme-id="redi"] [data-slot="sidebar"]::after {
   font-family: var(--font-script);
   font-size: 11rem;
   line-height: 1;
-  color: var(--redi-red);
+  color: var(--theme-accent);
   opacity: 0.13;
   pointer-events: none;
   user-select: none;
@@ -2514,96 +2529,109 @@ html[data-theme-id="redi"] {
   --stage-night-sparkle: oklch(0.884 0.052 23.4);
 }
 
-/* Redi surfaces derive from the palette and respect Appearance's glass settings.
-   Keep the glow static: a coding surface should settle when work stops. */
-html[data-theme-id="redi"] {
-  --redi-glass-card: color-mix(
-    in oklab,
-    var(--app-theme-surface) var(--glass-opacity),
-    transparent
-  );
-  --redi-glass-edge: color-mix(in oklab, var(--app-theme-accent) 44%, var(--border));
-  --redi-glass-top: color-mix(in oklab, var(--foreground) 6%, transparent);
-  --redi-sheen: linear-gradient(165deg, var(--redi-glass-top), transparent 48%);
-  --redi-card-gradient: linear-gradient(145deg, var(--redi-red-mist), transparent 65%);
+html[data-theme-id="bludi"] {
+  --stage-art-top: oklch(0.471 0.152 255);
+  --stage-art-mid: oklch(0.352 0.121 255);
+  --stage-art-bottom: oklch(0.208 0.062 258);
+  --stage-art-highlight: oklch(0.932 0.048 240);
+  --stage-art-secondary: oklch(0.662 0.176 255);
+  --stage-art-tertiary: oklch(0.598 0.124 222);
+  --stage-art-line: oklch(0.938 0.041 240);
+  --stage-art-celeste-highlight: oklch(0.958 0.03 240);
+  --stage-art-celeste-secondary: oklch(0.774 0.09 240);
+  --stage-art-violet-highlight: oklch(0.884 0.06 270);
+  --stage-art-grid-line: oklch(0.944 0.024 240);
+  --stage-night-top: oklch(0.418 0.128 255);
+  --stage-night-mid: oklch(0.302 0.096 255);
+  --stage-night-bottom: oklch(0.176 0.046 258);
+  --stage-night-highlight: oklch(0.902 0.056 245);
+  --stage-night-secondary: oklch(0.618 0.148 252);
+  --stage-night-tertiary: oklch(0.548 0.112 222);
+  --stage-night-line: oklch(0.936 0.038 245);
+  --stage-night-glow-highlight: oklch(0.572 0.176 255);
+  --stage-night-glow-secondary: oklch(0.352 0.098 255);
+  --stage-night-sparkle: oklch(0.884 0.052 248);
 }
 
-html[data-theme-id="redi"] [data-slot="popover-popup"],
-html[data-theme-id="redi"] [data-slot="menu-popup"],
-html[data-theme-id="redi"] [data-slot="select-popup"],
-html[data-theme-id="redi"] [data-slot="dialog-popup"],
-html[data-theme-id="redi"] [data-thread-details-card] {
-  background-image: var(--redi-sheen), var(--redi-card-gradient);
-  border-color: var(--redi-glass-edge);
+/* These surfaces derive from the palette and respect Appearance's glass
+   settings. Keep the glow static: a coding surface should settle when work
+   stops. */
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-slot="popover-popup"],
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-slot="menu-popup"],
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-slot="select-popup"],
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-slot="dialog-popup"],
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-thread-details-card] {
+  background-image: var(--theme-sheen), var(--theme-card-gradient);
+  border-color: var(--theme-glass-edge);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
 }
 
-html[data-theme-id="redi"] [data-thread-details-card] {
-  border: 1px solid var(--redi-glass-edge);
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-thread-details-card] {
+  border: 1px solid var(--theme-glass-edge);
   box-shadow:
-    inset 0 1px 0 var(--redi-glass-top),
-    0 12px 36px -24px var(--redi-red-veil);
+    inset 0 1px 0 var(--theme-glass-top),
+    0 12px 36px -24px var(--theme-accent-veil);
 }
 
 /* Use the composer's existing outline and backdrop layers so attached banners,
    the context strip and collapsed mobile controls keep their shared silhouette. */
-html[data-theme-id="redi"] [data-slot="composer-shell"] {
-  --chat-composer-outline: var(--redi-glass-edge);
-  --chat-composer-highlight: var(--redi-red-veil);
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-slot="composer-shell"] {
+  --chat-composer-outline: var(--theme-glass-edge);
+  --chat-composer-highlight: var(--theme-accent-veil);
 }
 
-html[data-theme-id="redi"] [data-slot="composer-shell"]::before {
-  background-image: var(--redi-sheen), var(--redi-card-gradient);
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-slot="composer-shell"]::before {
+  background-image: var(--theme-sheen), var(--theme-card-gradient);
 }
 
-html[data-theme-id="redi"] [data-slot="composer-host"],
-html[data-theme-id="redi"] [data-chat-composer-main-surface="true"] {
-  box-shadow: 0 8px 36px -24px var(--redi-red);
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-slot="composer-host"],
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-chat-composer-main-surface="true"] {
+  box-shadow: 0 8px 36px -24px var(--theme-accent);
 }
 
-html[data-theme-id="redi"] [data-slot="composer-host"]::after {
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-slot="composer-host"]::after {
   box-shadow:
-    inset 0 1px 0 var(--redi-red-veil),
-    inset 0 -1px 0 var(--redi-red-mist);
+    inset 0 1px 0 var(--theme-accent-veil),
+    inset 0 -1px 0 var(--theme-accent-mist);
 }
 
-html[data-theme-id="redi"] [data-slot="composer-shell"]:focus-within {
-  --chat-composer-outline: var(--redi-red);
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-slot="composer-shell"]:focus-within {
+  --chat-composer-outline: var(--theme-accent);
 }
 
-html[data-theme-id="redi"] [data-slot="sidebar"] {
-  --sidebar-border: var(--redi-glass-edge);
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-slot="sidebar"] {
+  --sidebar-border: var(--theme-glass-edge);
   background-image:
-    radial-gradient(ellipse at 0% 100%, var(--redi-red-mist), transparent 55%),
-    linear-gradient(180deg, var(--redi-red-mist), transparent 18rem);
+    radial-gradient(ellipse at 0% 100%, var(--theme-accent-mist), transparent 55%),
+    linear-gradient(180deg, var(--theme-accent-mist), transparent 18rem);
 }
 
-html[data-theme-id="redi"] [data-thread-item] [aria-current="page"],
-html[data-theme-id="redi"] [data-thread-item] [aria-current="true"] {
-  background-image: linear-gradient(135deg, var(--redi-red-veil), transparent 80%);
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-thread-item] [aria-current="page"],
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-thread-item] [aria-current="true"] {
+  background-image: linear-gradient(135deg, var(--theme-accent-veil), transparent 80%);
   border-radius: var(--radius);
   box-shadow:
-    inset 0 0 0 1px var(--redi-glass-edge),
-    inset 0 1px 0 var(--redi-red-veil),
-    inset 0 -12px 24px -20px var(--redi-red);
+    inset 0 0 0 1px var(--theme-glass-edge),
+    inset 0 1px 0 var(--theme-accent-veil),
+    inset 0 -12px 24px -20px var(--theme-accent);
 }
 
 /* Activity rows stay cheap to scroll: painted gradients, no per-row blur. */
-html[data-theme-id="redi"] [data-work-log-card] {
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-work-log-card] {
   border-radius: var(--radius);
-  border-color: color-mix(in oklab, var(--redi-glass-edge) 55%, var(--border));
-  background-color: var(--redi-glass-card);
-  background-image: var(--redi-sheen);
-  box-shadow: inset 0 1px 0 var(--redi-glass-top);
+  border-color: color-mix(in oklab, var(--theme-glass-edge) 55%, var(--border));
+  background-color: var(--theme-glass-card);
+  background-image: var(--theme-sheen);
+  box-shadow: inset 0 1px 0 var(--theme-glass-top);
 }
 
-html[data-theme-id="redi"] [data-work-log-card]:hover {
-  border-color: var(--redi-glass-edge);
-  background-image: var(--redi-sheen), var(--redi-card-gradient);
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-work-log-card]:hover {
+  border-color: var(--theme-glass-edge);
+  background-image: var(--theme-sheen), var(--theme-card-gradient);
 }
 
-html[data-theme-id="redi"] [data-chat-header] {
-  background-image: linear-gradient(110deg, var(--redi-red-mist), transparent 65%);
-  box-shadow: inset 0 -1px 0 var(--redi-red-mist);
+html:is([data-theme-id="redi"], [data-theme-id="bludi"]) [data-chat-header] {
+  background-image: linear-gradient(110deg, var(--theme-accent-mist), transparent 65%);
+  box-shadow: inset 0 -1px 0 var(--theme-accent-mist);
 }

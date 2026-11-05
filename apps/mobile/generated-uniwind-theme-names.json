@@ -8,5 +8,9 @@
   "ember-light",
   "ember-dark",
   "iris-light",
-  "iris-dark"
+  "iris-dark",
+  "redi-light",
+  "redi-dark",
+  "bludi-light",
+  "bludi-dark"
 ]

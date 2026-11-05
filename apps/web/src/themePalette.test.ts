@@ -31,6 +31,7 @@ import {
   subscribeToCustomThemes,
   themeAllowsSidebarArtwork,
   T3_CHAT_THEME,
+  BLUDI_THEME,
   EMBER_THEME,
   GROVE_THEME,
   IRIS_THEME,
@@ -533,6 +534,7 @@ describe("theme files", () => {
       EMBER_THEME,
       IRIS_THEME,
       REDI_THEME,
+      BLUDI_THEME,
     ]) {
       expect(getThemeDefinition(theme.id)).toBe(theme);
       expect(getThemeModes(theme)).toEqual(["light", "dark"]);
@@ -1201,6 +1203,29 @@ describe("redi theme", () => {
   it("ships the three typefaces it references, so it renders offline", () => {
     for (const file of ["anton.woff2", "geist-variable.woff2", "great-vibes.woff2"]) {
       expect(existsSync(new URL(`../public/fonts/${file}`, import.meta.url))).toBe(true);
+    }
+  });
+});
+
+describe("bludi theme", () => {
+  it("mirrors Redi in blue, with a dark base and a light half", () => {
+    const theme = BUILT_IN_THEMES.find((candidate) => candidate.id === "bludi");
+
+    expect(theme?.label).toBe("Bludi");
+    expect(theme?.appearance).toBe("dark");
+    expect(theme?.variants?.light).toBeDefined();
+    expect(Object.keys(theme!.colors).sort()).toEqual(Object.keys(REDI_THEME.colors).sort());
+
+    const bludi = getThemeDefinition("bludi")!;
+    const dark = getThemeColorsForMode(bludi, "dark")!;
+    const light = getThemeColorsForMode(bludi, "light")!;
+    expect(dark.canvas).not.toBe(light.canvas);
+    expect(dark.accent).toBe(light.accent);
+  });
+
+  it("ships the artwork its stylesheet paints", () => {
+    for (const file of ["hero.webp", "hero-programmer.webp"]) {
+      expect(existsSync(new URL(`../public/themes/bludi/${file}`, import.meta.url))).toBe(true);
     }
   });
 });

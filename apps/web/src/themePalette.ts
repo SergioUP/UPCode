@@ -3,6 +3,7 @@ import * as Schema from "effect/Schema";
 import "culori/css";
 import { converter, parse } from "culori/fn";
 import {
+  BLUDI_THEME,
   BUILT_IN_THEMES,
   EMBER_THEME,
   GROVE_THEME,
@@ -22,6 +23,7 @@ import {
 } from "@t3tools/shared/themePalettes";
 
 export {
+  BLUDI_THEME,
   EMBER_THEME,
   GROVE_THEME,
   IRIS_THEME,

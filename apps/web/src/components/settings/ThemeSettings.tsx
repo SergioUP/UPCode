@@ -23,6 +23,7 @@ import {
   type ThemeDefinition,
   type ThemeHalves,
   T3_CHAT_THEME,
+  BLUDI_THEME,
   EMBER_THEME,
   GROVE_THEME,
   IRIS_THEME,
@@ -62,6 +63,7 @@ const MAINTAINER_THEMES: ReadonlyArray<ThemeDefinition> = [
   EMBER_THEME,
   IRIS_THEME,
   REDI_THEME,
+  BLUDI_THEME,
 ];
 
 function collectionVariantLabels(themes: ReadonlyArray<ThemeDefinition>): ReadonlyArray<string> {

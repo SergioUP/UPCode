@@ -1,5 +1,6 @@
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
+import { BUILT_IN_THEME_IDS } from "@t3tools/shared/themePalettes";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -26,18 +27,9 @@ describe("generate mobile Uniwind themes", () => {
   });
 
   it("registers every custom palette for both appearances", () => {
-    expect(customThemeNames).toEqual([
-      "t3-chat-light",
-      "t3-chat-dark",
-      "grove-light",
-      "grove-dark",
-      "ocean-light",
-      "ocean-dark",
-      "ember-light",
-      "ember-dark",
-      "iris-light",
-      "iris-dark",
-    ]);
+    expect(customThemeNames).toEqual(
+      BUILT_IN_THEME_IDS.flatMap((id) => [`${id}-light`, `${id}-dark`]),
+    );
 
     const stylesheet = renderUniwindThemesCSS();
     for (const themeName of customThemeNames) {

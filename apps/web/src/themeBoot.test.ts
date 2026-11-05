@@ -9,6 +9,7 @@ import {
   isKnownThemePreference,
   resolveThemeAppearance,
   T3_CHAT_THEME,
+  BLUDI_THEME,
   EMBER_THEME,
   GROVE_THEME,
   IRIS_THEME,
@@ -350,9 +351,11 @@ describe("index.html boot script", () => {
       EMBER_THEME,
       IRIS_THEME,
       REDI_THEME,
+      BLUDI_THEME,
     ]) {
-      // The boot script resolves every built-in from a light base appearance.
-      expect(theme.appearance).toBe("light");
+      // The boot script resolves every built-in from the half it ships for the
+      // requested mode, so both halves have to exist even when the palette
+      // leads with dark (Redi and Bludi do).
       for (const mode of ["light", "dark"] as const) {
         const colors = getThemeColorsForMode(theme, mode);
         expect(colors).not.toBeNull();
