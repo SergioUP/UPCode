@@ -164,13 +164,13 @@ it.runIf(hasDbus)("captures through real D-Bus marshalling on a private bus", as
       setup.close();
     }
     const portal = connect();
-    expect(await portal.backend("com.upango.UPCode")).toBe("screenshot-portal");
+    expect(await portal.backend("com.sergioup.UPCode")).toBe("screenshot-portal");
     expect(await portal.capturePortal()).toEqual({ png });
     expect(target).toBe(8);
     portalVersion = 2;
     const extension = connect();
-    expect(await extension.backend("com.upango.UPCode")).toBe("gnome-extension");
-    expect(await extension.captureExtension("com.upango.UPCode")).toMatchObject({
+    expect(await extension.backend("com.sergioup.UPCode")).toBe("gnome-extension");
+    expect(await extension.captureExtension("com.sergioup.UPCode")).toMatchObject({
       png,
       window: { processId: 42 },
     });
@@ -181,15 +181,15 @@ it.runIf(hasDbus)("captures through real D-Bus marshalling on a private bus", as
         interface: "org.freedesktop.DBus",
         member: "GetNameOwner",
         signature: "s",
-        body: ["com.upango.UPCode.SnapShot"],
+        body: ["com.sergioup.UPCode.SnapShot"],
       }),
     );
     expect(owner?.body[0]).toBe(clientName);
     extension.close();
     extensionVersion = 2;
     const updated = connect();
-    expect(await updated.backend("com.upango.UPCode")).toBe("gnome-extension");
-    const snapshot = await updated.captureExtension("com.upango.UPCode", {
+    expect(await updated.backend("com.sergioup.UPCode")).toBe("gnome-extension");
+    const snapshot = await updated.captureExtension("com.sergioup.UPCode", {
       flash: true,
       animate: true,
     });
@@ -202,14 +202,14 @@ it.runIf(hasDbus)("captures through real D-Bus marshalling on a private bus", as
     expect(animateFrame).toEqual([0.1, 0.8, 0.2, 0.1]);
     vi.stubEnv("XDG_CURRENT_DESKTOP", "KDE");
     const kde = connect();
-    expect(await kde.backend("com.upango.UPCode")).toBe("kde");
+    expect(await kde.backend("com.sergioup.UPCode")).toBe("kde");
     expect(kde.feedbackAvailable).toBe(false);
     kde.close();
     const triggered = vi.fn();
     const failed = vi.fn();
     const niriBus = sessionBus({ busAddress: String(address) });
     stopNiriShortcut = await startNiriCaptureShortcut(
-      "com.upango.UPCode.NiriTest",
+      "com.sergioup.UPCode.NiriTest",
       triggered,
       failed,
       niriBus,
@@ -218,11 +218,11 @@ it.runIf(hasDbus)("captures through real D-Bus marshalling on a private bus", as
       "call",
       "--session",
       "--dest",
-      "com.upango.UPCode.NiriTest.SnapShot",
+      "com.sergioup.UPCode.NiriTest.SnapShot",
       "--object-path",
-      "/com/upango/SnapShot",
+      "/com/sergioup/SnapShot",
       "--method",
-      "com.upango.SnapShot.Capture",
+      "com.sergioup.SnapShot.Capture",
     ];
     // Exercise the actual command copied to Niri's configuration, including gdbus introspection.
     await new Promise<void>((resolve, reject) => {
@@ -240,9 +240,9 @@ it.runIf(hasDbus)("captures through real D-Bus marshalling on a private bus", as
     expect(failed).not.toHaveBeenCalled();
     const invalid = server.call(
       new Message({
-        destination: "com.upango.UPCode.NiriTest.SnapShot",
-        path: "/com/upango/SnapShot",
-        interface: "com.upango.SnapShot",
+        destination: "com.sergioup.UPCode.NiriTest.SnapShot",
+        path: "/com/sergioup/SnapShot",
+        interface: "com.sergioup.SnapShot",
         member: "Capture",
         signature: "s",
         body: ["not allowed"],
@@ -252,7 +252,7 @@ it.runIf(hasDbus)("captures through real D-Bus marshalling on a private bus", as
     expect(triggered).toHaveBeenCalledOnce();
     await expect(
       startNiriCaptureShortcut(
-        "com.upango.UPCode.NiriTest",
+        "com.sergioup.UPCode.NiriTest",
         triggered,
         failed,
         sessionBus({ busAddress: String(address) }),
@@ -260,7 +260,7 @@ it.runIf(hasDbus)("captures through real D-Bus marshalling on a private bus", as
     ).rejects.toThrow("already owns");
     stopNiriShortcut();
     const restarted = await startNiriCaptureShortcut(
-      "com.upango.UPCode.NiriTest",
+      "com.sergioup.UPCode.NiriTest",
       triggered,
       failed,
       sessionBus({ busAddress: String(address) }),

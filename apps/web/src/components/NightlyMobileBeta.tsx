@@ -24,7 +24,7 @@ export const IS_NIGHTLY_BUILD =
 
 const IOS_TESTFLIGHT_URL = "https://testflight.apple.com/join/XgaxaRtd";
 const ANDROID_BETA_GROUP_URL = "https://groups.google.com/g/upcode-v2-beta";
-const ANDROID_PLAY_TESTING_URL = "https://play.google.com/apps/testing/com.upango.upcode";
+const ANDROID_PLAY_TESTING_URL = "https://play.google.com/apps/testing/com.sergioup.upcode";
 
 const ROW_ID = "nightly-mobile-beta";
 const NOTICE_DISMISSED_STORAGE_KEY = "upcode:nightly-mobile-beta-notice-dismissed:v1";

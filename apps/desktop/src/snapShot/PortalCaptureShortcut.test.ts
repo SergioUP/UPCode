@@ -114,7 +114,7 @@ function start(bus = new FakeBus(), shortcut = chord, managedByHyprland = false)
   const capture = vi.fn();
   const changed = vi.fn();
   const client = new PortalCaptureShortcut(
-    "com.upango.UPCode",
+    "com.sergioup.UPCode",
     shortcut,
     capture,
     changed,

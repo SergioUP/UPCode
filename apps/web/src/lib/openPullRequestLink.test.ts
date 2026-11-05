@@ -228,9 +228,9 @@ describe("shouldOpenPullRequestExternally", () => {
 
 describe("parseChangeRequestUrl", () => {
   it("reads a GitHub pull request", () => {
-    expect(parseChangeRequestUrl("https://github.com/UPango/UPCode/pull/123")).toEqual({
+    expect(parseChangeRequestUrl("https://github.com/SergioUP/UPCode/pull/123")).toEqual({
       host: "github.com",
-      repository: "upango/upcode",
+      repository: "sergioup/upcode",
       number: 123,
     });
   });
@@ -245,10 +245,10 @@ describe("parseChangeRequestUrl", () => {
 
   it("reads a GitLab merge request, nested groups and all", () => {
     expect(
-      parseChangeRequestUrl("https://gitlab.com/upango/platform/upcode/-/merge_requests/42"),
+      parseChangeRequestUrl("https://gitlab.com/sergioup/platform/upcode/-/merge_requests/42"),
     ).toEqual({
       host: "gitlab.com",
-      repository: "upango/platform/upcode",
+      repository: "sergioup/platform/upcode",
       number: 42,
     });
   });
@@ -289,9 +289,9 @@ describe("parseChangeRequestUrl", () => {
   });
 
   it("survives trailing segments, a trailing slash and a query string", () => {
-    expect(parseChangeRequestUrl("https://github.com/upango/upcode/pull/123/files?w=1")).toEqual({
+    expect(parseChangeRequestUrl("https://github.com/sergioup/upcode/pull/123/files?w=1")).toEqual({
       host: "github.com",
-      repository: "upango/upcode",
+      repository: "sergioup/upcode",
       number: 123,
     });
     expect(
@@ -300,27 +300,27 @@ describe("parseChangeRequestUrl", () => {
     expect(
       parseChangeRequestUrl("https://bitbucket.org/team/repo/pull-requests/5/commits"),
     ).toEqual({ host: "bitbucket.org", repository: "team/repo", number: 5 });
-    expect(parseChangeRequestUrl("https://github.com/upango/upcode/pull/123/")).toEqual({
+    expect(parseChangeRequestUrl("https://github.com/sergioup/upcode/pull/123/")).toEqual({
       host: "github.com",
-      repository: "upango/upcode",
+      repository: "sergioup/upcode",
       number: 123,
     });
   });
 
   it("claims nothing it cannot be sure of, so the link goes to the browser", () => {
     for (const link of [
-      "https://github.com/upango/upcode/issues/123",
-      "https://github.com/upango/upcode/commit/0a1b2c3",
-      "https://github.com/upango/upcode",
-      "https://github.com/upango/upcode/pull/abc",
-      "https://gitlab.com/upango/upcode/-/snippets/12",
-      "https://gitlab.com/upango/upcode/-/issues/12",
+      "https://github.com/sergioup/upcode/issues/123",
+      "https://github.com/sergioup/upcode/commit/0a1b2c3",
+      "https://github.com/sergioup/upcode",
+      "https://github.com/sergioup/upcode/pull/abc",
+      "https://gitlab.com/sergioup/upcode/-/snippets/12",
+      "https://gitlab.com/sergioup/upcode/-/issues/12",
       // A path shape that means nothing off its own host.
       "https://blog.example.test/2026/updates/pull/3",
       // A lookalike is deliberately not fought here: `github.com.evil.test` reads as a GitHub
       // Enterprise install and there is no way to tell it from one. It is `findProjectForChange
       // Request` that refuses it, because no project in the workspace is checked out from it.
-      "javascript:alert(1)//github.com/upango/upcode/pull/1",
+      "javascript:alert(1)//github.com/sergioup/upcode/pull/1",
       "not a url",
     ]) {
       expect(parseChangeRequestUrl(link), link).toBeNull();
@@ -462,20 +462,20 @@ describe("findProjectForChangeRequest", () => {
 
   it("matches a nested GitLab group by the whole path below the host", () => {
     // The server identifies a repository by `displayName`, which keeps every group segment; the
-    // two-segment owner/name form would look for `upango/upcode` and find nothing.
+    // two-segment owner/name form would look for `sergioup/upcode` and find nothing.
     const projects = [
       project({
-        canonicalKey: "gitlab.com/upango/platform/upcode",
+        canonicalKey: "gitlab.com/sergioup/platform/upcode",
         provider: "gitlab",
-        displayName: "upango/platform/upcode",
-        owner: "upango",
+        displayName: "sergioup/platform/upcode",
+        owner: "sergioup",
         name: "upcode",
       }),
     ];
     expect(
       findProjectForChangeRequest(projects, {
         host: "gitlab.com",
-        repository: "upango/platform/upcode",
+        repository: "sergioup/platform/upcode",
         number: 42,
       }),
     ).toBe(projects[0]);
@@ -486,8 +486,8 @@ describe("findProjectForChangeRequest", () => {
       project({
         canonicalKey: "github.com/SergioUP/UPCode",
         provider: "github",
-        owner: "pingdotgg",
-        name: "upcode",
+        owner: "SergioUP",
+        name: "UPCode",
       }),
     ];
     expect(
@@ -530,8 +530,8 @@ describe("findProjectForChangeRequest", () => {
       project({
         canonicalKey: "github.com/SergioUP/UPCode",
         provider: "github",
-        owner: "pingdotgg",
-        name: "upcode",
+        owner: "SergioUP",
+        name: "UPCode",
       }),
     ];
     expect(

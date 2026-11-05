@@ -296,7 +296,7 @@ describe("summarizeToolGroup", () => {
         entry("inspect-app", {
           label: "Inspect app",
           toolSource: {
-            key: "native-app:com.upango.upcode",
+            key: "native-app:com.sergioup.upcode",
             name: "Computer Use",
             kind: "computer",
           },

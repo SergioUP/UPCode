@@ -29,7 +29,7 @@ const makeEnvironment = (path: Path.Path, overrides: Record<string, unknown> = {
     isPackaged: true,
     isDevelopment: false,
     displayName: "UPCode (Alpha)",
-    linuxDesktopEntryName: "com.upango.UPCode.desktop",
+    linuxDesktopEntryName: "com.sergioup.UPCode.desktop",
     linuxWmClass: "upcode",
     linuxApplicationsDir: "/home/alice/.local/share/applications",
     appImagePath: Option.some("/home/alice/Applications/UPCode.AppImage"),
@@ -185,7 +185,7 @@ describe("DesktopLinuxUrlHandler", () => {
     const writeError = new DesktopLinuxUrlHandler.DesktopLinuxUrlHandlerRegistrationError({
       step: "write-desktop-entry",
       scheme: "upcode",
-      desktopEntryPath: "/home/alice/.local/share/applications/com.upango.UPCode.desktop",
+      desktopEntryPath: "/home/alice/.local/share/applications/com.sergioup.UPCode.desktop",
       cause: new Error("boom"),
     });
     assert.equal(
@@ -194,7 +194,7 @@ describe("DesktopLinuxUrlHandler", () => {
     );
     assert.equal(
       writeError.desktopEntryPath,
-      "/home/alice/.local/share/applications/com.upango.UPCode.desktop",
+      "/home/alice/.local/share/applications/com.sergioup.UPCode.desktop",
     );
 
     const exitError = new DesktopLinuxUrlHandler.DesktopLinuxUrlHandlerRegistrationError({
@@ -220,7 +220,7 @@ describe("DesktopLinuxUrlHandler", () => {
         assert.equal(recorded.files.length, 1);
         assert.equal(
           recorded.files[0]?.path,
-          "/home/alice/.local/share/applications/com.upango.UPCode.desktop",
+          "/home/alice/.local/share/applications/com.sergioup.UPCode.desktop",
         );
         assert.include(
           recorded.files[0]?.content,
@@ -234,7 +234,7 @@ describe("DesktopLinuxUrlHandler", () => {
           },
           {
             command: "xdg-mime",
-            args: ["default", "com.upango.UPCode.desktop", "x-scheme-handler/upcode"],
+            args: ["default", "com.sergioup.UPCode.desktop", "x-scheme-handler/upcode"],
           },
         ]);
       });
@@ -263,7 +263,7 @@ describe("DesktopLinuxUrlHandler", () => {
           displayName: "UPCode (Alpha)",
           execTarget: "/home/alice/Applications/UPCode.AppImage",
           scheme: "upcode",
-          iconPath: "/home/alice/.local/share/icons/com.upango.UPCode.desktop.png",
+          iconPath: "/home/alice/.local/share/icons/com.sergioup.UPCode.desktop.png",
         }),
       });
 
@@ -276,7 +276,7 @@ describe("DesktopLinuxUrlHandler", () => {
         },
         {
           command: "xdg-mime",
-          args: ["default", "com.upango.UPCode.desktop", "x-scheme-handler/upcode"],
+          args: ["default", "com.sergioup.UPCode.desktop", "x-scheme-handler/upcode"],
         },
       ]);
     });
@@ -284,7 +284,7 @@ describe("DesktopLinuxUrlHandler", () => {
 
   it.effect("installs a persistent icon even when the desktop entry is already current", () => {
     const recorded = emptyRecording();
-    const iconPath = "/home/alice/.local/share/icons/com.upango.UPCode.desktop.png";
+    const iconPath = "/home/alice/.local/share/icons/com.sergioup.UPCode.desktop.png";
     return Effect.gen(function* () {
       yield* runRegister(recorded, {
         iconSource: "/tmp/.mount_UPCode/resources/icon.png",
@@ -332,14 +332,14 @@ describe("DesktopLinuxUrlHandler", () => {
       yield* runRegister(unpackaged, {
         environment: {
           isPackaged: false,
-          linuxDesktopEntryName: "com.upango.UPCode.Development.desktop",
+          linuxDesktopEntryName: "com.sergioup.UPCode.Development.desktop",
         },
       });
 
       assert.deepEqual(nonLinux.files, []);
       assert.equal(
         unpackaged.files[0]?.path,
-        "/home/alice/.local/share/applications/com.upango.UPCode.Development.desktop",
+        "/home/alice/.local/share/applications/com.sergioup.UPCode.Development.desktop",
       );
       assert.deepEqual(unpackaged.commands, []);
     });
@@ -359,7 +359,7 @@ describe("DesktopLinuxUrlHandler", () => {
           module: "FileSystem",
           method: "writeFileString",
           description: "read-only filesystem",
-          pathOrDescriptor: "/home/alice/.local/share/applications/com.upango.UPCode.desktop",
+          pathOrDescriptor: "/home/alice/.local/share/applications/com.sergioup.UPCode.desktop",
         }),
       });
 

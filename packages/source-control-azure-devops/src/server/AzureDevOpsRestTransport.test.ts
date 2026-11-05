@@ -5,7 +5,7 @@ describe("Azure DevOps remote resolution for PAT REST calls", () => {
   it("reads an HTTPS remote with encoded project and repository names", () => {
     expect(
       parseAzureRemote(
-        "https://dev.azure.com/upango/UPG%20-%20Portal%20Empleado/_git/Portal%20Web",
+        "https://dev.azure.com/sergioup/UPG%20-%20Portal%20Empleado/_git/Portal%20Web",
       ),
     ).toEqual({
       organization: "upango",

@@ -56,8 +56,8 @@ describe("ThreadPullRequestServiceV2 project guard", () => {
               },
               provider: "github" as const,
               displayName: "SergioUP/UPCode",
-              owner: "pingdotgg",
-              name: "upcode",
+              owner: "SergioUP",
+              name: "UPCode",
             });
           },
         },

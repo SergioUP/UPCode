@@ -18,23 +18,23 @@ import {
 
 describe("normalizeGitRemoteUrl", () => {
   it("canonicalizes equivalent GitHub remotes across protocol variants", () => {
-    expect(normalizeGitRemoteUrl("git@github.com:UPango/UPCode.git")).toBe(
-      "github.com/upango/upcode",
+    expect(normalizeGitRemoteUrl("git@github.com:SergioUP/UPCode.git")).toBe(
+      "github.com/sergioup/upcode",
     );
-    expect(normalizeGitRemoteUrl("https://github.com/UPango/UPCode.git")).toBe(
-      "github.com/upango/upcode",
+    expect(normalizeGitRemoteUrl("https://github.com/SergioUP/UPCode.git")).toBe(
+      "github.com/sergioup/upcode",
     );
-    expect(normalizeGitRemoteUrl("ssh://git@github.com/UPango/UPCode")).toBe(
-      "github.com/upango/upcode",
+    expect(normalizeGitRemoteUrl("ssh://git@github.com/SergioUP/UPCode")).toBe(
+      "github.com/sergioup/upcode",
     );
   });
 
   it("preserves nested group paths for providers like GitLab", () => {
-    expect(normalizeGitRemoteUrl("git@gitlab.com:UPango/platform/UPCode.git")).toBe(
-      "gitlab.com/upango/platform/upcode",
+    expect(normalizeGitRemoteUrl("git@gitlab.com:SergioUP/platform/UPCode.git")).toBe(
+      "gitlab.com/sergioup/platform/upcode",
     );
-    expect(normalizeGitRemoteUrl("https://gitlab.com/UPango/platform/UPCode.git")).toBe(
-      "gitlab.com/upango/platform/upcode",
+    expect(normalizeGitRemoteUrl("https://gitlab.com/SergioUP/platform/UPCode.git")).toBe(
+      "gitlab.com/sergioup/platform/upcode",
     );
   });
 
@@ -158,14 +158,14 @@ describe("parseOriginUrlFromGitConfig", () => {
 describe("parseGitHubRepositoryNameWithOwnerFromRemoteUrl", () => {
   it("extracts the owner and repository from common GitHub remote shapes", () => {
     expect(
-      parseGitHubRepositoryNameWithOwnerFromRemoteUrl("git@github.com:UPango/UPCode.git"),
-    ).toBe("UPango/UPCode");
+      parseGitHubRepositoryNameWithOwnerFromRemoteUrl("git@github.com:SergioUP/UPCode.git"),
+    ).toBe("SergioUP/UPCode");
     expect(
-      parseGitHubRepositoryNameWithOwnerFromRemoteUrl("https://github.com/UPango/UPCode.git"),
-    ).toBe("UPango/UPCode");
+      parseGitHubRepositoryNameWithOwnerFromRemoteUrl("https://github.com/SergioUP/UPCode.git"),
+    ).toBe("SergioUP/UPCode");
     expect(
-      parseGitHubRepositoryNameWithOwnerFromRemoteUrl("ssh://github.com/UPango/UPCode.git"),
-    ).toBe("UPango/UPCode");
+      parseGitHubRepositoryNameWithOwnerFromRemoteUrl("ssh://github.com/SergioUP/UPCode.git"),
+    ).toBe("SergioUP/UPCode");
   });
 });
 

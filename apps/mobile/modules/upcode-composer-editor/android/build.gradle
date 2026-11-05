@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'org.jetbrains.kotlin.android'
 
-group = 'com.upango.composereditor'
+group = 'com.sergioup.composereditor'
 version = '0.0.0'
 
 android {

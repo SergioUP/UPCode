@@ -501,7 +501,7 @@ const layerTest = (
           DesktopEnvironment.DesktopEnvironment.of({
             platform,
             stateDir: "/state",
-            linuxDesktopEntryName: "com.upango.UPCode.desktop",
+            linuxDesktopEntryName: "com.sergioup.UPCode.desktop",
             appRoot: "/repo",
             linuxApplicationsDir: "/test-data/applications",
           } as DesktopEnvironment.DesktopEnvironment["Service"]),
@@ -939,7 +939,7 @@ it.effect.each(["win32", "darwin", "linux"] as const)(
     const upcode = {
       id: 42,
       title: "UPCode",
-      appIdentifier: "com.upango.UPCode.desktop",
+      appIdentifier: "com.sergioup.UPCode.desktop",
       owner: { name: "UPCode", processId: 123 },
       bounds,
       png: Buffer.from([1, 2, 3]),

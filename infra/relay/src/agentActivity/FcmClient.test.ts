@@ -51,7 +51,7 @@ const config = {
 } satisfies RelayConfiguration.RelayConfiguration["Service"];
 const input = {
   token: "device-token",
-  packageName: "com.upango.upcode.dev",
+  packageName: "com.sergioup.upcode.dev",
   data: { upcode_kind: "agent_activity", active: "true" },
   alert: false,
 };

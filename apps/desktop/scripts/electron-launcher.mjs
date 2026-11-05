@@ -17,8 +17,8 @@ const devBundleIdSuffix = NodePath.basename(repoRoot)
   .replaceAll(/[^a-z0-9]+/g, "");
 const APP_DISPLAY_NAME = isDevelopment ? "UPCode (Dev)" : "UPCode (Alpha)";
 const APP_BUNDLE_ID = isDevelopment
-  ? `com.upango.upcode.dev.${devBundleIdSuffix || "local"}`
-  : "com.upango.upcode";
+  ? `com.sergioup.upcode.dev.${devBundleIdSuffix || "local"}`
+  : "com.sergioup.upcode";
 const APP_PROTOCOL_SCHEMES = isDevelopment ? ["upcode-dev"] : ["upcode"];
 const LAUNCHER_VERSION = 19;
 const developmentMacIconPngPath = NodePath.join(

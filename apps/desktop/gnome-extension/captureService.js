@@ -1,7 +1,7 @@
 // This policy is independent of Shell so lifecycle and authorization can be tested without a desktop.
 export const CLIENT_NAMES = [
-  "com.upango.UPCode.SnapShot",
-  "com.upango.UPCode.Development.SnapShot",
+  "com.sergioup.UPCode.SnapShot",
+  "com.sergioup.UPCode.Development.SnapShot",
 ];
 
 export function isWaylandSession(meta) {

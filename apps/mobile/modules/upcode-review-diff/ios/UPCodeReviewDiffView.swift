@@ -317,7 +317,7 @@ private struct ReviewDiffNativeStyle {
 
 public final class UPCodeReviewDiffView: ExpoView, UIScrollViewDelegate {
   private let payloadDecodeQueue = DispatchQueue(
-    label: "com.upango.review-diff.payload-decode",
+    label: "com.sergioup.review-diff.payload-decode",
     qos: .userInitiated
   )
   private let scrollView = UIScrollView()

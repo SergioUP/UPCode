@@ -9,9 +9,9 @@ import {
 
 describe("parseChangeRequestUrl", () => {
   it("reads a GitHub pull request, lower-casing the repository", () => {
-    expect(parseChangeRequestUrl("https://github.com/UPango/UPCode/pull/123")).toEqual({
+    expect(parseChangeRequestUrl("https://github.com/SergioUP/UPCode/pull/123")).toEqual({
       host: "github.com",
-      repository: "upango/upcode",
+      repository: "sergioup/upcode",
       number: 123,
     });
   });
@@ -48,8 +48,8 @@ describe("parseChangeRequestUrl", () => {
 
   it("reads a GitLab merge request on any host, nested groups and all", () => {
     expect(
-      parseChangeRequestUrl("https://gitlab.com/upango/platform/upcode/-/merge_requests/42"),
-    ).toEqual({ host: "gitlab.com", repository: "upango/platform/upcode", number: 42 });
+      parseChangeRequestUrl("https://gitlab.com/sergioup/platform/upcode/-/merge_requests/42"),
+    ).toEqual({ host: "gitlab.com", repository: "sergioup/platform/upcode", number: 42 });
     expect(parseChangeRequestUrl("https://code.acme.test/team/project/-/merge_requests/9")).toEqual(
       { host: "code.acme.test", repository: "team/project", number: 9 },
     );
@@ -70,27 +70,27 @@ describe("parseChangeRequestUrl", () => {
   });
 
   it("survives trailing segments, a trailing slash and a query string", () => {
-    expect(parseChangeRequestUrl("https://github.com/upango/upcode/pull/123/files?w=1")).toEqual({
+    expect(parseChangeRequestUrl("https://github.com/sergioup/upcode/pull/123/files?w=1")).toEqual({
       host: "github.com",
-      repository: "upango/upcode",
+      repository: "sergioup/upcode",
       number: 123,
     });
-    expect(parseChangeRequestUrl("https://github.com/upango/upcode/pull/123/")).toEqual({
+    expect(parseChangeRequestUrl("https://github.com/sergioup/upcode/pull/123/")).toEqual({
       host: "github.com",
-      repository: "upango/upcode",
+      repository: "sergioup/upcode",
       number: 123,
     });
   });
 
   it("claims nothing it cannot be sure of", () => {
     for (const link of [
-      "https://github.com/upango/upcode/issues/123",
-      "https://github.com/upango/upcode/commit/0a1b2c3",
-      "https://github.com/upango/upcode",
-      "https://github.com/upango/upcode/pull/abc",
-      "https://gitlab.com/upango/upcode/-/issues/12",
+      "https://github.com/sergioup/upcode/issues/123",
+      "https://github.com/sergioup/upcode/commit/0a1b2c3",
+      "https://github.com/sergioup/upcode",
+      "https://github.com/sergioup/upcode/pull/abc",
+      "https://gitlab.com/sergioup/upcode/-/issues/12",
       "https://blog.example.test/2026/updates/pull/3",
-      "javascript:alert(1)//github.com/upango/upcode/pull/1",
+      "javascript:alert(1)//github.com/sergioup/upcode/pull/1",
       "not a url",
     ]) {
       expect(parseChangeRequestUrl(link), link).toBeNull();

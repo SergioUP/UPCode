@@ -238,10 +238,10 @@ it("keeps a GitLab identity's whole path, because a nested group is part of the 
 it("puts owner and name back together for an identity recorded before displayName", () => {
   const selector = sourceControlRepositorySelector({
     provider: "github",
-    owner: "upango",
+    owner: "sergioup",
     name: "upcode",
   });
-  expect(selector).toBe("upango/upcode");
+  expect(selector).toBe("sergioup/upcode");
 });
 
 it("names nothing for a project with no remote to name it by", () => {

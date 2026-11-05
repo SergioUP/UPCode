@@ -4,7 +4,7 @@ export const IOS_APP_STORE_URL =
   "https://apps.apple.com/us/app/upcode-remote-claude-more/id6787819824";
 
 export const ANDROID_PLAY_STORE_URL =
-  "https://play.google.com/store/apps/details?id=com.upango.upcode";
+  "https://play.google.com/store/apps/details?id=com.sergioup.upcode";
 
 export const MARKETING_STATS = {
   githubStars: "24k+",

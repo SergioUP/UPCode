@@ -15,7 +15,7 @@ import { startNativeCaptureFeedback } from "./NativeCaptureFeedback.ts";
 export { isKdeCaptureSession } from "./linuxCaptureSession.ts";
 
 export const KDE_CAPTURE_EXECUTABLE = "upcode-kde-snap-shot";
-const DESKTOP_FILE = "com.upango.UPCode.KdeCapture.desktop";
+const DESKTOP_FILE = "com.sergioup.UPCode.KdeCapture.desktop";
 const MARKER = "X-UPCode-Capture-Helper=true";
 const decodeCapabilities = Schema.decodeUnknownSync(
   Schema.fromJsonString(Schema.Struct({ feedbackAvailable: Schema.optional(Schema.Boolean) })),

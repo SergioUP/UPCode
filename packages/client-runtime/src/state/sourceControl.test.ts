@@ -38,12 +38,12 @@ const TARGET = new PrimaryConnectionTarget({
 const PUBLISH_RESULT: SourceControlPublishRepositoryResult = {
   repository: {
     provider: SourceControlProviderKind.make("github"),
-    nameWithOwner: "upango/upcode",
-    url: "https://github.com/upango/upcode",
-    sshUrl: "git@github.com:upango/upcode.git",
+    nameWithOwner: "sergioup/upcode",
+    url: "https://github.com/sergioup/upcode",
+    sshUrl: "git@github.com:sergioup/upcode.git",
   },
   remoteName: "origin",
-  remoteUrl: "git@github.com:upango/upcode.git",
+  remoteUrl: "git@github.com:sergioup/upcode.git",
   branch: "main",
   upstreamBranch: "origin/main",
   status: "pushed",
@@ -142,7 +142,7 @@ describe("source control environment atoms", () => {
             input: {
               cwd: "/repo",
               provider: SourceControlProviderKind.make("github"),
-              repository: "upango/upcode",
+              repository: "sergioup/upcode",
               visibility: "private",
             },
           }),
@@ -158,7 +158,7 @@ describe("source control environment atoms", () => {
             input: {
               cwd: "/repo",
               provider: SourceControlProviderKind.make("github"),
-              repository: "upango/upcode",
+              repository: "sergioup/upcode",
               visibility: "private",
             },
           }),

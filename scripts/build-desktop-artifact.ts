@@ -2912,7 +2912,7 @@ export const createBuildConfig = Effect.fn("createBuildConfig")(function* (
       // FPM runs outside the staged app directory, so source paths must be absolute.
       // AppStream consumers associate this metadata with our upcode.desktop entry.
       fpm: [
-        `${path.join(repoRoot, "apps/desktop/resources/linux/com.upango.upcode.metainfo.xml")}=/usr/share/metainfo/com.upango.upcode.metainfo.xml`,
+        `${path.join(repoRoot, "apps/desktop/resources/linux/com.sergioup.upcode.metainfo.xml")}=/usr/share/metainfo/com.sergioup.upcode.metainfo.xml`,
         `${path.join(repoRoot, "LICENSE")}=/usr/share/doc/upcode/copyright`,
       ],
       // Electron's runtime libraries. Debian 13 and Ubuntu 24.04 renamed some

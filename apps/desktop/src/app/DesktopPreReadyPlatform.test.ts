@@ -151,13 +151,13 @@ describe("DesktopPreReadyPlatform", () => {
     let desktopEntry = previousEntry;
     let iconInstalled = false;
     copyFileSyncMock.mockImplementation((_source: string, destination: string) => {
-      iconInstalled = destination === "/xdg/icons/com.upango.UPCode.desktop.png";
+      iconInstalled = destination === "/xdg/icons/com.sergioup.upcode.desktop.png";
     });
     setDesktopNameMock.mockImplementation((name: string) => {
       desktopName = name;
     });
     writeFileSyncMock.mockImplementation((path: string, contents: string) => {
-      if (path === "/xdg/applications/com.upango.UPCode.desktop") desktopEntry = contents;
+      if (path === "/xdg/applications/com.sergioup.upcode.desktop") desktopEntry = contents;
     });
 
     return Effect.scoped(
@@ -173,13 +173,13 @@ describe("DesktopPreReadyPlatform", () => {
           ),
         );
         const identity = yield* Effect.promise(() => portalIdentity);
-        assert.equal(identity.desktopName, "com.upango.UPCode.desktop");
+        assert.equal(identity.desktopName, "com.sergioup.upcode.desktop");
         assert.include(identity.desktopEntry ?? "", 'Exec="/Applications/current.AppImage" %U');
         assert.include(identity.desktopEntry ?? "", "Name=UPCode (Alpha)");
         assert.include(identity.desktopEntry ?? "", "MimeType=x-scheme-handler/upcode;");
         assert.include(
           identity.desktopEntry ?? "",
-          "Icon=/xdg/icons/com.upango.UPCode.desktop.png",
+          "Icon=/xdg/icons/com.sergioup.upcode.desktop.png",
         );
         assert.isTrue(identity.iconInstalled);
       }),

@@ -34,8 +34,8 @@ import {
 const BOOT_SERVICE_NAME = "upcode";
 const BOOT_SERVICE_UNIT_FILE = `${BOOT_SERVICE_NAME}.service`;
 // `.service` suffix keeps the label distinct from the desktop app's bundle id
-// (com.upango.upcode), so launchd and TCC records never collide.
-const BOOT_SERVICE_LAUNCHD_LABEL = "com.upango.upcode.service";
+// (com.sergioup.upcode), so launchd and TCC records never collide.
+const BOOT_SERVICE_LAUNCHD_LABEL = "com.sergioup.upcode.service";
 const BOOT_SERVICE_PLIST_FILE = `${BOOT_SERVICE_LAUNCHD_LABEL}.plist`;
 const BOOT_SERVICE_UNIT_ENV = "UPCODE_BOOT_SERVICE_UNIT";
 /** File in the logs dir that receives the service's stdout and stderr. `upcode triage` points agents at it. */

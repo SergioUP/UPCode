@@ -11,9 +11,9 @@ it.effect("keeps UPCode's Windows profile separate from existing UPCode credenti
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const directory = yield* fs.makeTempDirectoryScoped({ prefix: "upcode-profile-" });
-    const upcodeProfile = path.join(directory, "upcode-v2");
-    yield* fs.makeDirectory(upcodeProfile, { recursive: true });
-    yield* fs.writeFileString(path.join(upcodeProfile, "Local State"), "private-upcode-key");
+    const legacyProfile = path.join(directory, "legacy-v2");
+    yield* fs.makeDirectory(legacyProfile, { recursive: true });
+    yield* fs.writeFileString(path.join(legacyProfile, "Local State"), "private-legacy-key");
 
     const upcodeProfile = yield* resolveUserDataPath({
       appDataDirectory: directory,
@@ -22,7 +22,7 @@ it.effect("keeps UPCode's Windows profile separate from existing UPCode credenti
     });
     assert.equal(upcodeProfile, path.join(directory, "upcode"));
     assert.isFalse(yield* fs.exists(upcodeProfile));
-    assert.equal(yield* fs.readFileString(path.join(upcodeProfile, "Local State")), "private-upcode-key");
+    assert.equal(yield* fs.readFileString(path.join(legacyProfile, "Local State")), "private-legacy-key");
   }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
 );
 

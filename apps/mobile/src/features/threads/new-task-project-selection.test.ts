@@ -43,7 +43,7 @@ function makeProject(
 
 function makeScope(projects: ReadonlyArray<EnvironmentProject>): HomeProjectScope {
   return {
-    key: "github.com/upango/upcode",
+    key: "github.com/sergioup/upcode",
     title: "UPCode",
     representative: projects[0]!,
     projects,
@@ -72,10 +72,10 @@ describe("getProjectScopeSelectionTarget", () => {
 
 describe("resolveEnvironmentProjectMatch", () => {
   it("follows the same repository onto the target machine", () => {
-    const selected = makeProject("upcode", "mac", { repositoryKey: "github.com/upango/upcode" });
+    const selected = makeProject("upcode", "mac", { repositoryKey: "github.com/sergioup/upcode" });
     const target = [
-      makeProject("other", "server", { repositoryKey: "github.com/upango/other" }),
-      makeProject("upcode-clone", "server", { repositoryKey: "github.com/upango/upcode" }),
+      makeProject("other", "server", { repositoryKey: "github.com/sergioup/other" }),
+      makeProject("upcode-clone", "server", { repositoryKey: "github.com/sergioup/upcode" }),
     ];
     expect(resolveEnvironmentProjectMatch(target, selected)).toBe(target[1]);
   });
@@ -97,7 +97,7 @@ describe("resolveEnvironmentProjectMatch", () => {
 
   it("does not treat a known different repository as a basename or title match", () => {
     const selected = makeProject("upcode", "mac", {
-      repositoryKey: "github.com/upango/upcode",
+      repositoryKey: "github.com/sergioup/upcode",
       workspaceRoot: "/Users/me/upcode",
     });
     const fork = makeProject("fork", "server", {
@@ -112,7 +112,7 @@ describe("resolveEnvironmentProjectMatch", () => {
   });
 
   it("falls back to the first project on the target so the draft has a key to carry over to", () => {
-    const selected = makeProject("upcode", "mac", { repositoryKey: "github.com/upango/upcode" });
+    const selected = makeProject("upcode", "mac", { repositoryKey: "github.com/sergioup/upcode" });
     const target = [makeProject("unrelated", "server"), makeProject("also-unrelated", "server")];
     expect(resolveEnvironmentProjectMatch(target, selected)).toBe(target[0]);
     expect(resolveEnvironmentProjectMatch([], selected)).toBeNull();

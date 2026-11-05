@@ -44,7 +44,7 @@ process.stdout.write(`upcode-dev://connections/new?${query}`);
 NODE
 )"
 
-if ! "$agent_device_command" open com.upango.upcode.dev "$deep_link" "$@" \
+if ! "$agent_device_command" open com.sergioup.upcode.dev "$deep_link" "$@" \
   >/dev/null 2>&1; then
   echo "AgentDevice could not open the pairing route. Check the Device panel and retry with a fresh credential." >&2
   exit 1

@@ -66,7 +66,7 @@ or use a package manager:
 
 | Platform           | Install                            |
 | ------------------ | ---------------------------------- |
-| Windows            | `winget install UPango.UPCode`    |
+| Windows            | `winget install SergioUP.UPCode`    |
 | macOS              | `brew install --cask upcode`      |
 | Debian, Ubuntu     | `sudo apt install ./UPCode-*.deb` |
 | Arch Linux         | `yay -S upcode-bin`                |
@@ -109,7 +109,7 @@ command cannot reach the app, start or update the desktop app and try again.
 
 Install UPCode from the
 [App Store](https://apps.apple.com/us/app/upcode-remote-claude-more/id6787819824) or
-[Google Play](https://play.google.com/store/apps/details?id=com.upango.upcode).
+[Google Play](https://play.google.com/store/apps/details?id=com.sergioup.upcode).
 The phone connects to a server on another machine. Follow
 [remote access](./remote-access.md) to link it through UPCode Connect or a pairing URL.
 
@@ -118,7 +118,7 @@ shows these links as QR codes in **Settings → General → Mobile app**.
 
 - **iPhone and iPad:** join the [TestFlight beta](https://testflight.apple.com/join/XgaxaRtd).
 - **Android:** join the [beta group](https://groups.google.com/g/upcode-v2-beta). With the same
-  Google account, open the [Google Play testing page](https://play.google.com/apps/testing/com.upango.upcode)
+  Google account, open the [Google Play testing page](https://play.google.com/apps/testing/com.sergioup.upcode)
   and become a tester.
 
 If the app crashes during launch, open Settings → Diagnostics on the next launch

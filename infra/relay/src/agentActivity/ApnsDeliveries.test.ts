@@ -38,7 +38,7 @@ const config = RelayConfiguration.RelayConfiguration.of({
     teamId: "team-id",
     keyId: "key-id",
     privateKey: Redacted.make("not-a-private-key"),
-    bundleId: "com.upango.upcode.dev",
+    bundleId: "com.sergioup.upcode.dev",
   },
   apnsDeliveryJobSigningSecret: Redacted.make("job-signing-secret"),
   clerkSecretKey: Redacted.make("clerk-secret"),
@@ -462,7 +462,7 @@ describe("ApnsDeliveries", () => {
       yield* deliveries.sendForTarget({
         target: {
           ...target,
-          bundle_id: "com.upango.upcode.preview",
+          bundle_id: "com.sergioup.upcode.preview",
           aps_environment: "production",
           ended_at: "1970-01-01T00:00:05.000Z",
         },
@@ -476,7 +476,7 @@ describe("ApnsDeliveries", () => {
             kind: "live_activity_update",
             target: {
               token: "activity-token",
-              bundleId: "com.upango.upcode.preview",
+              bundleId: "com.sergioup.upcode.preview",
               apsEnvironment: "production",
             },
           },
@@ -493,7 +493,7 @@ describe("ApnsDeliveries", () => {
       userId: target.user_id,
       deviceId: target.device_id,
       token: "activity-token",
-      bundleId: "com.upango.upcode.preview",
+      bundleId: "com.sergioup.upcode.preview",
       apsEnvironment: "sandbox",
       aggregate,
       createdAt: "1970-01-01T00:00:00.000Z",
@@ -518,14 +518,14 @@ describe("ApnsDeliveries", () => {
       expect(requests).toHaveLength(1);
       expect(requests[0]?.url).toBe("https://api.sandbox.push.apple.com/3/device/activity-token");
       expect(requests[0]?.headers["apns-topic"]).toBe(
-        "com.upango.upcode.preview.push-type.liveactivity",
+        "com.sergioup.upcode.preview.push-type.liveactivity",
       );
     }).pipe(
       Effect.provide(
         layerFor({
           attempts,
           currentTargets: [
-            { ...target, bundle_id: "com.upango.upcode.preview", aps_environment: "sandbox" },
+            { ...target, bundle_id: "com.sergioup.upcode.preview", aps_environment: "sandbox" },
           ],
           config: signingConfig,
           execute,
@@ -2030,7 +2030,7 @@ describe("signed APNs registration metadata", () => {
       token: "unchanged-token",
       ...(changed === "legacy"
         ? {}
-        : { bundleId: "com.upango.upcode.dev", apsEnvironment: "sandbox" as const }),
+        : { bundleId: "com.sergioup.upcode.dev", apsEnvironment: "sandbox" as const }),
       aggregate: kind === "live_activity_update" ? aggregate : null,
       ...(kind === "push_notification"
         ? {
@@ -2060,7 +2060,7 @@ describe("signed APNs registration metadata", () => {
         `${changed === "environment" ? "https://api.push.apple.com" : "https://api.sandbox.push.apple.com"}/3/device/unchanged-token`,
       );
       expect(requests[0]?.headers["apns-topic"]).toBe(
-        `${changed === "bundle" ? "com.upango.upcode.preview" : "com.upango.upcode.dev"}${kind === "live_activity_update" ? ".push-type.liveactivity" : ""}`,
+        `${changed === "bundle" ? "com.sergioup.upcode.preview" : "com.sergioup.upcode.dev"}${kind === "live_activity_update" ? ".push-type.liveactivity" : ""}`,
       );
     }).pipe(
       Effect.provide(
@@ -2073,7 +2073,7 @@ describe("signed APNs registration metadata", () => {
               push_token: "unchanged-token",
               activity_push_token: "unchanged-token",
               bundle_id:
-                changed === "bundle" ? "com.upango.upcode.preview" : "com.upango.upcode.dev",
+                changed === "bundle" ? "com.sergioup.upcode.preview" : "com.sergioup.upcode.dev",
               aps_environment: changed === "environment" ? "production" : "sandbox",
             },
           ],

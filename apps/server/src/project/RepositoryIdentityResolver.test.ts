@@ -43,7 +43,7 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
   it.effect("refreshes the Git root only when requested", () => {
     const calls: Array<ReadonlyArray<string>> = [];
     let rootPath = "/repo";
-    let remoteUrl = "git@github.com:UPango/upcode.git";
+    let remoteUrl = "git@github.com:SergioUP/upcode.git";
     let refinements = 0;
     let refinementFails = false;
     const layerProcessRunner = Layer.succeed(ProcessRunner.ProcessRunner, {
@@ -99,7 +99,7 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
       yield* TestClock.adjust(Duration.minutes(10));
       const second = yield* resolver.resolve("/repo/packages/web");
 
-      expect(first?.canonicalKey).toBe("github.com/upango/upcode");
+      expect(first?.canonicalKey).toBe("github.com/sergioup/upcode");
       expect(second).toEqual(first);
       expect(refinements).toBe(1);
       expect(calls).toEqual([
@@ -143,7 +143,7 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
               ? failed
                 ? ""
                 : "/repo\n"
-              : "origin\tgit@github.com:UPango/upcode.git (fetch)\n",
+              : "origin\tgit@github.com:SergioUP/upcode.git (fetch)\n",
             stderr: failed ? "temporary Git failure" : "",
             code: ChildProcessSpawner.ExitCode(failed ? 1 : 0),
             timedOut: false,
@@ -183,7 +183,7 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
       });
 
       yield* git(cwd, ["init"]);
-      yield* git(cwd, ["remote", "add", "origin", "git@github.com:UPango/upcode.git"]);
+      yield* git(cwd, ["remote", "add", "origin", "git@github.com:SergioUP/upcode.git"]);
 
       const resolver = yield* RepositoryIdentityResolver.RepositoryIdentityResolver;
       const identity = yield* resolver.resolve(cwd);
@@ -194,11 +194,11 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
       const resolvedCwd = NodeFS.realpathSync.native(cwd);
 
       expect(identity).not.toBeNull();
-      expect(identity?.canonicalKey).toBe("github.com/upango/upcode");
+      expect(identity?.canonicalKey).toBe("github.com/sergioup/upcode");
       expect(normalizeResolvedPath(resolvedIdentityRoot)).toBe(normalizeResolvedPath(resolvedCwd));
-      expect(identity?.displayName).toBe("upango/upcode");
+      expect(identity?.displayName).toBe("sergioup/upcode");
       expect(identity?.provider).toBe("github");
-      expect(identity?.owner).toBe("upango");
+      expect(identity?.owner).toBe("sergioup");
       expect(identity?.name).toBe("upcode");
     }).pipe(Effect.provide(RepositoryIdentityResolver.layer)),
   );
@@ -214,7 +214,7 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
 
       yield* fileSystem.makeDirectory(nestedWorkspace, { recursive: true });
       yield* git(repoRoot, ["init"]);
-      yield* git(repoRoot, ["remote", "add", "origin", "git@github.com:UPango/upcode.git"]);
+      yield* git(repoRoot, ["remote", "add", "origin", "git@github.com:SergioUP/upcode.git"]);
 
       const resolver = yield* RepositoryIdentityResolver.RepositoryIdentityResolver;
       const identity = yield* resolver.resolve(nestedWorkspace);
@@ -223,7 +223,7 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
       const resolvedRepoRoot = NodeFS.realpathSync.native(repoRoot);
 
       expect(identity).not.toBeNull();
-      expect(identity?.canonicalKey).toBe("github.com/upango/upcode");
+      expect(identity?.canonicalKey).toBe("github.com/sergioup/upcode");
       expect(normalizeResolvedPath(resolvedIdentityRoot)).toBe(
         normalizeResolvedPath(resolvedRepoRoot),
       );
@@ -263,28 +263,28 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
         yield* git(cwd, ["init"]);
         yield* git(cwd, ["remote", "add", "origin", "git@github.com:julius/upcode.git"]);
         if (change === "replace") {
-          yield* git(cwd, ["remote", "add", "upstream", "git@github.com:UPango/previous.git"]);
+          yield* git(cwd, ["remote", "add", "upstream", "git@github.com:SergioUP/previous.git"]);
         }
 
         const resolver = yield* RepositoryIdentityResolver.RepositoryIdentityResolver;
         const initialIdentity = yield* resolver.resolve(cwd);
         expect(initialIdentity?.canonicalKey).toBe(
-          change === "add" ? "github.com/julius/upcode" : "github.com/upango/previous",
+          change === "add" ? "github.com/julius/upcode" : "github.com/sergioup/previous",
         );
 
         yield* git(cwd, [
           "remote",
           change === "add" ? "add" : "set-url",
           "upstream",
-          "git@github.com:UPango/upcode.git",
+          "git@github.com:SergioUP/upcode.git",
         ]);
         expect(yield* resolver.resolve(cwd)).toEqual(initialIdentity);
         const identity = yield* resolver.resolve(cwd, { refresh: true });
 
         expect(identity).not.toBeNull();
         expect(identity?.locator.remoteName).toBe("upstream");
-        expect(identity?.canonicalKey).toBe("github.com/upango/upcode");
-        expect(identity?.displayName).toBe("upango/upcode");
+        expect(identity?.canonicalKey).toBe("github.com/sergioup/upcode");
+        expect(identity?.displayName).toBe("sergioup/upcode");
         expect(yield* resolver.resolve(cwd)).toEqual(identity);
       }).pipe(Effect.provide(RepositoryIdentityResolver.layer)),
   );
@@ -298,13 +298,13 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
 
       yield* git(cwd, ["init"]);
       yield* git(cwd, ["remote", "add", "origin", "git@github.com:julius/upcode-fork.git"]);
-      yield* git(cwd, ["remote", "add", "upstream", "git@github.com:UPango/upcode.git"]);
+      yield* git(cwd, ["remote", "add", "upstream", "git@github.com:SergioUP/upcode.git"]);
 
       const resolver = yield* RepositoryIdentityResolver.RepositoryIdentityResolver;
       const identity = yield* resolver.resolve(cwd);
 
-      expect(identity?.canonicalKey).toBe("github.com/upango/upcode");
-      expect(identity?.displayName).toBe("upango/upcode");
+      expect(identity?.canonicalKey).toBe("github.com/sergioup/upcode");
+      expect(identity?.displayName).toBe("sergioup/upcode");
       expect(identity?.origin).toEqual({
         canonicalKey: "github.com/julius/upcode-fork",
         displayName: "julius/upcode-fork",
@@ -320,15 +320,15 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
       });
 
       yield* git(cwd, ["init"]);
-      yield* git(cwd, ["remote", "add", "origin", "git@gitlab.com:UPango/platform/upcode.git"]);
+      yield* git(cwd, ["remote", "add", "origin", "git@gitlab.com:SergioUP/platform/upcode.git"]);
 
       const resolver = yield* RepositoryIdentityResolver.RepositoryIdentityResolver;
       const identity = yield* resolver.resolve(cwd);
 
       expect(identity).not.toBeNull();
-      expect(identity?.canonicalKey).toBe("gitlab.com/upango/platform/upcode");
-      expect(identity?.displayName).toBe("upango/platform/upcode");
-      expect(identity?.owner).toBe("upango");
+      expect(identity?.canonicalKey).toBe("gitlab.com/sergioup/platform/upcode");
+      expect(identity?.displayName).toBe("sergioup/platform/upcode");
+      expect(identity?.owner).toBe("sergioup");
       expect(identity?.name).toBe("upcode");
     }).pipe(Effect.provide(RepositoryIdentityResolver.layer)),
   );
@@ -348,7 +348,7 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
         const initialIdentity = yield* resolver.resolve(cwd);
         expect(initialIdentity).toBeNull();
 
-        yield* git(cwd, ["remote", "add", "origin", "git@github.com:UPango/upcode.git"]);
+        yield* git(cwd, ["remote", "add", "origin", "git@github.com:SergioUP/upcode.git"]);
 
         for (const _attempt of [1, 2, 3]) {
           const cachedIdentity = yield* resolver.resolve(cwd);
@@ -359,7 +359,7 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
 
         const refreshedIdentity = yield* resolver.resolve(cwd);
         expect(refreshedIdentity).not.toBeNull();
-        expect(refreshedIdentity?.canonicalKey).toBe("github.com/upango/upcode");
+        expect(refreshedIdentity?.canonicalKey).toBe("github.com/sergioup/upcode");
         expect(refreshedIdentity?.name).toBe("upcode");
       }).pipe(
         Effect.provide(
@@ -382,25 +382,25 @@ it.layer(NodeServices.layer)("RepositoryIdentityResolverLive", (it) => {
       });
 
       yield* git(cwd, ["init"]);
-      yield* git(cwd, ["remote", "add", "origin", "git@github.com:UPango/upcode.git"]);
+      yield* git(cwd, ["remote", "add", "origin", "git@github.com:SergioUP/upcode.git"]);
 
       const resolver = yield* RepositoryIdentityResolver.RepositoryIdentityResolver;
       const initialIdentity = yield* resolver.resolve(cwd);
       expect(initialIdentity).not.toBeNull();
-      expect(initialIdentity?.canonicalKey).toBe("github.com/upango/upcode");
+      expect(initialIdentity?.canonicalKey).toBe("github.com/sergioup/upcode");
 
-      yield* git(cwd, ["remote", "set-url", "origin", "git@github.com:UPango/upcode-next.git"]);
+      yield* git(cwd, ["remote", "set-url", "origin", "git@github.com:SergioUP/upcode-next.git"]);
 
       const cachedIdentity = yield* resolver.resolve(cwd);
       expect(cachedIdentity).not.toBeNull();
-      expect(cachedIdentity?.canonicalKey).toBe("github.com/upango/upcode");
+      expect(cachedIdentity?.canonicalKey).toBe("github.com/sergioup/upcode");
 
       yield* TestClock.adjust(Duration.millis(180));
 
       const refreshedIdentity = yield* resolver.resolve(cwd);
       expect(refreshedIdentity).not.toBeNull();
-      expect(refreshedIdentity?.canonicalKey).toBe("github.com/upango/upcode-next");
-      expect(refreshedIdentity?.displayName).toBe("upango/upcode-next");
+      expect(refreshedIdentity?.canonicalKey).toBe("github.com/sergioup/upcode-next");
+      expect(refreshedIdentity?.displayName).toBe("sergioup/upcode-next");
       expect(refreshedIdentity?.name).toBe("upcode-next");
     }).pipe(
       Effect.provide(

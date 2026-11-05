@@ -81,22 +81,22 @@ Clerk's native Android SDK uses `clerk://<applicationId>.callback`. In the Clerk
 
 | Variant     | Callback                                      |
 | ----------- | --------------------------------------------- |
-| Development | `clerk://com.upango.upcode.dev.callback`     |
-| Preview     | `clerk://com.upango.upcode.preview.callback` |
-| Production  | `clerk://com.upango.upcode.callback`         |
+| Development | `clerk://com.sergioup.upcode.dev.callback`     |
+| Preview     | `clerk://com.sergioup.upcode.preview.callback` |
+| Production  | `clerk://com.sergioup.upcode.callback`         |
 
 Preserve existing entries. These callbacks are separate from the `upcode-dev` / `upcode-preview` / `upcode` navigation schemes. A private development build using the production Clerk key still needs its development callback allowed by that instance's administrator; rebuilding the same package does not change the allowlist.
 
 ## Desktop passkeys
 
-For a production macOS app with bundle ID `com.upango.upcode`:
+For a production macOS app with bundle ID `com.sergioup.upcode`:
 
 1. Create an explicit macOS App ID in the Apple Developer portal with **Associated Domains**.
 2. Create a provisioning profile for that App ID and the distribution signing certificate.
 3. In Clerk's Native API settings, add an iOS app with the same Apple Team ID and bundle ID.
    This setting also configures Electron/macOS passkeys.
 4. Check `https://<frontend-api>/.well-known/apple-app-site-association`. Its
-   `webcredentials.apps` must include `<TEAM_ID>.com.upango.upcode`.
+   `webcredentials.apps` must include `<TEAM_ID>.com.sergioup.upcode`.
 5. Configure signing as described in the [release runbook](./release.md#2-apple-signing--notarization-setup-macos).
 
 Local signed builds additionally use:

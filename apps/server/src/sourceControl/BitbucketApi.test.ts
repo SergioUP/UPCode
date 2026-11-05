@@ -43,7 +43,7 @@ const bitbucketPullRequest = {
     branch: { name: "main" },
     repository: {
       full_name: "SergioUP/UPCode",
-      workspace: { slug: "pingdotgg" },
+      workspace: { slug: "SergioUP" },
     },
   },
 };
@@ -841,7 +841,7 @@ it.effect("checks out same-repository pull requests with the existing Bitbucket 
           branch: { name: "feature/source-control" },
           repository: {
             full_name: "SergioUP/UPCode",
-            workspace: { slug: "pingdotgg" },
+            workspace: { slug: "SergioUP" },
           },
         },
       }),
@@ -899,7 +899,7 @@ it.effect("preserves Git checkout failures without deriving the domain message f
           branch: { name: "feature/source-control" },
           repository: {
             full_name: "SergioUP/UPCode",
-            workspace: { slug: "pingdotgg" },
+            workspace: { slug: "SergioUP" },
           },
         },
       }),

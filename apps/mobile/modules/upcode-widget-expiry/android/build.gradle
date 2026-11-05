@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'org.jetbrains.kotlin.android'
 
-group = 'com.upango.widgetexpiry'
+group = 'com.sergioup.widgetexpiry'
 version = '0.0.0'
 
 android {

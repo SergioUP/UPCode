@@ -3,7 +3,7 @@ plugins {
   id 'expo-module-gradle-plugin'
 }
 
-group = 'com.upango.agentnotifications'
+group = 'com.sergioup.agentnotifications'
 version = '0.0.0'
 
 android {

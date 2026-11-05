@@ -91,7 +91,7 @@ On macOS, check **System Settings → General → Login Items** if the service n
 longer starts at login. If agent work cannot access Desktop, Documents, or
 Downloads, it may need Full Disk Access for the `upcode` executable listed in
 `ProgramArguments` in
-`~/Library/LaunchAgents/com.upango.upcode.service.plist`.
+`~/Library/LaunchAgents/com.sergioup.upcode.service.plist`.
 
 For failures after signing in to UPCode Connect, see
 [connection troubleshooting](./remote-access.md#upcode-connect-troubleshooting).

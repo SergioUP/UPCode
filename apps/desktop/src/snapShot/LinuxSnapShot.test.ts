@@ -41,7 +41,7 @@ import {
 } from "./LinuxSnapShot.ts";
 
 const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0]);
-const appId = "com.upango.UPCode";
+const appId = "com.sergioup.UPCode";
 const metadata = {
   title: "Editor",
   appName: "Text Editor",

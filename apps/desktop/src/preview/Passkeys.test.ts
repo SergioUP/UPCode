@@ -301,7 +301,7 @@ describe("PreviewPasskeys", () => {
         Effect.provide(
           layerFor({
             upcodeWebAuthn: {
-              touchIdKeychainAccessGroup: "ABC1234567.com.upango.upcode.webauthn",
+              touchIdKeychainAccessGroup: "ABC1234567.com.sergioup.upcode.webauthn",
               browserPasskeys: false,
             },
           }),
@@ -309,7 +309,7 @@ describe("PreviewPasskeys", () => {
       );
       yield* entitled.configure;
       assert.deepStrictEqual(electron.configureWebAuthn.mock.calls, [
-        [{ touchID: { keychainAccessGroup: "ABC1234567.com.upango.upcode.webauthn" } }],
+        [{ touchID: { keychainAccessGroup: "ABC1234567.com.sergioup.upcode.webauthn" } }],
       ]);
       assert.isFalse(entitled.bridgeEnabled);
       const { guest, handlers } = makeGuest();

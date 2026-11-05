@@ -58,15 +58,15 @@ const invocation = (
 
 function makeProject(
   repositoryIdentity: OrchestrationProjectShell["repositoryIdentity"] = {
-    canonicalKey: "github.com/upango/upcode",
+    canonicalKey: "github.com/sergioup/upcode",
     locator: {
       source: "git-remote",
       remoteName: "origin",
-      remoteUrl: "git@github.com:UPango/UPCode.git",
+      remoteUrl: "git@github.com:SergioUP/UPCode.git",
     },
     provider: "github",
-    displayName: "UPango/UPCode",
-    owner: "UPango",
+    displayName: "SergioUP/UPCode",
+    owner: "SergioUP",
     name: "UPCode",
   },
 ): OrchestrationProjectShell {
@@ -112,9 +112,9 @@ function makeLink(
   const { headBranch, baseBranch, ...rest } = overrides;
   return {
     host: "github.com",
-    repository: "upango/upcode",
+    repository: "sergioup/upcode",
     number,
-    url: `https://github.com/upango/upcode/pull/${number}`,
+    url: `https://github.com/sergioup/upcode/pull/${number}`,
     source: "manual",
     linkedAt: "2026-08-10T00:00:00.000Z",
     snapshot:
@@ -247,13 +247,13 @@ describe("pull request toolkit handlers", () => {
     Effect.gen(function* () {
       const harness = yield* makeHarness();
       const result = yield* harness.call("link_pull_request", {
-        url: "https://github.com/UPango/UPCode/pull/123/files",
+        url: "https://github.com/SergioUP/UPCode/pull/123/files",
       });
       expect(result).toEqual({
         host: "github.com",
-        repository: "upango/upcode",
+        repository: "sergioup/upcode",
         number: 123,
-        url: "https://github.com/UPango/UPCode/pull/123/files",
+        url: "https://github.com/SergioUP/UPCode/pull/123/files",
         alreadyLinked: false,
       });
       expect(yield* Ref.get(harness.commands)).toMatchObject([
@@ -261,7 +261,7 @@ describe("pull request toolkit handlers", () => {
           type: "thread.pull-request.link",
           threadId: THREAD_ID,
           host: "github.com",
-          repository: "upango/upcode",
+          repository: "sergioup/upcode",
           number: 123,
           source: "agent",
         },
@@ -273,7 +273,7 @@ describe("pull request toolkit handlers", () => {
     Effect.gen(function* () {
       const harness = yield* makeHarness();
       const result = yield* harness.call("watch_pull_request", {
-        url: "https://github.com/upango/upcode/pull/9",
+        url: "https://github.com/sergioup/upcode/pull/9",
       });
       // The harness thread never changes, so the result reports what it still holds.
       expect(result).toMatchObject({ number: 9, watching: false, wasWatching: false });
@@ -282,7 +282,7 @@ describe("pull request toolkit handlers", () => {
           type: "thread.pull-request.watch",
           number: 9,
           watching: true,
-          link: { url: "https://github.com/upango/upcode/pull/9", source: "agent" },
+          link: { url: "https://github.com/sergioup/upcode/pull/9", source: "agent" },
         },
       ]);
     }),
@@ -310,11 +310,11 @@ describe("pull request toolkit handlers", () => {
         ]),
       });
       const error = yield* harness
-        .call("watch_pull_request", { repository: "upango/upcode", number: 1 })
+        .call("watch_pull_request", { repository: "sergioup/upcode", number: 1 })
         .pipe(Effect.flip);
       expect(error).toMatchObject({ _tag: "PullRequestNotOpenError", state: "merged" });
       expect(
-        yield* harness.call("unwatch_pull_request", { repository: "upango/upcode", number: 3 }),
+        yield* harness.call("unwatch_pull_request", { repository: "sergioup/upcode", number: 3 }),
       ).toMatchObject({ wasWatching: true });
       expect(yield* Ref.get(harness.commands)).toMatchObject([
         { type: "thread.pull-request.watch", number: 3, watching: false },
@@ -330,7 +330,7 @@ describe("pull request toolkit handlers", () => {
           { ...closed, snapshot: closed.snapshot && { ...closed.snapshot, state: "closed" } },
         ]),
       });
-      yield* harness.call("watch_pull_request", { repository: "upango/upcode", number: 1 });
+      yield* harness.call("watch_pull_request", { repository: "sergioup/upcode", number: 1 });
       expect(yield* Ref.get(harness.commands)).toMatchObject([
         { type: "thread.pull-request.watch", number: 1, watching: true },
       ]);
@@ -350,7 +350,7 @@ describe("pull request toolkit handlers", () => {
         },
       });
       const error = yield* harness
-        .call("watch_pull_request", { repository: "upango/upcode", number: 1 })
+        .call("watch_pull_request", { repository: "sergioup/upcode", number: 1 })
         .pipe(Effect.flip);
       expect(error).toMatchObject({ _tag: "PullRequestWatchFromSubagentError" });
       expect(yield* Ref.get(harness.commands)).toEqual([]);
@@ -361,14 +361,14 @@ describe("pull request toolkit handlers", () => {
     Effect.gen(function* () {
       const harness = yield* makeHarness();
       const result = yield* harness.call("link_pull_request", {
-        repository: "UPango/Other",
+        repository: "SergioUP/Other",
         number: 7,
       });
       expect(result).toEqual({
         host: "github.com",
-        repository: "upango/other",
+        repository: "sergioup/other",
         number: 7,
-        url: "https://github.com/upango/other/pull/7",
+        url: "https://github.com/sergioup/other/pull/7",
         alreadyLinked: false,
       });
     }),
@@ -440,7 +440,7 @@ describe("pull request toolkit handlers", () => {
       expect(error).toMatchObject({ _tag: "PullRequestTargetIncompleteError" });
       const unknown = yield* harness
         .call("link_pull_request", {
-          url: "https://github.com/upango/upcode/issues/1?token=private-value",
+          url: "https://github.com/sergioup/upcode/issues/1?token=private-value",
         })
         .pipe(Effect.flip);
       expect(unknown).toMatchObject({ _tag: "PullRequestUrlInvalidError" });
@@ -457,7 +457,7 @@ describe("pull request toolkit handlers", () => {
           command.type === "thread.pull-request.link" ? "already linked" : null,
       });
       const result = yield* harness.call("link_pull_request", {
-        url: "https://github.com/upango/upcode/pull/123",
+        url: "https://github.com/sergioup/upcode/pull/123",
       });
       expect(result.alreadyLinked).toBe(true);
     }),
@@ -473,17 +473,17 @@ describe("pull request toolkit handlers", () => {
             : null,
       });
       const linked = yield* harness.call("unlink_pull_request", {
-        repository: "upango/upcode",
+        repository: "sergioup/upcode",
         number: 5,
       });
       expect(linked).toEqual({
         host: "github.com",
-        repository: "upango/upcode",
+        repository: "sergioup/upcode",
         number: 5,
         wasLinked: true,
       });
       const missing = yield* harness.call("unlink_pull_request", {
-        url: "https://github.com/upango/upcode/pull/9",
+        url: "https://github.com/sergioup/upcode/pull/9",
       });
       expect(missing.wasLinked).toBe(false);
       expect(yield* Ref.get(harness.commands)).toMatchObject([
@@ -497,7 +497,7 @@ describe("pull request toolkit handlers", () => {
       makeThread([
         makeLink(42, {
           host: "forge.example",
-          url: "http://forge.example:3000/upango/upcode/pulls/42",
+          url: "http://forge.example:3000/sergioup/upcode/pulls/42",
         }),
       ]),
     );
@@ -527,9 +527,9 @@ describe("pull request toolkit handlers", () => {
       expect(result.pullRequests.map((entry) => entry.number)).toEqual([3, 1, 2, 10]);
       expect(result.pullRequests[0]).toEqual({
         host: "github.com",
-        repository: "upango/upcode",
+        repository: "sergioup/upcode",
         number: 3,
-        url: "https://github.com/upango/upcode/pull/3",
+        url: "https://github.com/sergioup/upcode/pull/3",
         source: "agent",
         watching: false,
         state: "open",
@@ -560,7 +560,7 @@ describe("listThreadPullRequests", () => {
       kind: "native" as const,
       id: "stack-1",
       number: 1,
-      url: "https://github.com/upango/upcode/stack/1",
+      url: "https://github.com/sergioup/upcode/stack/1",
       base: "main",
       layers: [
         { number: 1, headBranch: "a", state: "open" as const },
@@ -605,7 +605,7 @@ describe("pull request guide tools", () => {
         const result = yield* harness.call("write_pull_request_guides", {
           pullRequests: [
             { url: "https://github.com/acme/web/pull/7" },
-            { repository: "upango/upcode", number: 12 },
+            { repository: "sergioup/upcode", number: 12 },
             { url: "https://github.com/someone/else/pull/1" },
           ],
         });
@@ -613,7 +613,7 @@ describe("pull request guide tools", () => {
           result.guides.map((guide) => [guide.repository, guide.number, guide.outcome]),
         ).toEqual([
           ["acme/web", 7, "started"],
-          ["upango/upcode", 12, "started"],
+          ["sergioup/upcode", 12, "started"],
           ["someone/else", 1, "failed"],
         ]);
         expect(result.guides[2]?.detail).toContain("No project in this environment");
@@ -649,8 +649,8 @@ describe("pull request guide tools", () => {
       });
       const result = yield* harness.call("write_pull_request_guides", {
         pullRequests: [
-          { repository: "upango/upcode", number: 1 },
-          { repository: "upango/upcode", number: 2 },
+          { repository: "sergioup/upcode", number: 1 },
+          { repository: "sergioup/upcode", number: 2 },
         ],
       });
       expect(result.guides.map((guide) => [guide.number, guide.outcome, guide.detail])).toEqual([
@@ -666,8 +666,8 @@ describe("pull request guide tools", () => {
       const result = yield* harness.call("write_pull_request_guides", {
         pullRequests: [
           { url: "https://example.com/not-a-pull-request" },
-          { repository: "upango/upcode" },
-          { repository: "upango/upcode", number: 5 },
+          { repository: "sergioup/upcode" },
+          { repository: "sergioup/upcode", number: 5 },
         ],
       });
       expect(result.guides.map((guide) => guide.outcome)).toEqual(["failed", "failed", "started"]);
@@ -688,7 +688,7 @@ describe("pull request guide tools", () => {
           }),
       });
       const result = yield* harness.call("write_pull_request_guides", {
-        pullRequests: [{ repository: "upango/upcode", number: 4 }],
+        pullRequests: [{ repository: "sergioup/upcode", number: 4 }],
       });
       expect(result.guides.map((guide) => guide.outcome)).toEqual(["running"]);
     }),
@@ -726,7 +726,7 @@ describe("pull request guide tools", () => {
     Effect.gen(function* () {
       const harness = yield* makeHarness();
       const result = yield* harness.call("read_pull_request_guide", {
-        repository: "upango/upcode",
+        repository: "sergioup/upcode",
         number: 3,
       });
       expect(result).toMatchObject({ number: 3, guide: null, run: null, stale: false });

@@ -52,7 +52,7 @@ const target: LiveActivities.TargetRow = {
   platform: "android",
   ios_major_version: null,
   app_version: null,
-  bundle_id: "com.upango.upcode.dev",
+  bundle_id: "com.sergioup.upcode.dev",
   aps_environment: null,
   push_token: "fcm-token",
   push_to_start_token: null,

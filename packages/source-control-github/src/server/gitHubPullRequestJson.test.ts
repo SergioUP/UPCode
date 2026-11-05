@@ -2077,8 +2077,8 @@ describe("pull request watch fingerprints", () => {
     );
     expect(document?.query).toContain("w1: repository(owner: $w1_owner, name: $w1_name)");
     expect(document?.variables).toEqual({
-      w0_owner: "pingdotgg",
-      w0_name: "upcode",
+      w0_owner: "SergioUP",
+      w0_name: "UPCode",
       w0_number: 7,
       w1_owner: "pingdotgg",
       w1_name: "lakebed",
