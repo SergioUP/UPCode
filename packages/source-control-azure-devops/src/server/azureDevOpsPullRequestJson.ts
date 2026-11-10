@@ -7,7 +7,9 @@ import type {
   PullRequestComment,
   PullRequestMergeMethod,
   PullRequestMergeability,
+  PullRequestReviewThread,
   PullRequestState,
+  PullRequestThreadComment,
 } from "@t3tools/contracts";
 import { TrimmedNonEmptyString } from "@t3tools/contracts";
 import { decodeJsonResult } from "@t3tools/shared/schemaJson";
@@ -81,11 +83,26 @@ const RawPullRequestSchema = Schema.Struct({
 });
 
 /** A pull request thread, which is how Azure keeps its conversation. */
+const RawThreadPositionSchema = Schema.Struct({
+  line: Schema.optional(Schema.NullOr(Schema.Int)),
+  offset: Schema.optional(Schema.NullOr(Schema.Int)),
+});
+
 const RawThreadSchema = Schema.Struct({
   id: Schema.Int,
   isDeleted: Schema.optional(Schema.NullOr(Schema.Boolean)),
+  /** `Active` and `Pending` are open threads; `Fixed` and friends read as settled. */
+  status: Schema.optional(Schema.NullOr(Schema.String)),
   threadContext: Schema.optional(
-    Schema.NullOr(Schema.Struct({ filePath: Schema.optional(Schema.NullOr(Schema.String)) })),
+    Schema.NullOr(
+      Schema.Struct({
+        filePath: Schema.optional(Schema.NullOr(Schema.String)),
+        leftFileStart: Schema.optional(Schema.NullOr(RawThreadPositionSchema)),
+        leftFileEnd: Schema.optional(Schema.NullOr(RawThreadPositionSchema)),
+        rightFileStart: Schema.optional(Schema.NullOr(RawThreadPositionSchema)),
+        rightFileEnd: Schema.optional(Schema.NullOr(RawThreadPositionSchema)),
+      }),
+    ),
   ),
   comments: Schema.optional(
     Schema.NullOr(
@@ -330,6 +347,45 @@ export function decodeViewerJson(raw: string): Result.Result<string | null, Deco
     : Result.fail(decoded.failure);
 }
 
+/** The conversation one pull request carries: the flat timeline and the line-anchored threads. */
+export interface AzureDevOpsConversation {
+  readonly comments: ReadonlyArray<PullRequestComment>;
+  readonly threads: ReadonlyArray<PullRequestReviewThread>;
+}
+
+/** Azure's thread statuses that read as settled; the rest stay open. */
+const threadIsResolved = (status: string | null): boolean => {
+  const normalized = status?.trim().toLowerCase() ?? "";
+  return ["fixed", "closed", "wontfix", "bydesign", "notapplicable"].includes(normalized);
+};
+
+/** The comments of one thread, oldest first, dropping the ones that are not remarks. */
+const threadComments = (
+  thread: Schema.Schema.Type<typeof RawThreadSchema>,
+): ReadonlyArray<PullRequestThreadComment> => {
+  const comments: PullRequestThreadComment[] = [];
+  for (const comment of thread.comments ?? []) {
+    const publishedDate = trimmed(comment.publishedDate);
+    if (
+      comment.isDeleted === true ||
+      comment.commentType?.trim().toLowerCase() === "system" ||
+      (comment.content ?? "").trim().length === 0 ||
+      publishedDate === null
+    ) {
+      continue;
+    }
+    comments.push({
+      id: `${thread.id}:${comment.id ?? 0}`,
+      author: toActor(comment.author),
+      body: comment.content ?? "",
+      createdAt: publishedDate,
+      editedAt: null,
+      url: null,
+    });
+  }
+  return comments.toSorted((left, right) => left.createdAt.localeCompare(right.createdAt));
+};
+
 /**
  * Azure keeps its conversation as threads of comments, and every one of them is a remark
  * somebody wrote: a reply under a thread is as much of the conversation as the line that opened
@@ -338,45 +394,63 @@ export function decodeViewerJson(raw: string): Result.Result<string | null, Deco
  * Azure answers the whole thread collection in one response, with no cursor and no page to
  * follow, so what this returns is everything the host has.
  */
-export function decodeThreadsJson(
+export function decodeConversationJson(
   raw: string,
-): Result.Result<ReadonlyArray<PullRequestComment>, DecodeFailure> {
+): Result.Result<AzureDevOpsConversation, DecodeFailure> {
   const decoded = decodeThreadPage(raw);
   if (!Result.isSuccess(decoded)) {
     return Result.fail(decoded.failure);
   }
   const comments: PullRequestComment[] = [];
+  const threads: PullRequestReviewThread[] = [];
   for (const entry of decoded.success.value) {
     const decodedThread = decodeThreadEntry(entry);
     if (Exit.isFailure(decodedThread)) continue;
     const thread = decodedThread.value;
     if (thread.isDeleted === true) continue;
+    const threadRemarks = threadComments(thread);
+    if (threadRemarks.length === 0) continue;
     const path = trimmed(thread.threadContext?.filePath);
-    for (const comment of thread.comments ?? []) {
-      const publishedDate = trimmed(comment.publishedDate);
-      if (
-        comment.isDeleted === true ||
-        comment.commentType?.trim().toLowerCase() === "system" ||
-        (comment.content ?? "").trim().length === 0 ||
-        publishedDate === null
-      ) {
-        continue;
-      }
+    for (const comment of threadRemarks) {
       comments.push({
-        id: `${thread.id}:${comment.id ?? 0}`,
+        id: comment.id,
         kind: path === null ? "issue-comment" : "review-comment",
-        author: toActor(comment.author),
-        body: comment.content ?? "",
-        createdAt: publishedDate,
+        author: comment.author,
+        body: comment.body,
+        createdAt: comment.createdAt,
         url: null,
         path,
         reviewState: null,
       });
     }
+    if (path === null) continue;
+    // A thread carries both anchors when it was moved across the change; the
+    // right side is the one a reader of today's diff can still find it on.
+    const rightLine = thread.threadContext?.rightFileStart?.line ?? null;
+    const leftLine = thread.threadContext?.leftFileStart?.line ?? null;
+    threads.push({
+      id: String(thread.id),
+      path,
+      line: rightLine ?? leftLine,
+      side: rightLine !== null ? "right" : "left",
+      isResolved: threadIsResolved(thread.status ?? null),
+      isOutdated: false,
+      comments: threadRemarks,
+    });
   }
-  return Result.succeed(
-    comments.toSorted((left, right) => left.createdAt.localeCompare(right.createdAt)),
-  );
+  return Result.succeed({
+    comments: comments.toSorted((left, right) => left.createdAt.localeCompare(right.createdAt)),
+    threads,
+  });
+}
+
+export function decodeThreadsJson(
+  raw: string,
+): Result.Result<ReadonlyArray<PullRequestComment>, DecodeFailure> {
+  const decoded = decodeConversationJson(raw);
+  return Result.isSuccess(decoded)
+    ? Result.succeed(decoded.success.comments)
+    : Result.fail(decoded.failure);
 }
 
 /**

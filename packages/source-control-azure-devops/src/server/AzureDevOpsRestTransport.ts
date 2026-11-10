@@ -6,6 +6,8 @@ import type * as SourceControlHost from "@t3tools/source-control-core/server/Sou
 import { settings as azureSettings } from "../client/definition.ts";
 
 const API_VERSION = "7.1";
+/** `connectionData` answers HTTP 400 on the plain version; it only exists as a preview. */
+const CONNECTION_DATA_VERSION = "7.1-preview.1";
 const timeoutMs = 30_000;
 
 /** No request URL or error body is included in messages: either may contain private data. */
@@ -37,7 +39,7 @@ const loadDescription = async (path: string): Promise<string> => {
 async function fetchText(input: {
   url: string;
   method: string;
-  pat: string;
+  authorization: string;
   body?: unknown;
   maxOutputBytes: number;
 }): Promise<{ status: number; ok: boolean; text: string }> {
@@ -47,7 +49,7 @@ async function fetchText(input: {
     const response = await fetch(input.url, {
       method: input.method,
       headers: {
-        Authorization: `Basic ${Buffer.from(`:${input.pat}`, "utf8").toString("base64")}`,
+        Authorization: input.authorization,
         Accept: "application/json",
         ...(input.body === undefined ? {} : { "Content-Type": "application/json" }),
       },
@@ -109,11 +111,11 @@ function option(args: readonly string[], flag: string): string | undefined {
   return args.find((part) => part.startsWith(`${flag}=`))?.slice(flag.length + 1);
 }
 
-function query(values: Record<string, string | undefined>): string {
+function query(values: Record<string, string | undefined>, version = API_VERSION): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(values))
     if (value !== undefined) params.set(key, value);
-  params.set("api-version", API_VERSION);
+  params.set("api-version", version);
   return `?${params.toString()}`;
 }
 
@@ -130,8 +132,17 @@ export function makeAzureDevOpsRestTransport(host: SourceControlHost.SourceContr
     Effect.gen(function* () {
       const remote = yield* host.git.readConfigValue(cwd, "remote.origin.url");
       const location = remote === null ? null : parseAzureRemote(remote);
-      if (location === null)
-        return yield* Effect.fail(new AzureDevOpsRestTransportError("configuration"));
+      if (location === null) {
+        const settings = yield* host.settings.get;
+        const credential = readSourceControlHostSettings(
+          azureSettings,
+          settings.sourceControlHosts["azure-devops"],
+        );
+        if (!credential.organization)
+          return yield* Effect.fail(new AzureDevOpsRestTransportError("configuration"));
+        // PR ids are organization-wide. Explicit invoke routes carry their own project/repository.
+        return { organization: credential.organization, project: "", repository: "" };
+      }
       return location;
     });
 
@@ -152,12 +163,40 @@ export function makeAzureDevOpsRestTransport(host: SourceControlHost.SourceContr
       );
       const pat = credential.personalAccessToken;
       if (
-        !pat ||
         !credential.organization ||
         credential.organization.toLowerCase() !== location.organization.toLowerCase()
       )
         return yield* Effect.fail(new AzureDevOpsRestTransportError("configuration"));
       const organization = credential.organization;
+      const authorization = pat
+        ? `Basic ${Buffer.from(`:${pat}`, "utf8").toString("base64")}`
+        : yield* host.process
+            .run({
+              operation: "azureDevOpsAccessToken",
+              command: "az",
+              cwd: input.cwd,
+              args: [
+                "account",
+                "get-access-token",
+                "--resource",
+                "499b84ac-1321-427f-aa17-267ca6975798",
+                "--query",
+                "accessToken",
+                "--output",
+                "tsv",
+                "--only-show-errors",
+              ],
+              timeoutMs: 8_000,
+              maxOutputBytes: 32_768,
+            })
+            .pipe(
+              Effect.mapError(() => new AzureDevOpsRestTransportError("authentication")),
+              Effect.flatMap((result) =>
+                result.stdout.trim()
+                  ? Effect.succeed(`Bearer ${result.stdout.trim()}`)
+                  : Effect.fail(new AzureDevOpsRestTransportError("authentication")),
+              ),
+            );
       const base = `https://${input.service === "identities" ? "vssps.dev.azure.com" : "dev.azure.com"}/${encodeURIComponent(organization)}`;
       const path = input.path
         .replaceAll("{project}", encodeURIComponent(location.project))
@@ -167,7 +206,7 @@ export function makeAzureDevOpsRestTransport(host: SourceControlHost.SourceContr
           fetchText({
             url: `${base}${path}`,
             method: input.method ?? "GET",
-            pat,
+            authorization,
             body: input.body,
             maxOutputBytes: input.maxOutputBytes ?? 16 * 1024 * 1024,
           }),
@@ -183,7 +222,14 @@ export function makeAzureDevOpsRestTransport(host: SourceControlHost.SourceContr
       return response.text;
     });
 
-  const execute = (input: { cwd: string; args: readonly string[]; maxOutputBytes?: number }) =>
+  const execute = (input: {
+    cwd: string;
+    args: readonly string[];
+    maxOutputBytes?: number;
+    /** A write travels with its verb and JSON body; reads stay GET. */
+    method?: string;
+    body?: unknown;
+  }) =>
     Effect.gen(function* () {
       const args = input.args;
       const prefix = args.slice(0, 3).join(" ");
@@ -224,13 +270,17 @@ export function makeAzureDevOpsRestTransport(host: SourceControlHost.SourceContr
         const suffix =
           resource === "pullRequestThreads"
             ? `pullRequests/${pr}/threads`
-            : resource === "pullRequestIterations"
-              ? `pullRequests/${pr}/iterations`
-              : resource === "pullRequestIterationChanges"
-                ? `pullRequests/${pr}/iterations/${encodeURIComponent(route.iterationId ?? "")}/changes`
-                : resource === "items"
-                  ? "items"
-                  : null;
+            : resource === "pullRequestThreadComments"
+              ? `pullRequests/${pr}/threads/${encodeURIComponent(route.threadId ?? "")}/comments`
+              : resource === "pullRequestThread"
+                ? `pullRequests/${pr}/threads/${encodeURIComponent(route.threadId ?? "")}`
+                : resource === "pullRequestIterations"
+                  ? `pullRequests/${pr}/iterations`
+                  : resource === "pullRequestIterationChanges"
+                    ? `pullRequests/${pr}/iterations/${encodeURIComponent(route.iterationId ?? "")}/changes`
+                    : resource === "items"
+                      ? "items"
+                      : null;
         if (suffix === null) return yield* Effect.fail(new AzureDevOpsRestTransportError("failed"));
         raw = yield* request({
           ...input,
@@ -238,7 +288,10 @@ export function makeAzureDevOpsRestTransport(host: SourceControlHost.SourceContr
         });
       } else if (args[0] === "account" && args[1] === "show") {
         const connection = parseJson<{ authenticatedUser?: { uniqueName?: string } }>(
-          yield* request({ ...input, path: `/_apis/connectionData${query({})}` }),
+          yield* request({
+            ...input,
+            path: `/_apis/connectionData${query({}, CONNECTION_DATA_VERSION)}`,
+          }),
         );
         raw = stringifyJson({ name: connection.authenticatedUser?.uniqueName ?? null });
       } else if (prefix === "repos pr list") {
@@ -256,7 +309,10 @@ export function makeAzureDevOpsRestTransport(host: SourceControlHost.SourceContr
         const viewer =
           creator === "me"
             ? parseJson<{ authenticatedUser?: { id?: string } }>(
-                yield* request({ ...input, path: `/_apis/connectionData${query({})}` }),
+                yield* request({
+                  ...input,
+                  path: `/_apis/connectionData${query({}, CONNECTION_DATA_VERSION)}`,
+                }),
               )
             : null;
         const creatorId =
@@ -274,7 +330,7 @@ export function makeAzureDevOpsRestTransport(host: SourceControlHost.SourceContr
         const id = encodeURIComponent(option(args, "--id") ?? "");
         raw = yield* request({
           ...input,
-          path: `/${project}/_apis/git/pullrequests/${id}${query({ includeLinks: "true" })}`,
+          path: `${project ? `/${project}` : ""}/_apis/git/pullrequests/${id}${query({ includeLinks: "true" })}`,
         });
       } else if (prefix === "repos pr create") {
         const title = option(args, "--title");
@@ -312,7 +368,10 @@ export function makeAzureDevOpsRestTransport(host: SourceControlHost.SourceContr
         if (squash !== undefined) body.completionOptions = { squashMerge: squash === "true" };
         if (autoComplete !== undefined) {
           const connection = parseJson<{ authenticatedUser?: { id?: string } }>(
-            yield* request({ ...input, path: `/_apis/connectionData${query({})}` }),
+            yield* request({
+              ...input,
+              path: `/_apis/connectionData${query({}, CONNECTION_DATA_VERSION)}`,
+            }),
           );
           if (autoComplete === "true" && !connection.authenticatedUser?.id)
             return yield* Effect.fail(new AzureDevOpsRestTransportError("failed"));

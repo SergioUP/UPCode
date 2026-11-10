@@ -4,9 +4,12 @@ import { AzureDevOpsWorkspaceError } from "@t3tools/contracts";
 import { readSourceControlHostSettings } from "@t3tools/source-control-core/client/definition";
 import { settings as azureSettings } from "@t3tools/source-control-azure-devops/client/definition";
 import * as ServerSettings from "./serverSettings.ts";
+import * as AzureDevOpsAzCli from "./azureDevOpsAzCli.ts";
 
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
 const API_VERSION = "7.1";
+/** `connectionData` answers HTTP 400 on the plain version; it only exists as a preview. */
+const CONNECTION_DATA_VERSION = "7.1-preview.1";
 
 type AzureFields = Record<string, unknown>;
 type AzureRelation = { rel?: string; url?: string; attributes?: { name?: string } };
@@ -79,6 +82,15 @@ const identity = (value: unknown): string | null =>
 /** ADO hands back a full identity object; the avatar and the unique name hang off it. */
 const identityProperty = (value: unknown, key: string): string | null =>
   value && typeof value === "object" ? text((value as Record<string, unknown>)[key]) || null : null;
+/**
+ * Azure DevOps stamps the caller on every response as `X-VSS-UserData: <id>:<email>`,
+ * so a PAT is enough to know who "mine" is: no extra round trip and no CLI.
+ */
+const viewerIdFromResponse = (headers: Headers): string | null => {
+  const raw = headers.get("x-vss-userdata") ?? "";
+  const id = raw.slice(0, raw.indexOf(":")).toLowerCase();
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id) ? id : null;
+};
 const fieldText = (value: unknown): string | null => {
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   if (typeof value === "string") {
@@ -129,6 +141,10 @@ const applyAzCliPat = (pat: string) => {
 
 export const make = Effect.gen(function* () {
   const serverSettings = yield* ServerSettings.ServerSettingsService;
+  const cliAccessToken = yield* Effect.cachedWithTTL(
+    AzureDevOpsAzCli.getAccessToken(),
+    "10 seconds",
+  );
 
   const credentials = serverSettings.getSettings.pipe(
     Effect.map((settings) =>
@@ -137,9 +153,15 @@ export const make = Effect.gen(function* () {
     Effect.mapError(() =>
       error("configuration", "No se puede leer la configuración de Azure DevOps."),
     ),
+    Effect.tap((value) => Effect.sync(() => applyAzCliPat(value.personalAccessToken))),
     Effect.flatMap((value) => {
       if (value.organization && value.personalAccessToken)
-        return Effect.sync(() => applyAzCliPat(value.personalAccessToken)).pipe(Effect.as(value));
+        return Effect.sync(() => applyAzCliPat(value.personalAccessToken)).pipe(
+          Effect.as({
+            organization: value.organization,
+            authorization: `Basic ${Buffer.from(`:${value.personalAccessToken}`, "utf8").toString("base64")}`,
+          }),
+        );
       if (!value.organization && value.personalAccessToken)
         return Effect.fail(
           error(
@@ -148,16 +170,25 @@ export const make = Effect.gen(function* () {
           ),
         );
       if (value.organization && !value.personalAccessToken)
-        return Effect.fail(
-          error(
-            "configuration",
-            "Falta el Personal Access Token. Pégalo en Ajustes → Source control. Se guarda solo.",
+        return cliAccessToken.pipe(
+          Effect.flatMap((token) =>
+            token
+              ? Effect.succeed({
+                  organization: value.organization,
+                  authorization: `Bearer ${token}`,
+                })
+              : Effect.fail(
+                  error(
+                    "authentication",
+                    "Inicia sesión con Azure CLI o configura un Personal Access Token en Ajustes → Source control.",
+                  ),
+                ),
           ),
         );
       return Effect.fail(
         error(
           "configuration",
-          "Faltan la organización y el Personal Access Token. Están en Ajustes → Source control y se guardan al pegarlos.",
+          "Configura la organización en Ajustes → Source control e inicia sesión con Azure CLI o añade un Personal Access Token.",
         ),
       );
     }),
@@ -166,7 +197,7 @@ export const make = Effect.gen(function* () {
   // Keep T3's az CLI calls (az devops / az repos) authenticated with the saved PAT.
   yield* Effect.ignore(credentials);
 
-  const request = (input: {
+  const requestWithHeaders = (input: {
     path: string;
     method?: string;
     body?: unknown;
@@ -183,7 +214,7 @@ export const make = Effect.gen(function* () {
             fetch(url, {
               method: input.method ?? "GET",
               headers: {
-                Authorization: `Basic ${Buffer.from(`:${credential.personalAccessToken}`, "utf8").toString("base64")}`,
+                Authorization: credential.authorization,
                 Accept: "application/json",
                 ...(input.body === undefined
                   ? {}
@@ -209,20 +240,29 @@ export const make = Effect.gen(function* () {
           return yield* Effect.fail(
             error("failed", "La respuesta de Azure DevOps supera el límite permitido."),
           );
-        return yield* Effect.try({
+        const body = yield* Effect.try({
           try: () => (raw.length ? (JSON.parse(raw) as unknown) : null),
           catch: () => error("failed", "Azure DevOps devolvió una respuesta no válida."),
         });
+        return { body, headers: response.headers };
       } finally {
         clearTimeout(timer);
       }
     });
+  const request = (input: {
+    path: string;
+    method?: string;
+    body?: unknown;
+    contentType?: string;
+  }) => requestWithHeaders(input).pipe(Effect.map((response) => response.body));
 
   const path = (project: string, suffix: string) =>
     `/${encode(project)}/_apis/${suffix}${suffix.includes("?") ? "&" : "?"}api-version=${API_VERSION}`;
-  const config = credentials.pipe(
-    Effect.map(({ organization }) => ({ organization, connected: true })),
-  );
+  const config = Effect.gen(function* () {
+    const { organization } = yield* credentials;
+    yield* request({ path: `/_apis/projects?api-version=${API_VERSION}&$top=1` });
+    return { organization, connected: true };
+  });
   const listProjects = request({
     path: `/_apis/projects?api-version=${API_VERSION}&$top=100`,
   }).pipe(
@@ -693,10 +733,35 @@ export const make = Effect.gen(function* () {
       const resource = repositoryId
         ? `git/repositories/${encode(repositoryId)}/pullrequests`
         : "git/pullrequests";
-      const result = (yield* request({
-        path: path(project, `${resource}?searchCriteria.status=active&$top=100`),
-      })) as { value?: Array<Record<string, unknown>> };
-      return (result.value ?? []).map((pr) => {
+      const rows: Array<Record<string, unknown>> = [];
+      let viewerId: string | null = null;
+      let offset = 0;
+      while (true) {
+        const response = yield* requestWithHeaders({
+          path: path(project, `${resource}?searchCriteria.status=active&$top=100&$skip=${offset}`),
+        });
+        viewerId ??= viewerIdFromResponse(response.headers);
+        const page = (response.body as { value?: Array<Record<string, unknown>> }).value ?? [];
+        rows.push(...page);
+        if (page.length < 100) break;
+        offset += page.length;
+      }
+      if (viewerId === null) {
+        // Some proxies strip the header; the caller identity then costs one request.
+        viewerId = yield* request({
+          path: `/_apis/connectionData?api-version=${CONNECTION_DATA_VERSION}`,
+        }).pipe(
+          Effect.map(
+            (connection) =>
+              text(
+                (connection as { authenticatedUser?: { id?: unknown } } | null)?.authenticatedUser
+                  ?.id,
+              ).toLowerCase() || null,
+          ),
+          Effect.orElseSucceed(() => null),
+        );
+      }
+      return rows.map((pr) => {
         const repository = (pr.repository ?? {}) as Record<string, unknown>;
         const createdBy = (pr.createdBy ?? {}) as Record<string, unknown>;
         const links = (pr._links ?? {}) as { web?: { href?: string } };
@@ -715,7 +780,25 @@ export const make = Effect.gen(function* () {
             links.web?.href ??
             `https://dev.azure.com/${encode(organization)}/${encode(project)}/_git/${encode(text(repository.name))}/pullrequest/${id}`,
           createdBy: text(createdBy.displayName),
+          involvesViewer: viewerId
+            ? text(createdBy.id).toLowerCase() === viewerId ||
+              (Array.isArray(pr.reviewers) ? pr.reviewers : []).some(
+                (reviewer: unknown) => identityProperty(reviewer, "id")?.toLowerCase() === viewerId,
+              )
+            : null,
           isDraft: pr.isDraft === true,
+          createdAt: text(pr.creationDate) || null,
+          reviewers: (Array.isArray(pr.reviewers) ? pr.reviewers : []).map((value: unknown) => {
+            const reviewer = (value ?? {}) as Record<string, unknown>;
+            return {
+              name: text(reviewer.displayName),
+              vote:
+                typeof reviewer.vote === "number" && Number.isInteger(reviewer.vote)
+                  ? reviewer.vote
+                  : 0,
+              required: reviewer.isRequired === true,
+            };
+          }),
         };
       });
     });

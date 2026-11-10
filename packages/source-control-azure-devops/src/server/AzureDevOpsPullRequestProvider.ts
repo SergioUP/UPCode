@@ -58,26 +58,24 @@ const CAPABILITIES: PullRequestCapabilities = {
   // Azure serves no patch of its own, so the one the Code tab reads is built here out of the
   // files an iteration changed and both sides of each of them.
   diff: true,
-  // Reading a conversation is a plain REST read, but posting one is not something this can
-  // claim without having run it, so the composer stays hidden.
-  comment: false,
+  // A remark is a thread POST: on the conversation, or pinned to a line with a thread context.
+  comment: true,
   actions: [...definition.changeRequestActions],
   // Azure squashes as a completion option; it has no rebase strategy of its own.
   mergeMethods: ["merge", "squash"],
   // `az repos pr list` filters by status, creator, reviewer and branch, and by no text at all.
   search: false,
   reactions: false,
-  // The patch has lines to write against, but writing a remark at all is what Azure is not
-  // offered for here, so nothing in a review is either.
-  review: { inlineComment: false, reply: false, resolve: false, verdicts: [] },
+  // Threads reply and settle through the same REST route that reads them. There are no verdicts
+  // to vote with: a review is remarks, posted one at a time.
+  review: { inlineComment: true, reply: true, resolve: true, verdicts: ["comment"] },
   // `az repos pr reviewer add` and `remove` name identities, and nothing anywhere in `az repos`
   // lists the ones this repository could name — that lives behind the identity and graph APIs, a
   // different service with its own permissions. So the page takes a name here rather than being
   // handed a menu built out of a guess.
   reviewers: { request: true, listCandidates: false },
   // A new title and description travel on the same `az repos pr update` that moves a pull request.
-  // Rewriting a remark is false for the same reason posting one is: this cannot put a remark on
-  // Azure DevOps at all, so there is nothing here it could rewrite either.
+  // Rewriting a remark is Azure's per-comment edit, which this has not wired up.
   edit: { changeRequest: true, comment: false },
   // Azure does keep a viewed record of its own, but only behind the undocumented contribution
   // endpoint its web UI talks to, keyed on an iteration so a push would drop every mark anyway.
@@ -173,6 +171,31 @@ export const make = Effect.gen(function* () {
         reason: "failed",
         detail: "Azure DevOps reviews cannot be written from here yet.",
       }),
+    );
+
+  /**
+   * A write needs the project and repository the checkout names: the pull request read carries
+   * them, and a checkout that names nothing has nowhere to post to.
+   */
+  const writeLocation = (
+    input: { readonly cwd: string; readonly number: number },
+    operation: string,
+  ) =>
+    cli.getPullRequest({ cwd: input.cwd, number: input.number }).pipe(
+      Effect.mapError(fail(operation)),
+      Effect.flatMap((pullRequest) =>
+        pullRequest.location === null
+          ? Effect.fail(
+              new PullRequestProviderError({
+                provider: SourceControlProviderKind.make("azure-devops"),
+                operation,
+                reason: "failed",
+                detail:
+                  "The checkout does not name the Azure DevOps repository this pull request lives in.",
+              }),
+            )
+          : Effect.succeed({ location: pullRequest.location, number: input.number }),
+      ),
     );
 
   /** A pull request Azure could not place has no diff to read, which reads as an empty one. */
@@ -395,23 +418,27 @@ export const make = Effect.gen(function* () {
         Effect.mapError(fail("getChangeRequestActivity")),
         Effect.flatMap((pullRequest) =>
           (pullRequest.location === null
-            ? Effect.succeed({ comments: [], truncated: true })
+            ? Effect.succeed({ comments: [], threads: [], truncated: true })
             : cli
-                .listThreads({
+                .listConversation({
                   cwd: input.cwd,
                   location: pullRequest.location,
                   number: input.number,
                 })
                 .pipe(
-                  Effect.map((comments) => ({ comments, truncated: false })),
-                  Effect.orElseSucceed(() => ({ comments: [], truncated: true })),
+                  Effect.map((conversation) => ({ ...conversation, truncated: false })),
+                  Effect.orElseSucceed(() => ({
+                    comments: [],
+                    threads: [],
+                    truncated: true,
+                  })),
                 )
           ).pipe(
             Effect.map((conversation): ProviderChangeRequestActivity => ({
               comments: conversation.comments,
               commentCount: conversation.comments.length,
               commentsTruncated: conversation.truncated,
-              reviewThreads: [],
+              reviewThreads: conversation.threads,
               commits: [],
             })),
           ),
@@ -631,16 +658,88 @@ export const make = Effect.gen(function* () {
         })
         .pipe(Effect.mapError(fail("setReviewerRequest"))),
 
-    // Never called: `capabilities.comment` is false, and the service refuses a comment without it.
-    comment: () => unsupported("comment"),
+    comment: (input) =>
+      writeLocation(input, "comment").pipe(
+        Effect.flatMap(({ location, number }) =>
+          cli
+            .createThread({ cwd: input.cwd, location, number, body: input.body })
+            .pipe(Effect.mapError(fail("comment"))),
+        ),
+      ),
 
-    // Declared unsupported above, so the service refuses these before a provider is reached.
-    // They exist because every provider answers the whole port.
-    submitReview: () => unsupported("submitReview"),
+    submitReview: (input) =>
+      // Azure has no verdict to vote with: a "comment" review posts the words on
+      // the conversation and every line remark as the thread it is anchored to.
+      writeLocation(input, "submitReview").pipe(
+        Effect.flatMap(({ location, number }) =>
+          Effect.all(
+            [
+              ...(input.body.trim() === ""
+                ? []
+                : [
+                    cli
+                      .createThread({ cwd: input.cwd, location, number, body: input.body })
+                      .pipe(Effect.mapError(fail("submitReview"))),
+                  ]),
+              ...input.comments.map((draft) => {
+                const position = draft.position;
+                return cli
+                  .createThread({
+                    cwd: input.cwd,
+                    location,
+                    number,
+                    body: draft.body,
+                    context:
+                      position.kind === "deleted" ||
+                      (position.kind === "context" && position.side === "left")
+                        ? {
+                            path: draft.oldPath ?? draft.path,
+                            line: position.oldLine,
+                            side: "left",
+                          }
+                        : {
+                            path: draft.path,
+                            line: position.newLine,
+                            side: "right",
+                          },
+                  })
+                  .pipe(Effect.mapError(fail("submitReview")));
+              }),
+            ],
+            { discard: true },
+          ),
+        ),
+      ),
 
-    replyToThread: () => unsupported("replyToThread"),
+    replyToThread: (input) =>
+      writeLocation(input, "replyToThread").pipe(
+        Effect.flatMap(({ location, number }) =>
+          cli
+            .replyToThread({
+              cwd: input.cwd,
+              location,
+              number,
+              threadId: Number(input.threadId),
+              body: input.body,
+            })
+            .pipe(Effect.mapError(fail("replyToThread"))),
+        ),
+      ),
 
-    setThreadResolution: () => unsupported("setThreadResolution"),
+    setThreadResolution: (input) =>
+      writeLocation(input, "setThreadResolution").pipe(
+        Effect.flatMap(({ location, number }) =>
+          cli
+            .setThreadStatus({
+              cwd: input.cwd,
+              location,
+              number,
+              threadId: Number(input.threadId),
+              resolved: input.resolved,
+            })
+            .pipe(Effect.mapError(fail("setThreadResolution"))),
+        ),
+      ),
 
     setReaction: () => unsupported("setReaction"),
   };

@@ -25,14 +25,23 @@ import {
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
+/**
+ * Routes the PAT transport can answer itself — reads and the pull request review
+ * writes, so a stored token is enough to review: the CLI stays for the commands
+ * that have no REST counterpart here.
+ */
 function isSupportedPatRead(args: ReadonlyArray<string>): boolean {
-  if (args.slice(0, 3).join(" ") === "repos pr show") return true;
+  const command = args.slice(0, 3).join(" ");
+  if (command === "repos pr show" || command === "repos pr list") return true;
+  if (args[0] === "account" && args[1] === "show") return true;
   if (args[0] !== "devops" || args[1] !== "invoke") return false;
   const resourceIndex = args.indexOf("--resource");
   return (
     resourceIndex >= 0 &&
     [
       "pullRequestThreads",
+      "pullRequestThreadComments",
+      "pullRequestThread",
       "pullRequestIterations",
       "pullRequestIterationChanges",
       "items",
@@ -261,6 +270,9 @@ export class AzureDevOpsCli extends Context.Service<
       readonly timeoutMs?: number;
       readonly maxOutputBytes?: number;
       readonly usePatRead?: boolean;
+      /** A write travels with its verb and JSON body; reads stay GET. */
+      readonly method?: string;
+      readonly body?: unknown;
     }) => Effect.Effect<SourceControlHost.SourceControlProcessOutput, AzureDevOpsCliError>;
 
     readonly listPullRequests: (input: {

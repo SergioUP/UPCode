@@ -2,6 +2,7 @@ import * as Result from "effect/Result";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  decodeConversationJson,
   decodeItemContentJson,
   decodeIterationChangesJson,
   decodeIterationsJson,
@@ -340,6 +341,66 @@ describe("decodeThreadsJson", () => {
     );
 
     expect(comments).toEqual([]);
+  });
+
+  it("reads a file-anchored thread as a review thread the reader can reply into", () => {
+    const conversation = expectSuccess(
+      decodeConversationJson(
+        asJson({
+          value: [
+            {
+              id: 9,
+              status: "fixed",
+              threadContext: {
+                filePath: "/src/app.ts",
+                rightFileStart: { line: 7, offset: 1 },
+                rightFileEnd: { line: 7, offset: 12 },
+              },
+              comments: [
+                { id: 1, content: "Rename this.", publishedDate: "2026-07-02T00:00:00Z" },
+                { id: 2, content: "Renamed.", publishedDate: "2026-07-02T01:00:00Z" },
+              ],
+            },
+            // A conversation thread pins to no file, so it stays timeline-only.
+            {
+              id: 10,
+              comments: [{ id: 1, content: "Looks good.", publishedDate: "2026-07-02T02:00:00Z" }],
+            },
+          ],
+        }),
+      ),
+    );
+
+    expect(conversation.threads).toEqual([
+      {
+        id: "9",
+        path: "/src/app.ts",
+        line: 7,
+        side: "right",
+        isResolved: true,
+        isOutdated: false,
+        comments: [
+          {
+            id: "9:1",
+            author: null,
+            body: "Rename this.",
+            createdAt: "2026-07-02T00:00:00Z",
+            editedAt: null,
+            url: null,
+          },
+          {
+            id: "9:2",
+            author: null,
+            body: "Renamed.",
+            createdAt: "2026-07-02T01:00:00Z",
+            editedAt: null,
+            url: null,
+          },
+        ],
+      },
+    ]);
+    // Both threads' remarks stay on the timeline, whichever kind they are.
+    expect(conversation.comments.map((comment) => comment.id)).toEqual(["9:1", "9:2", "10:1"]);
   });
 });
 

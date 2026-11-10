@@ -311,11 +311,36 @@ describe("azureDevOpsFilePatch", () => {
     expect(patch.edits).toBe(0);
   });
 
+  it("spans the whole file, so the change is read inside the complete file", () => {
+    // Unchanged lines appear once and uncoloured; only the edit itself is red/green.
+    const patch = azureDevOpsFilePatch({
+      change: change(),
+      texts: texts("top\none\ntwo\nthree\nbottom\n", "top\none\ntwo again\nthree\nbottom\n"),
+    });
+
+    expect(patch.truncated).toBe(false);
+    expect(patch.section).toBe(
+      [
+        "diff --git a/README.md b/README.md",
+        "--- a/README.md",
+        "+++ b/README.md",
+        "@@ -1,5 +1,5 @@",
+        " top",
+        " one",
+        "-two",
+        "+two again",
+        " three",
+        " bottom",
+        "",
+      ].join("\n"),
+    );
+  });
+
   it("lists a file whose hunks outweigh its sides without them", () => {
     // A handful of very long lines is a few edits and nowhere near the edit ceiling, and the
-    // patch carries both sides in full with three lines of context around each hunk, so the
-    // section comes out heavier than either side was. What one file weighs is what a slice's
-    // budget is spent in, so the edit ceiling alone does not bound this.
+    // full-file patch carries both sides in their entirety, so the section comes out heavier
+    // than either side was. What one file weighs is what a slice's budget is spent in, so the
+    // edit ceiling alone does not bound this.
     const line = `${"a".repeat(400 * 1024)}\n`;
     const patch = azureDevOpsFilePatch({
       change: change({ path: "min.js", oldPath: "min.js" }),

@@ -37,6 +37,7 @@ import { Route as ChatPullRequestsRouteImport } from './routes/_chat.pull-reques
 import { Route as ChatNewRouteImport } from './routes/_chat.new'
 import { Route as ChatIssuesRouteImport } from './routes/_chat.issues'
 import { Route as ChatBrainRouteImport } from './routes/_chat.brain'
+import { Route as ChatAzureReposRouteImport } from './routes/_chat.azure-repos'
 import { Route as ChatAgentsRouteImport } from './routes/_chat.agents'
 import { Route as ChatDraftDraftIdRouteImport } from './routes/_chat.draft.$draftId'
 import { Route as ChatEnvironmentIdThreadIdRouteImport } from './routes/_chat.$environmentId.$threadId'
@@ -181,6 +182,11 @@ const ChatBrainRoute = ChatBrainRouteImport.update({
   path: '/brain',
   getParentRoute: () => ChatRoute,
 } as any)
+const ChatAzureReposRoute = ChatAzureReposRouteImport.update({
+  id: '/azure-repos',
+  path: '/azure-repos',
+  getParentRoute: () => ChatRoute,
+} as any)
 const ChatAgentsRoute = ChatAgentsRouteImport.update({
   id: '/agents',
   path: '/agents',
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
   '/agents': typeof ChatAgentsRoute
+  '/azure-repos': typeof ChatAzureReposRoute
   '/brain': typeof ChatBrainRoute
   '/issues': typeof ChatIssuesRoute
   '/new': typeof ChatNewRoute
@@ -238,6 +245,7 @@ export interface FileRoutesByTo {
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
   '/agents': typeof ChatAgentsRoute
+  '/azure-repos': typeof ChatAzureReposRoute
   '/brain': typeof ChatBrainRoute
   '/issues': typeof ChatIssuesRoute
   '/new': typeof ChatNewRoute
@@ -272,6 +280,7 @@ export interface FileRoutesById {
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
   '/_chat/agents': typeof ChatAgentsRoute
+  '/_chat/azure-repos': typeof ChatAzureReposRoute
   '/_chat/brain': typeof ChatBrainRoute
   '/_chat/issues': typeof ChatIssuesRoute
   '/_chat/new': typeof ChatNewRoute
@@ -307,6 +316,7 @@ export interface FileRouteTypes {
     | '/usage'
     | '/welcome'
     | '/agents'
+    | '/azure-repos'
     | '/brain'
     | '/issues'
     | '/new'
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/usage'
     | '/welcome'
     | '/agents'
+    | '/azure-repos'
     | '/brain'
     | '/issues'
     | '/new'
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '/usage'
     | '/welcome'
     | '/_chat/agents'
+    | '/_chat/azure-repos'
     | '/_chat/brain'
     | '/_chat/issues'
     | '/_chat/new'
@@ -605,6 +617,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatBrainRouteImport
       parentRoute: typeof ChatRoute
     }
+    '/_chat/azure-repos': {
+      id: '/_chat/azure-repos'
+      path: '/azure-repos'
+      fullPath: '/azure-repos'
+      preLoaderRoute: typeof ChatAzureReposRouteImport
+      parentRoute: typeof ChatRoute
+    }
     '/_chat/agents': {
       id: '/_chat/agents'
       path: '/agents'
@@ -631,6 +650,7 @@ declare module '@tanstack/react-router' {
 
 interface ChatRouteChildren {
   ChatAgentsRoute: typeof ChatAgentsRoute
+  ChatAzureReposRoute: typeof ChatAzureReposRoute
   ChatBrainRoute: typeof ChatBrainRoute
   ChatIssuesRoute: typeof ChatIssuesRoute
   ChatNewRoute: typeof ChatNewRoute
@@ -643,6 +663,7 @@ interface ChatRouteChildren {
 
 const ChatRouteChildren: ChatRouteChildren = {
   ChatAgentsRoute: ChatAgentsRoute,
+  ChatAzureReposRoute: ChatAzureReposRoute,
   ChatBrainRoute: ChatBrainRoute,
   ChatIssuesRoute: ChatIssuesRoute,
   ChatNewRoute: ChatNewRoute,

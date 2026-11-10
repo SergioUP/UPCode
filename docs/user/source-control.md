@@ -99,6 +99,14 @@ az login
 Work items can also be read and linked from an agent thread; see
 [Azure DevOps work items for agents](azure-devops-work-items.md).
 
+On web and desktop, open **Azure Repos** in the sidebar to browse a project's repositories,
+open pull requests, and pending reviews. Set your organization in **Settings → Source control**;
+the dashboard can use your Azure CLI session or a Personal Access Token. Select a pull request
+to open the existing review panel. The PR list defaults to pull requests you created or where you
+are a reviewer; select **Todas** to see all open pull requests. Project and repository filters are
+remembered when you return.
+The Activity view lists creation events for currently open pull requests.
+
 ### GitCafe
 
 Install the GitCafe CLI and sign in:

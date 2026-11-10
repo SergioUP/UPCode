@@ -105,7 +105,19 @@ export const AzureDevOpsPullRequest = Schema.Struct({
   targetBranch: Schema.String,
   url: Schema.String,
   createdBy: Schema.String,
+  /** Whether the connected identity created or is a reviewer of this PR; null if unknown. */
+  involvesViewer: Schema.optionalKey(Schema.NullOr(Schema.Boolean)),
   isDraft: Schema.Boolean,
+  createdAt: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  reviewers: Schema.optionalKey(
+    Schema.Array(
+      Schema.Struct({
+        name: Schema.String,
+        vote: Schema.Int,
+        required: Schema.Boolean,
+      }),
+    ),
+  ),
 });
 export type AzureDevOpsPullRequest = typeof AzureDevOpsPullRequest.Type;
 export const AzureDevOpsBranch = Schema.Struct({
