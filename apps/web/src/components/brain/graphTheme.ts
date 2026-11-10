@@ -15,7 +15,7 @@
 
 import type { VaultGraphNode } from "@t3tools/contracts";
 
-/** Pure black: the nodes are the light, not the backdrop. */
+/** A black backdrop preserves saturated halos through the additive bloom pass. */
 export const BRAIN_BACKGROUND = "#000000";
 
 /** Hues far enough apart that neighbouring clusters never look alike. */
@@ -41,7 +41,9 @@ const clusterHueCache = new Map<string, number>();
 export function clusterHue(cluster: string): number {
   const cached = clusterHueCache.get(cluster);
   if (cached !== undefined) return cached;
-  const hue = CLUSTER_HUES[hashText(cluster) % CLUSTER_HUES.length] ?? 205;
+  const hash = hashText(cluster);
+  const hue =
+    ((CLUSTER_HUES[hash % CLUSTER_HUES.length] ?? 205) + ((hash >>> 8) % 13) - 6 + 360) % 360;
   clusterHueCache.set(cluster, hue);
   return hue;
 }
@@ -109,34 +111,46 @@ function extensionTone(extension: string | undefined): { saturation: number; lig
   }
 }
 
-/** A file wears its folder's hue, tinted by its type. */
-export function fileColor(folder: string, extension: string | undefined, seen = true): string {
-  if (!seen) return hslToHex(clusterHue(folderClusterKey(folder)), 18, 22);
+/** Notes keep a folder family, with a stable individual tint rather than identical dots. */
+export function fileColor(
+  folder: string,
+  extension: string | undefined,
+  seen = true,
+  identity = "",
+): string {
+  const variation = identity ? hashText(identity) : 0;
+  const hue =
+    (clusterHue(folderClusterKey(folder)) + (identity ? (variation % 85) - 42 : 0) + 360) % 360;
+  if (!seen) return hslToHex(hue, 26, 19);
   const tone = extensionTone(extension);
-  return hslToHex(clusterHue(folderClusterKey(folder)), tone.saturation, tone.lightness);
+  return hslToHex(
+    hue,
+    tone.saturation,
+    tone.lightness + (identity ? ((variation >>> 8) % 9) - 4 : 0),
+  );
 }
 
-/** Structure stays quiet: one cool hue, dimmed by depth. */
-export function folderColor(depth: number, seen: boolean): string {
-  if (!seen) return hslToHex(215, 16, 20);
-  return hslToHex(214, 24, Math.max(36, 54 - depth * 3));
+/** Folder hubs share their notes' palette; their rings distinguish structure from content. */
+export function folderColor(depth: number, seen: boolean, folder = ""): string {
+  const hue = clusterHue(folderClusterKey(folder));
+  if (!seen) return hslToHex(hue, 26, 20);
+  return hslToHex(hue, 94, Math.max(58, 73 - depth * 2));
 }
 
 /** The only entry point the scene and the legend share. */
 export function nodeColorCss(node: VaultGraphNode, seen: boolean): string {
-  if (node.kind === "folder") return folderColor(node.depth, seen);
-  return fileColor(node.folder, node.extension, seen);
+  if (node.kind === "folder") return folderColor(node.depth, seen, node.id);
+  return fileColor(node.folder, node.extension, seen, node.id);
 }
 
 /**
- * Files are the dots; folders are only a skeleton, so they grow slowly with
- * their contents instead of towering over them.
+ * Slightly larger dots make notes readable; hubs still grow slowly with degree.
  */
 export function nodeRadius(node: VaultGraphNode): number {
   if (node.kind === "folder") {
-    return 2 + Math.min(1.8, Math.sqrt(Math.max(0, node.degree)) * 0.35);
+    return 2.65 + Math.min(2.2, Math.sqrt(Math.max(0, node.degree)) * 0.43);
   }
-  return 1.15 + Math.min(1.1, Math.sqrt(Math.max(0, node.degree)) * 0.3);
+  return 1.5 + Math.min(1.4, Math.sqrt(Math.max(0, node.degree)) * 0.38);
 }
 
 /**
@@ -197,9 +211,14 @@ export function createLabelTexture(text: string, color: string): HTMLCanvasEleme
   context.font = font;
   context.textAlign = "center";
   context.textBaseline = "middle";
-  // A dark plate behind the text keeps it readable over the bright nodes.
-  context.fillStyle = "rgba(0,0,0,0.7)";
-  context.fillRect(0, 0, width, height);
+  // A coloured outline preserves the cluster identity when labels cross bright links.
+  context.beginPath();
+  context.roundRect(1, 1, width - 2, height - 2, 10);
+  context.fillStyle = "rgba(6,9,18,0.88)";
+  context.fill();
+  context.strokeStyle = color;
+  context.lineWidth = 1.5;
+  context.stroke();
   context.fillStyle = color;
   context.fillText(text, width / 2, height / 2);
   return canvas;

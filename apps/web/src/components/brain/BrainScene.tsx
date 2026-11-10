@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import type { VaultGraphLink, VaultGraphNode } from "@t3tools/contracts";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ForceGraph3D, { type ForceGraphMethods, type NodeObject } from "react-force-graph-3d";
 import * as THREE from "three";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
@@ -12,8 +12,6 @@ import {
   BRAIN_BACKGROUND,
   createGlowTexture,
   createLabelTexture,
-  fileColor,
-  folderColor,
   nodeColorCss,
   nodeRadius,
   wantsLabel,
@@ -80,6 +78,7 @@ export function BrainScene({
 }: BrainSceneProps) {
   const graphRef = useRef<GraphHandle | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [viewport, setViewport] = useState<{ width: number; height: number } | null>(null);
 
   const glowTexture = useMemo(() => {
     const canvas = createGlowTexture();
@@ -93,6 +92,7 @@ export function BrainScene({
   const nodeObjects = useRef(new Map<string, THREE.Object3D>());
 
   const graphData = useMemo(() => ({ nodes: [...nodes], links: [...links] }), [nodes, links]);
+  const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
 
   const makeNodeObject = (node: BrainGraphNode): THREE.Object3D => {
     const radius = nodeRadius(node);
@@ -106,15 +106,14 @@ export function BrainScene({
     );
     group.add(sphere);
 
-    // A thin ring keeps a folder readable as a hub without turning it into a
-    // lamp: the folders are the skeleton, the files are the light.
+    // A bright orbital ring marks folder hubs without changing their graph role.
     if (isFolder) {
       const ring = new THREE.Mesh(
         new THREE.TorusGeometry(radius * 1.5, radius * 0.055, 6, 40),
         new THREE.MeshBasicMaterial({
           color,
           transparent: true,
-          opacity: 0.38,
+          opacity: 0.62,
           depthWrite: false,
         }),
       );
@@ -128,18 +127,17 @@ export function BrainScene({
           map: glowTexture,
           color,
           transparent: true,
-          // Dim on purpose: a bright halo per node washes the black out.
-          opacity: isFolder ? 0.1 : 0.22,
+          opacity: isFolder ? 0.32 : 0.26,
           blending: THREE.AdditiveBlending,
           depthWrite: false,
         }),
       );
-      halo.scale.setScalar(radius * (isFolder ? 4.5 : 6));
+      halo.scale.setScalar(radius * (isFolder ? 5.5 : 5));
       group.add(halo);
     }
 
     if (wantsLabel(node, detailed)) {
-      const canvas = createLabelTexture(node.label, "rgba(255,255,255,0.94)");
+      const canvas = createLabelTexture(node.label, color);
       if (canvas !== null) {
         const texture = new THREE.CanvasTexture(canvas);
         texture.needsUpdate = true;
@@ -181,13 +179,20 @@ export function BrainScene({
       object.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           (child.material as THREE.MeshBasicMaterial).color.copy(color);
-          (child.material as THREE.MeshBasicMaterial).opacity = lit ? 1 : isFolder ? 0.35 : 0.22;
+          (child.material as THREE.MeshBasicMaterial).opacity =
+            child.geometry instanceof THREE.TorusGeometry ? (lit ? 0.62 : 0.1) : lit ? 1 : 0.2;
         }
         if (child instanceof THREE.Sprite && child.material.map !== null) {
           if (child.material.map === glowTexture) {
             (child.material as THREE.SpriteMaterial).color.copy(color);
+            (child.material as THREE.SpriteMaterial).opacity = lit
+              ? isFolder
+                ? 0.32
+                : 0.26
+              : 0.04;
+          } else {
+            (child.material as THREE.SpriteMaterial).opacity = lit ? 1 : 0.12;
           }
-          (child.material as THREE.SpriteMaterial).opacity = lit ? 0.55 : 0.12;
         }
       });
       object.scale.setScalar(selected ? 1.55 : 1);
@@ -212,7 +217,7 @@ export function BrainScene({
     const graph = graphRef.current;
     if (graph === undefined) return;
     const composer = graph.postProcessingComposer();
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1024, 1024), 0.2, 0.45, 0.78);
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1024, 1024), 0.36, 0.4, 0.72);
     composer.addPass(bloom);
     return () => {
       composer.removePass(bloom);
@@ -285,6 +290,11 @@ export function BrainScene({
     // react-force-graph sizes itself from the container, but a panel that
     // resizes without a window resize event needs a nudge.
     return observeResize(element, () => {
+      const width = element.clientWidth;
+      const height = element.clientHeight;
+      setViewport((current) =>
+        current?.width === width && current.height === height ? current : { width, height },
+      );
       graphRef.current?.refresh();
     });
   }, []);
@@ -294,31 +304,32 @@ export function BrainScene({
       <ForceGraph3D<BrainGraphNode, BrainLink>
         ref={graphRef}
         graphData={graphData}
+        {...(viewport ?? {})}
         backgroundColor={BRAIN_BACKGROUND}
         showNavInfo={false}
         nodeThreeObject={nodeThreeObject}
         nodeLabel={() => ""}
         nodeResolution={detailed ? 12 : 8}
         linkColor={(link) => {
-          // A cross-folder name link keeps its own colour; a containment link
-          // borrows the colour of the file it hangs from, so an edge reads as
-          // part of its dot's cluster.
-          if (link.kind === "sameName") return "#e879f9";
-          const source = link.source;
-          if (typeof source === "object" && source !== null && "kind" in source) {
-            const node = source as BrainGraphNode;
-            return node.kind === "file"
-              ? fileColor(node.folder, node.extension)
-              : folderColor(node.depth, true);
+          // ForceGraph replaces endpoint ids with objects once the simulation starts.
+          // Containment takes the child's colour, so folders no longer grey out every edge.
+          for (const endpoint of [link.target, link.source]) {
+            if (typeof endpoint === "string") {
+              const node = nodeById.get(endpoint);
+              if (node) return nodeColorCss(node, true);
+            }
+            if (typeof endpoint === "object" && endpoint !== null && "kind" in endpoint) {
+              return nodeColorCss(endpoint as BrainGraphNode, true);
+            }
           }
-          return "#3f3f46";
+          return "#8da4cf";
         }}
-        linkOpacity={0.12}
-        linkWidth={(link) => (link.kind === "sameName" ? 0.7 : 0.35)}
+        linkOpacity={0.3}
+        linkWidth={(link) => (link.kind === "sameName" ? 1 : 0.45)}
         linkDirectionalParticles={(link) => (detailed && link.kind === "sameName" ? 2 : 0)}
-        linkDirectionalParticleWidth={1.4}
+        linkDirectionalParticleWidth={1.7}
         linkDirectionalParticleSpeed={0.004}
-        linkDirectionalParticleColor={() => "rgba(255,255,255,0.55)"}
+        linkDirectionalParticleColor={() => "#c9f5ff"}
         d3AlphaDecay={0.014}
         d3VelocityDecay={0.32}
         warmupTicks={40}
