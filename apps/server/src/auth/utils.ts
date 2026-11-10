@@ -179,6 +179,15 @@ function readRemoteAddressFromSource(source: unknown): string | undefined {
   return normalizeIpAddress(candidate.socket?.remoteAddress ?? candidate.remoteAddress);
 }
 
+/**
+ * A request that originates on this machine. Only these may pass the dev
+ * open-door: a shared or LAN-bound server must never answer it.
+ */
+export function isLoopbackRequest(request: HttpServerRequest.HttpServerRequest): boolean {
+  const ipAddress = readRemoteAddressFromSource(request.source);
+  return ipAddress === "127.0.0.1" || ipAddress === "::1";
+}
+
 export function deriveAuthClientMetadata(input: {
   readonly request: HttpServerRequest.HttpServerRequest;
   readonly presented?: AuthClientPresentationMetadata;

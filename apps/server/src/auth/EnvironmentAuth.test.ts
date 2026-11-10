@@ -81,7 +81,61 @@ const requestMetadata = {
   ipAddress: "192.168.1.23",
 };
 
+const makeLoopbackRequest = (
+  remoteAddress: string,
+): Parameters<EnvironmentAuth.EnvironmentAuth["Service"]["authenticateHttpRequest"]>[0] =>
+  ({
+    cookies: {},
+    headers: {},
+    source: { remoteAddress },
+  }) as unknown as Parameters<
+    EnvironmentAuth.EnvironmentAuth["Service"]["authenticateHttpRequest"]
+  >[0];
+
 it.layer(NodeServices.layer)("EnvironmentAuth.layer", (it) => {
+  it.effect("opens the door to loopback requests when dev insecure no-auth is set", () =>
+    Effect.gen(function* () {
+      const serverAuth = yield* EnvironmentAuth.EnvironmentAuth;
+      const authenticated = yield* serverAuth.authenticateHttpRequest(
+        makeLoopbackRequest("127.0.0.1"),
+      );
+      expect(authenticated.subject).toBe("dev-open");
+      expect(authenticated.scopes).toEqual(AuthAdministrativeScopes);
+      // Websockets take the same door, from either loopback spelling.
+      const upgraded = yield* serverAuth.authenticateWebSocketUpgrade(makeLoopbackRequest("::1"));
+      expect(upgraded.subject).toBe("dev-open");
+      // The session is a real one, so every session-backed path keeps working.
+      const ticket = yield* serverAuth.issueWebSocketTicket(authenticated);
+      expect(ticket.ticket.length).toBeGreaterThan(0);
+    }).pipe(
+      Effect.provide(
+        layerEnvironmentAuth({
+          mode: "web",
+          devUrl: new URL("http://127.0.0.1:5173"),
+          devNoAuth: true,
+        }),
+      ),
+    ),
+  );
+
+  it.effect("keeps the open door shut for remote addresses and without the flag", () =>
+    Effect.gen(function* () {
+      const serverAuth = yield* EnvironmentAuth.EnvironmentAuth;
+      const remote = yield* Effect.flip(
+        serverAuth.authenticateHttpRequest(makeLoopbackRequest("192.168.1.23")),
+      );
+      expect(EnvironmentAuth.isServerAuthCredentialError(remote)).toBe(true);
+      const loopback = yield* Effect.flip(
+        serverAuth.authenticateHttpRequest(makeLoopbackRequest("127.0.0.1")),
+      );
+      expect(EnvironmentAuth.isServerAuthCredentialError(loopback)).toBe(true);
+    }).pipe(
+      Effect.provide(
+        layerEnvironmentAuth({ mode: "web", devUrl: new URL("http://127.0.0.1:5173") }),
+      ),
+    ),
+  );
+
   it.effect("uses the reusable dev cookie without overriding a normal scoped cookie", () =>
     Effect.gen(function* () {
       const serverAuth = yield* EnvironmentAuth.EnvironmentAuth;

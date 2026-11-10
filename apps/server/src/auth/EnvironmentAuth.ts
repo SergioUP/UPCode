@@ -43,6 +43,7 @@ import * as PairingGrantStore from "./PairingGrantStore.ts";
 import * as ServerSecretStore from "./ServerSecretStore.ts";
 import * as SessionStore from "./SessionStore.ts";
 import { REUSABLE_DEV_SESSION_EXPIRES_AT, resolveReusableDevAuth } from "./ReusableDevAuth.ts";
+import { isLoopbackRequest } from "./utils.ts";
 import { verifyRequestDpopProof } from "./dpop.ts";
 import { DESKTOP_RENDERER_ORIGINS } from "../httpCors.ts";
 import * as SqlitePersistence from "../persistence/Sqlite.ts";
@@ -740,6 +741,32 @@ export const make = Effect.gen(function* () {
   const config = yield* ServerConfig.ServerConfig;
   const devAuth = resolveReusableDevAuth(config);
 
+  /**
+   * Dev-only open door: `T3CODE_DEV_INSECURE_NO_AUTH=1` stands in for pairing on
+   * a dev server. One real session is issued per run, so every authenticated
+   * path (websockets, tickets, revocation lists) keeps working, and only
+   * requests from this machine ever see it.
+   */
+  const devOpenSession: AuthenticatedSession | undefined =
+    config.mode === "web" && config.devUrl !== undefined && config.devNoAuth === true
+      ? yield* sessions
+          .issue({
+            subject: "dev-open",
+            method: "bearer-access-token",
+            scopes: AuthAdministrativeScopes,
+            replaceActiveForSubjectAndMethod: true,
+          })
+          .pipe(
+            Effect.map((issued) => ({
+              sessionId: issued.sessionId,
+              subject: "dev-open",
+              method: issued.method,
+              scopes: issued.scopes,
+              expiresAt: issued.expiresAt,
+            })),
+          )
+      : undefined;
+
   const authenticateToken = (
     token: string,
   ): Effect.Effect<
@@ -796,6 +823,9 @@ export const make = Effect.gen(function* () {
   const authenticateRequest = (
     request: HttpServerRequest.HttpServerRequest,
   ): Effect.Effect<AuthenticatedSession, ServerAuthCredentialError | ServerAuthInternalError> => {
+    if (devOpenSession !== undefined && isLoopbackRequest(request)) {
+      return Effect.succeed(devOpenSession);
+    }
     const dpopToken = parseDpopToken(request);
     const credential = resolveRequestCredential(request);
     if (!credential?.token) {
