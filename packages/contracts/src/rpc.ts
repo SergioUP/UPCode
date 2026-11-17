@@ -217,6 +217,8 @@ import {
   PullRequestSubmitReviewInput,
   PullRequestThreadCommentsInput,
   PullRequestThreadCommentsResult,
+  PullRequestPendingInput,
+  PullRequestPendingResult,
   PullRequestThreadReplyInput,
   PullRequestThreadResolutionInput,
   PullRequestUnavailableError,
@@ -570,6 +572,7 @@ export const WS_METHODS = {
   // Pull request methods
   pullRequestsList: "pullRequests.list",
   pullRequestsListStats: "pullRequests.listStats",
+  pullRequestsPending: "pullRequests.pending",
   pullRequestsSummary: "pullRequests.summary",
   pullRequestsRouting: "pullRequests.routing",
   pullRequestsRoutingIdentity: "pullRequests.routingIdentity",
@@ -1183,6 +1186,15 @@ const WsPullRequestsListRpc = Rpc.make(WS_METHODS.pullRequestsList, {
 const WsPullRequestsListStatsRpc = Rpc.make(WS_METHODS.pullRequestsListStats, {
   payload: PullRequestListStatsInput,
   success: PullRequestListStatsResult,
+  error: PullRequestRpcError,
+});
+
+/**
+ * What is waiting on the viewer across their open pull requests: the conversations nobody closed.
+ */
+const WsPullRequestsPendingRpc = Rpc.make(WS_METHODS.pullRequestsPending, {
+  payload: PullRequestPendingInput,
+  success: PullRequestPendingResult,
   error: PullRequestRpcError,
 });
 
@@ -2182,6 +2194,7 @@ export const WsRpcGroupCore = RpcGroup.make(
   WsPullRequestsRunActionRpc,
   WsPullRequestsUpdateRpc,
   WsPullRequestsCommentRpc,
+  WsPullRequestsPendingRpc,
   WsPullRequestsUpdateCommentRpc,
   WsPullRequestsSubmitReviewRpc,
   WsPullRequestsReplyToThreadRpc,

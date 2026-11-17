@@ -70,7 +70,8 @@ export function annotatePullRequestDiff(
     anchors.set(anchor.id, rows);
   };
   for (const thread of threads) {
-    if (thread.isOutdated) continue;
+    // A conversation about the whole change has no file line to sit on.
+    if (thread.isOutdated || thread.path === null) continue;
     const anchor =
       thread.line === null
         ? firstByPath.get(thread.path)

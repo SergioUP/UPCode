@@ -635,8 +635,7 @@ layer("AzureDevOpsPullRequestCli.layer", (it) => {
       mockedExecute.mockReturnValue(Effect.succeed(output("{}")));
       const provider = yield* AzureDevOpsPullRequestProvider.make;
 
-      // False for a remark because nothing here can post one, so there is none to rewrite.
-      expect(provider.capabilities.edit).toEqual({ changeRequest: true, comment: false });
+      expect(provider.capabilities.edit).toEqual({ changeRequest: true, comment: true });
       assert.isDefined(provider.updateChangeRequest);
       yield* provider.updateChangeRequest({
         cwd: "/w",
@@ -1268,6 +1267,40 @@ layer("AzureDevOpsPullRequestCli.layer", (it) => {
       // A review's threads grow with how long it ran, and this route does not page, so the read
       // asks for more than the process default rather than taking whatever it is given.
       expect(maxOutputBytesOfCall(0)).toBeGreaterThan(VCS_DEFAULT_MAX_OUTPUT_BYTES);
+    }),
+  );
+
+  it.effect("writes a thread's state, a reply and an edit as REST calls with a body", () =>
+    Effect.gen(function* () {
+      mockedExecute.mockReturnValue(Effect.succeed(output("{}")));
+      const cli = yield* AzureDevOpsPullRequestCli.AzureDevOpsPullRequestCli;
+      const location = { project: "platform", repository: "web" };
+
+      yield* cli.setThreadStatus({
+        cwd: "/w",
+        location,
+        number: 42,
+        threadId: "7",
+        status: "byDesign",
+      });
+      yield* cli.replyToThread({ cwd: "/w", location, number: 42, threadId: "7", body: "Done." });
+      yield* cli.updateThreadComment({
+        cwd: "/w",
+        location,
+        number: 42,
+        threadId: "7",
+        commentId: "2",
+        body: "Fixed.",
+      });
+
+      const call = (index: number) => argsOfCall(index);
+      expect(call(0)).toContain("PATCH");
+      expect(call(0)).toContain('{"status":"byDesign"}');
+      expect(call(0)).toContain("threadId=7");
+      expect(call(1)).toContain("POST");
+      expect(call(1)).toContain("pullRequestThreadComments");
+      expect(call(2)).toContain("commentId=2");
+      expect(call(2)).toContain('{"content":"Fixed."}');
     }),
   );
 

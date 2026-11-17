@@ -9,6 +9,8 @@ import type {
   PullRequestInvolvement,
   PullRequestListState,
   PullRequestMergeMethod,
+  PullRequestReviewThread,
+  PullRequestThreadStatus,
 } from "@upcode/contracts";
 
 import * as AzureDevOpsCli from "./AzureDevOpsCli.ts";
@@ -18,6 +20,7 @@ import {
   decodeIterationsJson,
   decodePullRequestJson,
   decodePullRequestListJson,
+  decodeReviewThreadsJson,
   decodeThreadsJson,
   decodeViewerJson,
   type AzureDevOpsChangeEntry,
@@ -198,6 +201,46 @@ export class AzureDevOpsPullRequestCli extends Context.Service<
       readonly location: AzureDevOpsRepositoryLocation;
       readonly number: number;
     }) => Effect.Effect<ReadonlyArray<PullRequestComment>, AzureDevOpsPullRequestCliError>;
+
+    /** The same collection as `listThreads`, read as conversations with Azure's own state. */
+    readonly listReviewThreads: (input: {
+      readonly cwd: string;
+      readonly location: AzureDevOpsRepositoryLocation;
+      readonly number: number;
+    }) => Effect.Effect<ReadonlyArray<PullRequestReviewThread>, AzureDevOpsPullRequestCliError>;
+
+    /** Opens a conversation about the whole change. */
+    readonly createThread: (input: {
+      readonly cwd: string;
+      readonly location: AzureDevOpsRepositoryLocation;
+      readonly number: number;
+      readonly body: string;
+    }) => Effect.Effect<void, AzureDevOpsPullRequestCliError>;
+
+    readonly replyToThread: (input: {
+      readonly cwd: string;
+      readonly location: AzureDevOpsRepositoryLocation;
+      readonly number: number;
+      readonly threadId: string;
+      readonly body: string;
+    }) => Effect.Effect<void, AzureDevOpsPullRequestCliError>;
+
+    readonly updateThreadComment: (input: {
+      readonly cwd: string;
+      readonly location: AzureDevOpsRepositoryLocation;
+      readonly number: number;
+      readonly threadId: string;
+      readonly commentId: string;
+      readonly body: string;
+    }) => Effect.Effect<void, AzureDevOpsPullRequestCliError>;
+
+    readonly setThreadStatus: (input: {
+      readonly cwd: string;
+      readonly location: AzureDevOpsRepositoryLocation;
+      readonly number: number;
+      readonly threadId: string;
+      readonly status: PullRequestThreadStatus;
+    }) => Effect.Effect<void, AzureDevOpsPullRequestCliError>;
 
     /**
      * The pushes a pull request has had, oldest first. Azure hangs the changed files off an
@@ -412,6 +455,40 @@ export const make = Effect.gen(function* () {
             );
       }),
     );
+
+  /**
+   * A write to the same REST routes. Only the PAT transport carries a body, so this always asks
+   * for it; `--http-method` and `--body-json` are that transport's spelling, placed before
+   * `--route-parameters` because that flag reads every `key=value` up to the next one.
+   */
+  const invokeWrite = (input: {
+    readonly cwd: string;
+    readonly resource: string;
+    readonly method: "POST" | "PATCH";
+    readonly routeParameters: ReadonlyArray<string>;
+    readonly body: unknown;
+  }): Effect.Effect<void, AzureDevOpsPullRequestCliError> =>
+    executeJson({
+      cwd: input.cwd,
+      usePatRead: true,
+      args: [
+        "devops",
+        "invoke",
+        ...detectArgs,
+        "--area",
+        "git",
+        "--resource",
+        input.resource,
+        "--api-version",
+        REST_API_VERSION,
+        "--http-method",
+        input.method,
+        "--body-json",
+        JSON.stringify(input.body),
+        "--route-parameters",
+        ...input.routeParameters,
+      ],
+    }).pipe(Effect.asVoid);
 
   /**
    * Azure names its own items with a leading slash, which the repository paths carried around
@@ -643,6 +720,59 @@ export const make = Effect.gen(function* () {
         routeParameters: pullRequestRoute(input),
         maxOutputBytes: REVIEW_HISTORY_MAX_OUTPUT_BYTES,
         decode: decodeThreadsJson,
+      }),
+
+    listReviewThreads: (input) =>
+      invoke({
+        cwd: input.cwd,
+        operation: "listReviewThreads",
+        resource: "pullRequestThreads",
+        routeParameters: pullRequestRoute(input),
+        maxOutputBytes: REVIEW_HISTORY_MAX_OUTPUT_BYTES,
+        decode: decodeReviewThreadsJson,
+      }),
+
+    createThread: (input) =>
+      invokeWrite({
+        cwd: input.cwd,
+        resource: "pullRequestThreads",
+        method: "POST",
+        routeParameters: pullRequestRoute(input),
+        body: {
+          comments: [{ parentCommentId: 0, content: input.body, commentType: "text" }],
+          status: "active",
+        },
+      }),
+
+    replyToThread: (input) =>
+      invokeWrite({
+        cwd: input.cwd,
+        resource: "pullRequestThreadComments",
+        method: "POST",
+        routeParameters: [...pullRequestRoute(input), `threadId=${input.threadId}`],
+        body: { parentCommentId: 1, content: input.body, commentType: "text" },
+      }),
+
+    updateThreadComment: (input) =>
+      invokeWrite({
+        cwd: input.cwd,
+        resource: "pullRequestThreadComments",
+        method: "PATCH",
+        routeParameters: [
+          ...pullRequestRoute(input),
+          `threadId=${input.threadId}`,
+          `commentId=${input.commentId}`,
+        ],
+        body: { content: input.body },
+      }),
+
+    setThreadStatus: (input) =>
+      invokeWrite({
+        cwd: input.cwd,
+        resource: "pullRequestThreads",
+        method: "PATCH",
+        routeParameters: [...pullRequestRoute(input), `threadId=${input.threadId}`],
+        body: { status: input.status },
       }),
 
     listIterations: (input) =>

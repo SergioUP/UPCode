@@ -221,20 +221,32 @@ export function makeAzureDevOpsRestTransport(host: SourceControlHost.SourceContr
         const p = encodeURIComponent(route.project ?? location.project);
         const r = encodeURIComponent(route.repositoryId ?? location.repository);
         const pr = encodeURIComponent(route.pullRequestId ?? "");
+        const thread = encodeURIComponent(route.threadId ?? "");
+        const comment = encodeURIComponent(route.commentId ?? "");
         const suffix =
           resource === "pullRequestThreads"
-            ? `pullRequests/${pr}/threads`
-            : resource === "pullRequestIterations"
-              ? `pullRequests/${pr}/iterations`
-              : resource === "pullRequestIterationChanges"
-                ? `pullRequests/${pr}/iterations/${encodeURIComponent(route.iterationId ?? "")}/changes`
-                : resource === "items"
-                  ? "items"
-                  : null;
+            ? `pullRequests/${pr}/threads${route.threadId === undefined ? "" : `/${thread}`}`
+            : resource === "pullRequestThreadComments"
+              ? `pullRequests/${pr}/threads/${thread}/comments${route.commentId === undefined ? "" : `/${comment}`}`
+              : resource === "pullRequestIterations"
+                ? `pullRequests/${pr}/iterations`
+                : resource === "pullRequestIterationChanges"
+                  ? `pullRequests/${pr}/iterations/${encodeURIComponent(route.iterationId ?? "")}/changes`
+                  : resource === "items"
+                    ? "items"
+                    : null;
         if (suffix === null) return yield* Effect.fail(new AzureDevOpsRestTransportError("failed"));
+        // `--http-method` and `--body-json` are this transport's own spelling of what
+        // `az devops invoke` takes as `--http-method` and `--in-file`; both sit before
+        // `--route-parameters`, which reads every `key=value` up to the next flag.
+        const bodyJson = option(args, "--body-json");
         raw = yield* request({
           ...input,
           path: `/${p}/_apis/git/repositories/${r}/${suffix}${query(params)}`,
+          ...(option(args, "--http-method") === undefined
+            ? {}
+            : { method: option(args, "--http-method")! }),
+          ...(bodyJson === undefined ? {} : { body: parseJson(bodyJson) }),
         });
       } else if (args[0] === "account" && args[1] === "show") {
         const connection = parseJson<{ authenticatedUser?: { uniqueName?: string } }>(

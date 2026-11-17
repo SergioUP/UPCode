@@ -63,10 +63,12 @@ import {
 import {
   canEditPullRequestChangeRequest,
   canEditPullRequestComment,
+  canResolvePullRequestThread,
 } from "./pullRequestEditing.logic";
 import { PullRequestMarkdown } from "./PullRequestMarkdown";
 import { PullRequestCommentBody } from "./PullRequestCommentBody";
 import { PullRequestMarkdownEditor } from "./PullRequestMarkdownEditor";
+import { PullRequestThreadStatusControl } from "./PullRequestThreadStatusMenu";
 import { PullRequestReactionBar } from "./PullRequestReactions";
 import { PullRequestConversationGhost } from "./PullRequestGhosts";
 import { sectionCollapseAnchorScrollTop } from "./pullRequestSummaryScroll.logic";
@@ -641,6 +643,18 @@ export function PullRequestSummaryTab({
               <HammerIcon className="size-3" />
               {pendingFinding === pullRequestFindingKey(finding) ? "Preparing..." : fixFindingLabel}
             </Button>
+          ) : null}
+          {thread !== undefined && thread.comments[0]?.id === comment.id ? (
+            <PullRequestThreadStatusControl
+              thread={thread}
+              statuses={detail.capabilities.review.threadStatuses}
+              canResolve={
+                detail.capabilities.review.resolve && canResolvePullRequestThread(detail, thread)
+              }
+              environmentId={environmentId}
+              reference={reference}
+              onRefresh={onRefresh}
+            />
           ) : null}
           {reactionBar}
         </div>

@@ -58,27 +58,30 @@ const CAPABILITIES: PullRequestCapabilities = {
   // Azure serves no patch of its own, so the one the Code tab reads is built here out of the
   // files an iteration changed and both sides of each of them.
   diff: true,
-  // Reading a conversation is a plain REST read, but posting one is not something this can
-  // claim without having run it, so the composer stays hidden.
-  comment: false,
+  comment: true,
   actions: [...definition.changeRequestActions],
   // Azure squashes as a completion option; it has no rebase strategy of its own.
   mergeMethods: ["merge", "squash"],
   // `az repos pr list` filters by status, creator, reviewer and branch, and by no text at all.
   search: false,
   reactions: false,
-  // The patch has lines to write against, but writing a remark at all is what Azure is not
-  // offered for here, so nothing in a review is either.
-  review: { inlineComment: false, reply: false, resolve: false, verdicts: [] },
+  // Azure keeps a review as conversations with a state of their own rather than as a verdict, so
+  // a thread can be answered and moved between those states; a line comment or a verdict is not
+  // offered.
+  review: {
+    inlineComment: false,
+    reply: true,
+    resolve: true,
+    threadStatuses: ["active", "pending", "fixed", "wontFix", "closed", "byDesign"],
+    verdicts: [],
+  },
   // `az repos pr reviewer add` and `remove` name identities, and nothing anywhere in `az repos`
   // lists the ones this repository could name — that lives behind the identity and graph APIs, a
   // different service with its own permissions. So the page takes a name here rather than being
   // handed a menu built out of a guess.
   reviewers: { request: true, listCandidates: false },
   // A new title and description travel on the same `az repos pr update` that moves a pull request.
-  // Rewriting a remark is false for the same reason posting one is: this cannot put a remark on
-  // Azure DevOps at all, so there is nothing here it could rewrite either.
-  edit: { changeRequest: true, comment: false },
+  edit: { changeRequest: true, comment: true },
   // Azure does keep a viewed record of its own, but only behind the undocumented contribution
   // endpoint its web UI talks to, keyed on an iteration so a push would drop every mark anyway.
   // So they are kept here instead, and the client says whose they are rather than implying the
@@ -208,6 +211,33 @@ export const make = Effect.gen(function* () {
       }),
     );
   };
+
+  /**
+   * Runs a write against the pull request's repository. A pull request Azure could not place has
+   * no route to write to, which is said rather than guessed at.
+   */
+  const withLocation = (
+    operation: string,
+    input: { readonly cwd: string; readonly number: number },
+    write: (
+      location: AzureDevOpsRepositoryLocation,
+    ) => Effect.Effect<void, AzureDevOpsPullRequestCli.AzureDevOpsPullRequestCliError>,
+  ): Effect.Effect<void, PullRequestProviderError> =>
+    locationOf(input).pipe(
+      Effect.mapError(fail(operation)),
+      Effect.flatMap((location) =>
+        location === null
+          ? Effect.fail(
+              new PullRequestProviderError({
+                provider: SourceControlProviderKind.make("azure-devops"),
+                operation,
+                reason: "failed",
+                detail: "Azure DevOps did not say which repository this pull request is in.",
+              }),
+            )
+          : write(location).pipe(Effect.mapError(fail(operation))),
+      ),
+    );
 
   /**
    * Everything a diff read needs before it can ask for a file: where the repository lives, and
@@ -394,27 +424,44 @@ export const make = Effect.gen(function* () {
       cli.getPullRequest({ cwd: input.cwd, number: input.number }).pipe(
         Effect.mapError(fail("getChangeRequestActivity")),
         Effect.flatMap((pullRequest) =>
-          (pullRequest.location === null
-            ? Effect.succeed({ comments: [], truncated: true })
-            : cli
-                .listThreads({
-                  cwd: input.cwd,
-                  location: pullRequest.location,
-                  number: input.number,
-                })
-                .pipe(
-                  Effect.map((comments) => ({ comments, truncated: false })),
-                  Effect.orElseSucceed(() => ({ comments: [], truncated: true })),
-                )
-          ).pipe(
-            Effect.map((conversation): ProviderChangeRequestActivity => ({
-              comments: conversation.comments,
-              commentCount: conversation.comments.length,
-              commentsTruncated: conversation.truncated,
-              reviewThreads: [],
-              commits: [],
-            })),
-          ),
+          pullRequest.location === null
+            ? Effect.succeed<ProviderChangeRequestActivity>({
+                comments: [],
+                commentCount: 0,
+                commentsTruncated: true,
+                reviewThreads: [],
+                commits: [],
+              })
+            : Effect.all(
+                {
+                  comments: cli.listThreads({
+                    cwd: input.cwd,
+                    location: pullRequest.location,
+                    number: input.number,
+                  }),
+                  threads: cli.listReviewThreads({
+                    cwd: input.cwd,
+                    location: pullRequest.location,
+                    number: input.number,
+                  }),
+                },
+                { concurrency: 2 },
+              ).pipe(
+                Effect.map(({ comments, threads }): ProviderChangeRequestActivity => ({
+                  comments,
+                  commentCount: comments.length,
+                  commentsTruncated: false,
+                  reviewThreads: threads,
+                  commits: [],
+                })),
+                Effect.orElseSucceed((): ProviderChangeRequestActivity => ({
+                  comments: [],
+                  commentCount: 0,
+                  commentsTruncated: true,
+                  reviewThreads: [],
+                  commits: [],
+                })),
+              ),
         ),
       ),
 
@@ -631,16 +678,52 @@ export const make = Effect.gen(function* () {
         })
         .pipe(Effect.mapError(fail("setReviewerRequest"))),
 
-    // Never called: `capabilities.comment` is false, and the service refuses a comment without it.
-    comment: () => unsupported("comment"),
+    comment: (input) =>
+      withLocation("comment", input, (location) =>
+        cli.createThread({ cwd: input.cwd, location, number: input.number, body: input.body }),
+      ),
 
-    // Declared unsupported above, so the service refuses these before a provider is reached.
-    // They exist because every provider answers the whole port.
+    updateComment: (input) =>
+      withLocation("updateComment", input, (location) => {
+        // A remark's id travels as `<thread>:<comment>`, the way the conversation carried it.
+        const [threadId, commentId] = input.commentId.split(":");
+        return cli.updateThreadComment({
+          cwd: input.cwd,
+          location,
+          number: input.number,
+          threadId: threadId ?? "",
+          commentId: commentId ?? "",
+          body: input.body,
+        });
+      }),
+
+    // Declared unsupported above, so the service refuses this before a provider is reached. It
+    // exists because every provider answers the whole port.
     submitReview: () => unsupported("submitReview"),
 
-    replyToThread: () => unsupported("replyToThread"),
+    replyToThread: (input) =>
+      withLocation("replyToThread", input, (location) =>
+        cli.replyToThread({
+          cwd: input.cwd,
+          location,
+          number: input.number,
+          threadId: input.threadId,
+          body: input.body,
+        }),
+      ),
 
-    setThreadResolution: () => unsupported("setThreadResolution"),
+    // Azure's states are the vocabulary: with no exact one asked for, resolved means `fixed` and
+    // unresolved means `active`, which is what its own Resolve and Reactivate buttons do.
+    setThreadResolution: (input) =>
+      withLocation("setThreadResolution", input, (location) =>
+        cli.setThreadStatus({
+          cwd: input.cwd,
+          location,
+          number: input.number,
+          threadId: input.threadId,
+          status: input.status ?? (input.resolved ? "fixed" : "active"),
+        }),
+      ),
 
     setReaction: () => unsupported("setReaction"),
   };

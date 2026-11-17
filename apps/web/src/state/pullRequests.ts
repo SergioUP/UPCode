@@ -9,6 +9,8 @@ import type {
   PullRequestListInput,
   PullRequestListStatsInput,
   PullRequestListEntry,
+  PullRequestPendingEntry,
+  PullRequestPendingInput,
   PullRequestRef,
   PullRequestSummary,
 } from "@upcode/contracts";
@@ -256,6 +258,11 @@ const usePullRequestListsQuery = createMergedEnvironmentQuery(
   pullRequestEnvironment.list,
 );
 
+const usePullRequestPendingQuery = createMergedEnvironmentQuery(
+  "web-pull-requests:pending",
+  pullRequestEnvironment.pending,
+);
+
 const usePullRequestStatsQuery = createMergedEnvironmentQuery(
   "web-pull-requests:list-stats",
   pullRequestEnvironment.listStats,
@@ -311,6 +318,27 @@ export function usePullRequestList(
   }, [query.observations]);
   const data = useMemo(() => mergePullRequestLists(query.values), [query.values]);
   return { data, error: query.error, isPending: query.isPending, refresh: query.refresh };
+}
+
+/** The viewer's open pull requests with conversations nobody closed, across the servers asked. */
+export function usePullRequestPending(
+  targets: ReadonlyArray<EnvironmentQueryTarget<PullRequestPendingInput>>,
+): {
+  readonly entries: ReadonlyArray<{
+    readonly environmentId: EnvironmentId;
+    readonly entry: PullRequestPendingEntry;
+  }>;
+  readonly isPending: boolean;
+} {
+  const query = usePullRequestPendingQuery(targets);
+  const entries = useMemo(
+    () =>
+      query.values.flatMap(([environmentId, result]) =>
+        result.entries.map((entry) => ({ environmentId, entry })),
+      ),
+    [query.values],
+  );
+  return { entries, isPending: query.isPending };
 }
 
 /** The line counts for the rows on screen, asked of each environment for its own rows. */

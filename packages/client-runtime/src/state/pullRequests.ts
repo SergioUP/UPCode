@@ -5,6 +5,7 @@ import {
   PullRequestPreview,
   PullRequestReviewGuideResult,
   PullRequestListResult,
+  PullRequestPendingResult,
   PullRequestChecks,
   PullRequestDiffResult,
   PullRequestFilesViewedResult,
@@ -255,6 +256,14 @@ export function createPullRequestEnvironmentAtoms<R, E>(
       staleTimeMs: 30_000,
       refreshTrigger: ({ environmentId, input }) =>
         input.cursors === undefined ? refreshes({ environmentId, input: {} }) : undefined,
+    }),
+    /** The viewer's open pull requests that still have conversations nobody closed. */
+    pending: createEnvironmentRpcQueryAtomFamily(runtime, {
+      label: "environment-data:pull-requests:pending",
+      persistence: persistQuery(PullRequestPendingResult),
+      tag: WS_METHODS.pullRequestsPending,
+      staleTimeMs: 30_000,
+      refreshTrigger: ({ environmentId }) => refreshes({ environmentId, input: {} }),
     }),
     /**
      * The line counts for rows the listing has already handed over. Its own query because the

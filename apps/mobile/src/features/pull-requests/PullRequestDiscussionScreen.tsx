@@ -174,12 +174,14 @@ function Discussion({ params }: { params: PullRequestParams & { readonly discuss
                   {thread.isResolved ? "Resolved" : "Unresolved"}
                   {thread.isOutdated ? " · Outdated" : ""}
                 </Text>
-                <MaterialButton
-                  label="View file diff"
-                  onPress={() =>
-                    navigation.navigate("PullRequestFile", { ...params, path: thread.path })
-                  }
-                />
+                {thread.path === null ? null : (
+                  <MaterialButton
+                    label="View file diff"
+                    onPress={() =>
+                      navigation.navigate("PullRequestFile", { ...params, path: thread.path! })
+                    }
+                  />
+                )}
               </View>
             ) : !activity.isPending ? (
               <Text>This discussion is no longer available.</Text>

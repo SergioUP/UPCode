@@ -26,6 +26,7 @@ import type {
   PullRequestReviewCommentDraft,
   PullRequestReviewDecision,
   PullRequestReviewThread,
+  PullRequestThreadStatus,
   PullRequestThreadCommentsResult,
   PullRequestReviewVerdict,
   PullRequestReviewerCandidateList,
@@ -717,6 +718,8 @@ export interface PullRequestProviderApi {
       readonly number: number;
       readonly threadId: string;
       readonly resolved: boolean;
+      /** The exact state for a host with several; wins over `resolved`. */
+      readonly status?: PullRequestThreadStatus | undefined;
     },
   ) => Effect.Effect<void, PullRequestProviderError>;
 }

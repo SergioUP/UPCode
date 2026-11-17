@@ -33,6 +33,7 @@ function isSupportedPatRead(args: ReadonlyArray<string>): boolean {
     resourceIndex >= 0 &&
     [
       "pullRequestThreads",
+      "pullRequestThreadComments",
       "pullRequestIterations",
       "pullRequestIterationChanges",
       "items",

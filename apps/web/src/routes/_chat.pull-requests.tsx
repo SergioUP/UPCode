@@ -117,6 +117,7 @@ import {
   type PullRequestRowTarget,
 } from "../components/pullRequest/PullRequestRow";
 import { PullRequestsUnavailableState } from "../components/pullRequest/PullRequestsUnavailableState";
+import { PullRequestPendingInbox } from "../components/pullRequest/PullRequestPendingInbox";
 import { RightPanelTabs, type PullRequestTabStatusSeed } from "../components/RightPanelTabs";
 import {
   WorkspaceBreadcrumb,
@@ -1903,6 +1904,9 @@ function PullRequestsRouteView() {
     showingCarried && listQuery.isPending && shownCount === 0 && typedQuery.length === 0;
   const listBody = (
     <>
+      {capabilityKnown && pullRequestsSupported ? (
+        <PullRequestPendingInbox environmentIds={queryEnvironmentIds} onSelect={selectEntry} />
+      ) : null}
       {!capabilityKnown ? (
         <PullRequestListGhost rows={7} />
       ) : !pullRequestsSupported ? (

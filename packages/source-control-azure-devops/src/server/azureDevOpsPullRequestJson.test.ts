@@ -7,6 +7,7 @@ import {
   decodeIterationsJson,
   decodePullRequestJson,
   decodePullRequestListJson,
+  decodeReviewThreadsJson,
   decodeThreadsJson,
   decodeViewerJson,
 } from "./azureDevOpsPullRequestJson.ts";
@@ -234,6 +235,56 @@ describe("decodeViewerJson", () => {
 
   it("returns nothing when nobody is signed in", () => {
     expect(expectSuccess(decodeViewerJson(asJson({ user: null })))).toBeNull();
+  });
+});
+
+describe("decodeReviewThreadsJson", () => {
+  it("carries Azure's own state, and counts only the open ones as unresolved", () => {
+    const threads = expectSuccess(
+      decodeReviewThreadsJson(
+        asJson({
+          value: [
+            {
+              id: 1,
+              status: "active",
+              threadContext: { filePath: "/src/a.ts", rightFileStart: { line: 12 } },
+              comments: [{ id: 1, content: "Why?", publishedDate: "2026-07-02T00:00:00Z" }],
+            },
+            {
+              id: 2,
+              status: "wontFix",
+              comments: [{ id: 1, content: "Meh.", publishedDate: "2026-07-02T00:00:00Z" }],
+            },
+            {
+              id: 3,
+              status: "somethingNew",
+              comments: [{ id: 1, content: "?", publishedDate: "2026-07-02T00:00:00Z" }],
+            },
+            // Only Azure's own note: an event, not a conversation.
+            {
+              id: 4,
+              status: "closed",
+              comments: [{ id: 1, content: "voted", commentType: "system", publishedDate: "x" }],
+            },
+          ],
+        }),
+      ),
+    );
+
+    expect(
+      threads.map((thread) => [
+        thread.id,
+        thread.path,
+        thread.line,
+        thread.status,
+        thread.isResolved,
+      ]),
+    ).toEqual([
+      ["1", "src/a.ts", 12, "active", false],
+      ["2", null, null, "wontFix", true],
+      ["3", null, null, "unknown", false],
+    ]);
+    expect(threads[0]?.comments[0]?.id).toBe("1:1");
   });
 });
 

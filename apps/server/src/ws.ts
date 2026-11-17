@@ -252,10 +252,7 @@ import * as PairingGrantStore from "./auth/PairingGrantStore.ts";
 import * as SessionStore from "./auth/SessionStore.ts";
 import { failEnvironmentAuthInvalid, failEnvironmentInternal } from "./auth/http.ts";
 import * as RelayClient from "@upcode/shared/relayClient";
-import {
-  sameUsageLimitCommandCoverage,
-  withUsageLimitsCommands,
-} from "@upcode/shared/usageLimits";
+import { sameUsageLimitCommandCoverage, withUsageLimitsCommands } from "@upcode/shared/usageLimits";
 import * as AgentSessionScanner from "./project/AgentSessionScanner.ts";
 import * as AgentSessionImporter from "./project/AgentSessionImporter.ts";
 import * as UsageLimitSources from "./usage/UsageLimitSources.ts";
@@ -1588,7 +1585,8 @@ const layerWsRpcCore = (
             if (importedThread !== null) {
               return yield* new AcpRegistryOperationError({
                 reason: "session_delete_failed",
-                message: "Delete the imported UPCode thread before deleting its native ACP session.",
+                message:
+                  "Delete the imported UPCode thread before deleting its native ACP session.",
               });
             }
             yield* manager.deleteSession({
@@ -2500,6 +2498,7 @@ const layerWsRpcCore = (
               ),
           ),
         [WS_METHODS.pullRequestsList]: (input) => pullRequests.list(input),
+        [WS_METHODS.pullRequestsPending]: (input) => pullRequests.pending(input),
         [WS_METHODS.pullRequestsListStats]: (input) => pullRequests.listStats(input),
         [WS_METHODS.pullRequestsRoutingIdentity]: (input) => pullRequests.routingIdentity(input),
         [WS_METHODS.pullRequestsRouting]: (input) => pullRequests.routing(input),

@@ -230,6 +230,27 @@ export type PullRequestDiffSide = typeof PullRequestDiffSide.Type;
 export const PullRequestReviewVerdict = Schema.Literals(["comment", "approve", "request-changes"]);
 export type PullRequestReviewVerdict = typeof PullRequestReviewVerdict.Type;
 
+/**
+ * The states Azure DevOps gives a review conversation, which are the richest any host has and so
+ * the vocabulary for the rest. Hosts with only resolved/unresolved never report one.
+ * `active` and `pending` are open; every other state closes the conversation, for a different
+ * reason.
+ */
+export const PullRequestThreadStatus = Schema.Literals([
+  "active",
+  "pending",
+  "fixed",
+  "wontFix",
+  "closed",
+  "byDesign",
+  "unknown",
+]);
+export type PullRequestThreadStatus = typeof PullRequestThreadStatus.Type;
+
+/** Whether a conversation in this state still wants an answer from somebody. */
+export const isPullRequestThreadStatusOpen = (status: PullRequestThreadStatus): boolean =>
+  status === "active" || status === "pending" || status === "unknown";
+
 export const PullRequestThreadComment = Schema.Struct({
   id: TrimmedNonEmptyString,
   author: Schema.NullOr(PullRequestActor),
@@ -254,11 +275,17 @@ export type PullRequestThreadComment = typeof PullRequestThreadComment.Type;
  */
 export const PullRequestReviewThread = Schema.Struct({
   id: TrimmedNonEmptyString,
-  path: TrimmedNonEmptyString,
+  /** Null for a conversation about the whole change rather than about a file. */
+  path: Schema.NullOr(TrimmedNonEmptyString),
   /** Null when the host anchors the thread to a file rather than to a line. */
   line: Schema.NullOr(PositiveInt),
   side: PullRequestDiffSide,
   isResolved: Schema.Boolean,
+  /**
+   * The host's own state for the conversation, where it has more than resolved/unresolved. When
+   * present, `isResolved` is derived from it.
+   */
+  status: Schema.optional(PullRequestThreadStatus),
   /**
    * The line the thread was written against is no longer in the diff, so it cannot be shown
    * against the code. Such a thread is listed separately rather than pinned to the wrong line.
@@ -358,6 +385,11 @@ export const PullRequestReviewCapabilities = Schema.Struct({
   reply: Schema.Boolean,
   /** A thread can be marked resolved, and unresolved again. */
   resolve: Schema.Boolean,
+  /**
+   * The states a thread can be moved to, where the host has more than resolved/unresolved.
+   * Absent means the two-state toggle.
+   */
+  threadStatuses: Schema.optional(Schema.Array(PullRequestThreadStatus)),
   /** The verdicts a submitted review can carry. Empty means reviews cannot be submitted. */
   verdicts: Schema.Array(PullRequestReviewVerdict),
 });
@@ -681,6 +713,46 @@ export const PullRequestListResult = Schema.Struct({
   nextCursors: PullRequestListCursors,
 });
 export type PullRequestListResult = typeof PullRequestListResult.Type;
+
+/**
+ * The pull requests the viewer opened that still have conversations nobody closed, which is what
+ * is waiting on them. A pull request with none is left out, so an empty answer is the good one.
+ */
+export const PullRequestPendingInput = Schema.Struct({
+  projectIds: Schema.optional(Schema.Array(ProjectId).check(Schema.isMaxLength(100))),
+  host: Schema.optional(TrimmedNonEmptyString),
+});
+export type PullRequestPendingInput = typeof PullRequestPendingInput.Type;
+
+/** One open conversation, trimmed to what a row of the inbox shows. */
+export const PullRequestPendingThread = Schema.Struct({
+  threadId: TrimmedNonEmptyString,
+  path: Schema.NullOr(TrimmedNonEmptyString),
+  line: Schema.NullOr(PositiveInt),
+  status: PullRequestThreadStatus,
+  /** Who spoke last, and what they said, cut short. */
+  lastAuthor: Schema.NullOr(PullRequestActor),
+  preview: Schema.String,
+  commentCount: NonNegativeInt,
+  updatedAt: IsoDateTime,
+});
+export type PullRequestPendingThread = typeof PullRequestPendingThread.Type;
+
+export const PullRequestPendingEntry = Schema.Struct({
+  pullRequest: PullRequestListEntry,
+  /** Every open conversation, even where `threads` is cut to the newest few. */
+  unresolvedCount: PositiveInt,
+  threads: Schema.Array(PullRequestPendingThread),
+});
+export type PullRequestPendingEntry = typeof PullRequestPendingEntry.Type;
+
+export const PullRequestPendingResult = Schema.Struct({
+  entries: Schema.Array(PullRequestPendingEntry),
+  errors: Schema.Array(PullRequestListProjectError),
+  /** More pull requests matched than were read; the newest were. */
+  truncated: Schema.Boolean,
+});
+export type PullRequestPendingResult = typeof PullRequestPendingResult.Type;
 
 /**
  * Addresses one pull request for reads and writes. `projectId` picks the checkout the host
@@ -1244,6 +1316,8 @@ export const PullRequestThreadResolutionInput = Schema.Struct({
   ...PullRequestRef.fields,
   threadId: TrimmedNonEmptyString,
   resolved: Schema.Boolean,
+  /** The exact state to move to, for a host that has several. Wins over `resolved`. */
+  status: Schema.optional(PullRequestThreadStatus),
 });
 export type PullRequestThreadResolutionInput = typeof PullRequestThreadResolutionInput.Type;
 

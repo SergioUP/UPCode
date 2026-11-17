@@ -7,9 +7,12 @@ import type {
   PullRequestComment,
   PullRequestMergeMethod,
   PullRequestMergeability,
+  PullRequestReviewThread,
   PullRequestState,
+  PullRequestThreadComment,
+  PullRequestThreadStatus,
 } from "@upcode/contracts";
-import { TrimmedNonEmptyString } from "@upcode/contracts";
+import { isPullRequestThreadStatusOpen, TrimmedNonEmptyString } from "@upcode/contracts";
 import { decodeJsonResult } from "@upcode/shared/schemaJson";
 
 import { azureDevOpsPullRequestWebUrl } from "./azureDevOpsPullRequests.ts";
@@ -84,8 +87,20 @@ const RawPullRequestSchema = Schema.Struct({
 const RawThreadSchema = Schema.Struct({
   id: Schema.Int,
   isDeleted: Schema.optional(Schema.NullOr(Schema.Boolean)),
+  /** Azure's own state for the conversation: active, pending, fixed, wontFix, closed, byDesign. */
+  status: Schema.optional(Schema.NullOr(Schema.String)),
   threadContext: Schema.optional(
-    Schema.NullOr(Schema.Struct({ filePath: Schema.optional(Schema.NullOr(Schema.String)) })),
+    Schema.NullOr(
+      Schema.Struct({
+        filePath: Schema.optional(Schema.NullOr(Schema.String)),
+        rightFileStart: Schema.optional(
+          Schema.NullOr(Schema.Struct({ line: Schema.optional(Schema.NullOr(Schema.Int)) })),
+        ),
+        leftFileStart: Schema.optional(
+          Schema.NullOr(Schema.Struct({ line: Schema.optional(Schema.NullOr(Schema.Int)) })),
+        ),
+      }),
+    ),
   ),
   comments: Schema.optional(
     Schema.NullOr(
@@ -95,6 +110,7 @@ const RawThreadSchema = Schema.Struct({
           content: Schema.optional(Schema.NullOr(Schema.String)),
           author: Schema.optional(Schema.NullOr(RawIdentitySchema)),
           publishedDate: Schema.optional(Schema.NullOr(Schema.String)),
+          lastContentUpdatedDate: Schema.optional(Schema.NullOr(Schema.String)),
           isDeleted: Schema.optional(Schema.NullOr(Schema.Boolean)),
           /** `system` marks the notes Azure writes itself, which are events, not comments. */
           commentType: Schema.optional(Schema.NullOr(Schema.String)),
@@ -377,6 +393,79 @@ export function decodeThreadsJson(
   return Result.succeed(
     comments.toSorted((left, right) => left.createdAt.localeCompare(right.createdAt)),
   );
+}
+
+const THREAD_STATUSES: ReadonlyArray<PullRequestThreadStatus> = [
+  "active",
+  "pending",
+  "fixed",
+  "wontFix",
+  "closed",
+  "byDesign",
+];
+
+/** Azure answers a state by name; one this build has not heard of is `unknown`, not an error. */
+export function toThreadStatus(value: string | null | undefined): PullRequestThreadStatus {
+  const wanted = value?.trim().toLowerCase();
+  return THREAD_STATUSES.find((status) => status.toLowerCase() === wanted) ?? "unknown";
+}
+
+/**
+ * Azure's conversations as the neutral review threads the page already renders, general threads
+ * included: a thread with no file is a conversation about the whole change, and is exactly as
+ * open or resolved as one on a line, so it has `path: null` rather than being left out.
+ */
+export function decodeReviewThreadsJson(
+  raw: string,
+): Result.Result<ReadonlyArray<PullRequestReviewThread>, DecodeFailure> {
+  const decoded = decodeThreadPage(raw);
+  if (!Result.isSuccess(decoded)) return Result.fail(decoded.failure);
+  const threads: PullRequestReviewThread[] = [];
+  for (const entry of decoded.success.value) {
+    const decodedThread = decodeThreadEntry(entry);
+    if (Exit.isFailure(decodedThread)) continue;
+    const thread = decodedThread.value;
+    if (thread.isDeleted === true) continue;
+    const comments: PullRequestThreadComment[] = [];
+    for (const comment of thread.comments ?? []) {
+      const publishedDate = trimmed(comment.publishedDate);
+      if (
+        comment.isDeleted === true ||
+        comment.commentType?.trim().toLowerCase() === "system" ||
+        (comment.content ?? "").trim().length === 0 ||
+        publishedDate === null
+      ) {
+        continue;
+      }
+      const editedAt = trimmed(comment.lastContentUpdatedDate);
+      comments.push({
+        id: `${thread.id}:${comment.id ?? 0}`,
+        author: toActor(comment.author),
+        body: comment.content ?? "",
+        createdAt: publishedDate,
+        ...(editedAt !== null && editedAt !== publishedDate ? { editedAt } : {}),
+        url: null,
+      });
+    }
+    // A thread of nothing but Azure's own notes (a vote, a push) is an event, not a conversation.
+    if (comments.length === 0) continue;
+    const status = toThreadStatus(thread.status);
+    const rightLine = thread.threadContext?.rightFileStart?.line ?? null;
+    const leftLine = thread.threadContext?.leftFileStart?.line ?? null;
+    const line = rightLine ?? leftLine;
+    threads.push({
+      id: String(thread.id),
+      path: trimmed(thread.threadContext?.filePath)?.replace(/^\//, "") ?? null,
+      line: line !== null && line > 0 ? line : null,
+      side: rightLine === null && leftLine !== null ? "left" : "right",
+      isResolved: !isPullRequestThreadStatusOpen(status),
+      status,
+      isOutdated: false,
+      comments,
+      commentCount: comments.length,
+    });
+  }
+  return Result.succeed(threads);
 }
 
 /**

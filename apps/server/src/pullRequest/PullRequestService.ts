@@ -17,6 +17,7 @@ import * as PubSub from "effect/PubSub";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import type * as Scope from "effect/Scope";
+import * as Result from "effect/Result";
 import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 import {
@@ -48,6 +49,9 @@ import {
   type PullRequestListInput,
   type PullRequestListProjectError,
   type PullRequestListResult,
+  type PullRequestPendingEntry,
+  type PullRequestPendingInput,
+  type PullRequestPendingResult,
   type PullRequestListStatsInput,
   type PullRequestListStatsResult,
   type PullRequestProviderSummary,
@@ -275,6 +279,10 @@ export class PullRequestService extends Context.Service<
     readonly activity: (
       input: PullRequestRef,
     ) => Effect.Effect<PullRequestActivity, PullRequestError>;
+    /** The viewer's open pull requests that still have conversations nobody closed. */
+    readonly pending: (
+      input: PullRequestPendingInput,
+    ) => Effect.Effect<PullRequestPendingResult, PullRequestError>;
     readonly threadComments: (
       input: PullRequestThreadCommentsInput,
     ) => Effect.Effect<PullRequestThreadCommentsResult, PullRequestError>;
@@ -2405,6 +2413,7 @@ export const make = Effect.gen(function* () {
                 number: input.number,
                 threadId: input.threadId,
                 resolved: input.resolved,
+                ...(input.status === undefined ? {} : { status: input.status }),
               })
               .pipe(Effect.mapError(toPullRequestError("setThreadResolution")));
           }),
@@ -3228,6 +3237,13 @@ export const make = Effect.gen(function* () {
       : lastGoodDetail.serveHeld(key, read, "revalidate");
   };
 
+  // Reading a pull request's conversations is one host call each, so the inbox reads only the
+  // newest few and says so, rather than fanning a call out across everything the viewer opened.
+  const PENDING_MAX_PULL_REQUESTS = 30;
+  const PENDING_THREADS_PER_PULL_REQUEST = 5;
+  const PENDING_PREVIEW_LENGTH = 240;
+  const PENDING_READ_CONCURRENCY = 4;
+
   const activityCache = yield* Cache.makeWith(
     (key: string) => {
       return activityUncached(refOfCacheKey(key));
@@ -3265,6 +3281,76 @@ export const make = Effect.gen(function* () {
     const key = refCacheKey(input);
     return Cache.get(activityCache, key);
   };
+
+  const pending: PullRequestService["Service"]["pending"] = (input) =>
+    list({
+      state: "open",
+      involvement: "authored",
+      ...(input.projectIds === undefined ? {} : { projectIds: input.projectIds }),
+      ...(input.host === undefined ? {} : { host: input.host }),
+    }).pipe(
+      Effect.flatMap((listed) => {
+        const candidates = listed.entries.slice(0, PENDING_MAX_PULL_REQUESTS);
+        return Effect.forEach(
+          candidates,
+          (pullRequest) =>
+            activity({
+              projectId: pullRequest.projectId,
+              host: pullRequest.host,
+              repository: pullRequest.repository,
+              number: pullRequest.number,
+            }).pipe(
+              Effect.map((read): PullRequestPendingEntry | null => {
+                const open = read.reviewThreads.filter(
+                  (thread) => !thread.isResolved && !thread.isOutdated,
+                );
+                if (open.length === 0) return null;
+                const threads = open
+                  .map((thread) => {
+                    const last = thread.comments.at(-1);
+                    return {
+                      threadId: thread.id,
+                      path: thread.path,
+                      line: thread.line,
+                      status: thread.status ?? "active",
+                      lastAuthor: last?.author ?? null,
+                      preview: (last?.body ?? "").trim().slice(0, PENDING_PREVIEW_LENGTH),
+                      commentCount: thread.commentCount ?? thread.comments.length,
+                      updatedAt: last?.editedAt ?? last?.createdAt ?? pullRequest.updatedAt,
+                    };
+                  })
+                  .toSorted((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+                  .slice(0, PENDING_THREADS_PER_PULL_REQUEST);
+                return { pullRequest, unresolvedCount: open.length, threads };
+              }),
+              Effect.mapError((error) => ({ pullRequest, error })),
+              Effect.result,
+            ),
+          { concurrency: PENDING_READ_CONCURRENCY },
+        ).pipe(
+          Effect.map((results): PullRequestPendingResult => {
+            const entries: PullRequestPendingEntry[] = [];
+            const errors: PullRequestPendingResult["errors"][number][] = [];
+            for (const result of results) {
+              if (Result.isSuccess(result)) {
+                if (result.success !== null) entries.push(result.success);
+              } else {
+                errors.push({
+                  projectId: result.failure.pullRequest.projectId,
+                  projectTitle: result.failure.pullRequest.projectTitle,
+                  message: `#${result.failure.pullRequest.number}: ${result.failure.error.message}`,
+                });
+              }
+            }
+            return {
+              entries,
+              errors: [...listed.errors, ...errors],
+              truncated: listed.truncated || listed.entries.length > candidates.length,
+            };
+          }),
+        );
+      }),
+    );
 
   const diffCache = yield* Cache.makeWith(
     (key: string) => {
@@ -3565,6 +3651,7 @@ export const make = Effect.gen(function* () {
       Cache.get(watchFingerprintCache, refCacheKey(input)),
     ),
     activity: credentialCached(activity),
+    pending,
     preview: credentialCached(preview),
     threadComments,
     diff: credentialCached(diff),

@@ -989,6 +989,20 @@ function PullRequestCodeTab({
             }),
           )
         }
+        threadStatuses={detail.capabilities.review.threadStatuses}
+        onSetStatus={(status) =>
+          void runThreadCommand("The conversation could not be updated", () =>
+            setThreadResolution({
+              environmentId,
+              input: {
+                ...reference,
+                threadId: thread.id,
+                resolved: status === "fixed",
+                status,
+              },
+            }),
+          )
+        }
         onReacted={onRefresh}
       />
     ),
@@ -1451,6 +1465,8 @@ function PullRequestCodeTab({
   // five copies of its path.
   const orphanFiles = new Map<string, PullRequestReviewThread[]>();
   for (const thread of orphanThreads) {
+    // A conversation about the whole change has no file to be stranded from.
+    if (thread.path === null) continue;
     const existing = orphanFiles.get(thread.path);
     if (existing) existing.push(thread);
     else orphanFiles.set(thread.path, [thread]);

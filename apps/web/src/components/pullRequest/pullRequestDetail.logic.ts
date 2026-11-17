@@ -742,7 +742,7 @@ function reviewThreadContext(
     id: `pull-request-finding:${thread.id}`,
     sectionId: `pull-request:${pullRequestNumber}`,
     sectionTitle: `PR #${pullRequestNumber} review`,
-    filePath: thread.path,
+    filePath: thread.path ?? "(conversation)",
     startIndex: lineIndex,
     endIndex: lineIndex,
     // A left-side line numbers the file before the change, so the same number means another line.
@@ -759,7 +759,7 @@ function reviewThreadContext(
         .join("\n"),
     ),
     diff: "",
-    fenceLanguage: inferReviewCommentFenceLanguage(thread.path),
+    fenceLanguage: inferReviewCommentFenceLanguage(thread.path ?? ""),
   };
 }
 
