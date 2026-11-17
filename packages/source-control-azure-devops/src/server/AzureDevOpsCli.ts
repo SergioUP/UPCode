@@ -34,6 +34,7 @@ function isSupportedPatRead(args: ReadonlyArray<string>): boolean {
   const command = args.slice(0, 3).join(" ");
   if (command === "repos pr show" || command === "repos pr list") return true;
   if (args[0] === "account" && args[1] === "show") return true;
+  if (args[0] === "identities" && args[1] === "resolve") return true;
   if (args[0] !== "devops" || args[1] !== "invoke") return false;
   const resourceIndex = args.indexOf("--resource");
   return (

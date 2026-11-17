@@ -286,6 +286,14 @@ export function makeAzureDevOpsRestTransport(host: SourceControlHost.SourceContr
           ...input,
           path: `/${p}/_apis/git/repositories/${r}/${suffix}${query(params)}`,
         });
+      } else if (args[0] === "identities" && args[1] === "resolve") {
+        // Azure writes a mention into a remark as `@<identity id>`; this names those ids.
+        const ids = option(args, "--ids") ?? "";
+        raw = yield* request({
+          ...input,
+          service: "identities",
+          path: `/_apis/identities${query({ identityIds: ids, queryMembership: "None" })}`,
+        });
       } else if (args[0] === "account" && args[1] === "show") {
         const connection = parseJson<{ authenticatedUser?: { uniqueName?: string } }>(
           yield* request({

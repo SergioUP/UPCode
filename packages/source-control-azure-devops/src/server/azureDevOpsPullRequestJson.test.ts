@@ -2,7 +2,10 @@ import * as Result from "effect/Result";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  conversationMentionIds,
   decodeConversationJson,
+  decodeIdentityNamesJson,
+  withResolvedMentions,
   decodeItemContentJson,
   decodeIterationChangesJson,
   decodeIterationsJson,
@@ -779,5 +782,44 @@ describe("what az devops invoke answers with", () => {
         ),
       ),
     ).toEqual({ contents: "# UPCodeDemo\n", isBinary: false });
+  });
+});
+
+describe("mentions", () => {
+  const id = "33B826CB-1F5A-6027-BDE3-516B0EAD16F9";
+  const conversation = expectSuccess(
+    decodeConversationJson(
+      asJson({
+        value: [
+          {
+            id: 1,
+            status: "active",
+            comments: [
+              {
+                id: 1,
+                content: `Mira esto @<${id}> y @<${id}>`,
+                publishedDate: "2026-07-02T00:00:00Z",
+              },
+            ],
+          },
+        ],
+      }),
+    ),
+  );
+
+  it("names the people a remark mentions by identity id, once each", () => {
+    expect(conversationMentionIds(conversation)).toEqual([id.toLowerCase()]);
+    const names = expectSuccess(
+      decodeIdentityNamesJson(
+        asJson({ value: [{ id: id.toLowerCase(), providerDisplayName: "Mario Munuera" }] }),
+      ),
+    );
+    const named = withResolvedMentions(conversation, names);
+    expect(named.comments[0]?.body).toBe("Mira esto @Mario Munuera y @Mario Munuera");
+    expect(named.threads[0]?.comments[0]?.body).toBe("Mira esto @Mario Munuera y @Mario Munuera");
+  });
+
+  it("leaves a mention as written when nobody is known by that id", () => {
+    expect(withResolvedMentions(conversation, new Map()).comments[0]?.body).toContain(`@<${id}>`);
   });
 });

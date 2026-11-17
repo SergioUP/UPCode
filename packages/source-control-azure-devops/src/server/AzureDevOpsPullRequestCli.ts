@@ -14,7 +14,10 @@ import type {
 
 import * as AzureDevOpsCli from "./AzureDevOpsCli.ts";
 import {
+  conversationMentionIds,
   decodeConversationJson,
+  decodeIdentityNamesJson,
+  withResolvedMentions,
   decodeItemContentJson,
   decodeIterationChangesJson,
   decodeIterationsJson,
@@ -405,6 +408,29 @@ export const make = Effect.gen(function* () {
    */
   const decodeUnit = (): Result.Result<undefined, unknown> => Result.succeed(undefined);
 
+  // Mentions name people by identity id. Names do not change within a session, so each id is
+  // asked for once; a lookup that fails leaves the id as written rather than failing the read.
+  const mentionNames = new Map<string, string>();
+  const nameMentions = (cwd: string, conversation: AzureDevOpsConversation) => {
+    const unknown = conversationMentionIds(conversation).filter((id) => !mentionNames.has(id));
+    const named = () => withResolvedMentions(conversation, mentionNames);
+    if (unknown.length === 0) return Effect.succeed(named());
+    return executeJson({
+      cwd,
+      usePatRead: true,
+      args: ["identities", "resolve", "--ids", unknown.join(",")],
+    }).pipe(
+      Effect.map((result) => {
+        const decoded = decodeIdentityNamesJson(result.stdout.trim());
+        if (Result.isSuccess(decoded)) {
+          for (const [id, name] of decoded.success) mentionNames.set(id, name);
+        }
+        return named();
+      }),
+      Effect.orElseSucceed(named),
+    );
+  };
+
   const executeJson = (input: {
     readonly cwd: string;
     readonly args: ReadonlyArray<string>;
@@ -724,7 +750,7 @@ export const make = Effect.gen(function* () {
         routeParameters: pullRequestRoute(input),
         maxOutputBytes: REVIEW_HISTORY_MAX_OUTPUT_BYTES,
         decode: decodeConversationJson,
-      }),
+      }).pipe(Effect.flatMap((conversation) => nameMentions(input.cwd, conversation))),
 
     createThread: (input) =>
       invoke({

@@ -3270,7 +3270,7 @@ export const make = Effect.gen(function* () {
   // Reading a pull request's conversations is one host call each, so the inbox reads only the
   // newest few and says so, rather than fanning a call out across everything the viewer opened.
   const PENDING_MAX_PULL_REQUESTS = 30;
-  const PENDING_THREADS_PER_PULL_REQUEST = 5;
+  const PENDING_THREADS_PER_PULL_REQUEST = 20;
   const PENDING_PREVIEW_LENGTH = 240;
   const PENDING_READ_CONCURRENCY = 4;
 
@@ -3312,13 +3312,41 @@ export const make = Effect.gen(function* () {
     return Cache.get(activityCache, key);
   };
 
+  // What is waiting on the viewer is what they opened and what they were asked to review; the
+  // same change request can be both, so the two listings are folded into one by identity.
+  const pendingCandidates = (input: PullRequestPendingInput) => {
+    const listing = (involvement: "authored" | "reviewing") =>
+      list({
+        state: "open",
+        involvement,
+        ...(input.projectIds === undefined ? {} : { projectIds: input.projectIds }),
+        ...(input.host === undefined ? {} : { host: input.host }),
+      });
+    return Effect.all(
+      { authored: listing("authored"), reviewing: listing("reviewing") },
+      { concurrency: 2 },
+    ).pipe(
+      Effect.map(({ authored, reviewing }) => {
+        const seen = new Set<string>();
+        const entries = [...authored.entries, ...reviewing.entries]
+          .filter((entry) => {
+            const key = `${entry.projectId} ${entry.host} ${entry.repository}#${entry.number}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .toSorted((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+        return {
+          entries,
+          errors: [...authored.errors, ...reviewing.errors],
+          truncated: authored.truncated || reviewing.truncated,
+        };
+      }),
+    );
+  };
+
   const pending: PullRequestService["Service"]["pending"] = (input) =>
-    list({
-      state: "open",
-      involvement: "authored",
-      ...(input.projectIds === undefined ? {} : { projectIds: input.projectIds }),
-      ...(input.host === undefined ? {} : { host: input.host }),
-    }).pipe(
+    pendingCandidates(input).pipe(
       Effect.flatMap((listed) => {
         const candidates = listed.entries.slice(0, PENDING_MAX_PULL_REQUESTS);
         return Effect.forEach(

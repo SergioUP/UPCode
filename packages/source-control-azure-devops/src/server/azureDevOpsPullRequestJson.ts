@@ -462,6 +462,66 @@ export function decodeConversationJson(
   });
 }
 
+const RawIdentityNamesSchema = Schema.Struct({
+  value: Schema.Array(
+    Schema.Struct({
+      id: Schema.optional(Schema.NullOr(Schema.String)),
+      providerDisplayName: Schema.optional(Schema.NullOr(Schema.String)),
+      customDisplayName: Schema.optional(Schema.NullOr(Schema.String)),
+    }),
+  ),
+});
+const decodeIdentityNames = decodeJsonResult(RawIdentityNamesSchema);
+
+/** Azure writes a mention into a remark as `@<identity id>`, which reads as noise. */
+const MENTION = /@<([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})>/gi;
+
+/** The identity ids mentioned anywhere in a conversation, lowercased and without repeats. */
+export function conversationMentionIds(conversation: AzureDevOpsConversation): string[] {
+  const ids = new Set<string>();
+  const scan = (body: string) => {
+    for (const match of body.matchAll(MENTION)) ids.add(match[1]!.toLowerCase());
+  };
+  for (const comment of conversation.comments) scan(comment.body);
+  for (const thread of conversation.threads)
+    for (const comment of thread.comments) scan(comment.body);
+  return [...ids];
+}
+
+/** Identity id to display name, from Azure's identities answer. */
+export function decodeIdentityNamesJson(
+  raw: string,
+): Result.Result<ReadonlyMap<string, string>, DecodeFailure> {
+  const decoded = decodeIdentityNames(raw);
+  if (!Result.isSuccess(decoded)) return Result.fail(decoded.failure);
+  const names = new Map<string, string>();
+  for (const identity of decoded.success.value) {
+    const id = trimmed(identity.id)?.toLowerCase();
+    const name = trimmed(identity.customDisplayName) ?? trimmed(identity.providerDisplayName);
+    if (id !== undefined && id !== null && name !== null) names.set(id, name);
+  }
+  return Result.succeed(names);
+}
+
+/** The conversation with every mention whose person is known written as `@Name`. */
+export function withResolvedMentions(
+  conversation: AzureDevOpsConversation,
+  names: ReadonlyMap<string, string>,
+): AzureDevOpsConversation {
+  const resolve = (body: string) =>
+    body.replace(MENTION, (whole, id: string) => {
+      const name = names.get(id.toLowerCase());
+      return name === undefined ? whole : `@${name}`;
+    });
+  return {
+    comments: conversation.comments.map((comment) => ({ ...comment, body: resolve(comment.body) })),
+    threads: conversation.threads.map((thread) => ({
+      ...thread,
+      comments: thread.comments.map((comment) => ({ ...comment, body: resolve(comment.body) })),
+    })),
+  };
+}
+
 export function decodeThreadsJson(
   raw: string,
 ): Result.Result<ReadonlyArray<PullRequestComment>, DecodeFailure> {
