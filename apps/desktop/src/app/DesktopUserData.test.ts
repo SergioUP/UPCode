@@ -6,14 +6,14 @@ import * as Path from "effect/Path";
 
 import { resolveUserDataPath } from "./DesktopUserData.ts";
 
-it.effect("keeps UPCode's Windows profile separate from existing T3 credentials", () =>
+it.effect("keeps UPCode's Windows profile separate from existing UPCode credentials", () =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
     const directory = yield* fs.makeTempDirectoryScoped({ prefix: "upcode-profile-" });
-    const t3Profile = path.join(directory, "t3code-v2");
-    yield* fs.makeDirectory(t3Profile, { recursive: true });
-    yield* fs.writeFileString(path.join(t3Profile, "Local State"), "private-t3-key");
+    const legacyProfile = path.join(directory, "legacy-v2");
+    yield* fs.makeDirectory(legacyProfile, { recursive: true });
+    yield* fs.writeFileString(path.join(legacyProfile, "Local State"), "private-legacy-key");
 
     const upcodeProfile = yield* resolveUserDataPath({
       appDataDirectory: directory,
@@ -22,7 +22,7 @@ it.effect("keeps UPCode's Windows profile separate from existing T3 credentials"
     });
     assert.equal(upcodeProfile, path.join(directory, "upcode"));
     assert.isFalse(yield* fs.exists(upcodeProfile));
-    assert.equal(yield* fs.readFileString(path.join(t3Profile, "Local State")), "private-t3-key");
+    assert.equal(yield* fs.readFileString(path.join(legacyProfile, "Local State")), "private-legacy-key");
   }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
 );
 

@@ -1,4 +1,4 @@
-import { OrchestratorMcpFailure } from "@t3tools/contracts";
+import { OrchestratorMcpFailure } from "@upcode/contracts";
 import * as Schema from "effect/Schema";
 import { Tool, Toolkit } from "effect/ai";
 import * as ServerConfig from "../../../config.ts";
@@ -15,7 +15,7 @@ const shared = {
   ],
 };
 
-const SaveIncidentEvidenceTool = Tool.make("t3_incident_save_evidence", {
+const SaveIncidentEvidenceTool = Tool.make("upcode_incident_save_evidence", {
   ...shared,
   description:
     "Save a captured read-only investigation result as evidence on the incident that owns the calling conversation. Only available inside an Incident Center conversation. Call it INCREMENTALLY, the moment you obtain each relevant result, not in a batch at the end: the user watches this panel fill while you investigate, so a result saved late is a result the user could not follow. Report what was queried so the investigation is auditable: `source` is the system (e.g. Shopify, ERP, PostgreSQL, Logs, Project files), `metadata` should name the request and the credential/config used, for example method=GET, url=..., query=SELECT ... LIMIT, status=200, credential=<config key or connection name>. NEVER put a password, token, private key or full connection string in `content`, `summary` or `metadata` — only the non-secret name of the credential used.",
@@ -32,7 +32,7 @@ const SaveIncidentEvidenceTool = Tool.make("t3_incident_save_evidence", {
   .annotate(Tool.Readonly, false)
   .annotate(Tool.Destructive, false);
 
-const UpdateIncidentSummaryTool = Tool.make("t3_incident_update_summary", {
+const UpdateIncidentSummaryTool = Tool.make("upcode_incident_update_summary", {
   ...shared,
   description:
     "Replace the incident's investigation summary. Only available inside an Incident Center conversation. Separate verified facts, possible explanations and what is still unverified; never present a hypothesis as a confirmed fact. This is a short, readable summary, not a full report.",

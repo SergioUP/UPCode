@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import type { EnvironmentId, Subagent } from "@t3tools/contracts";
+import type { EnvironmentId, Subagent } from "@upcode/contracts";
 import { PlusIcon } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 

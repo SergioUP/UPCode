@@ -1,0 +1,10 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["UPCodeTerminalModule"],
+    "podspecPath": "UPCodeTerminalNative.podspec"
+  },
+  "android": {
+    "modules": ["expo.modules.upcodeterminal.UPCodeTerminalModule"]
+  }
+}

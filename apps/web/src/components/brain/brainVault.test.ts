@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { VaultGraphNode } from "@t3tools/contracts";
+import type { VaultGraphNode } from "@upcode/contracts";
 
 import { buildVaultTree, parseVaultNote } from "./brainVault";
 

@@ -9,11 +9,15 @@ import type {
   PullRequestInvolvement,
   PullRequestListState,
   PullRequestMergeMethod,
-} from "@t3tools/contracts";
+  PullRequestThreadStatus,
+} from "@upcode/contracts";
 
 import * as AzureDevOpsCli from "./AzureDevOpsCli.ts";
 import {
+  conversationMentionIds,
   decodeConversationJson,
+  decodeIdentityNamesJson,
+  withResolvedMentions,
   decodeItemContentJson,
   decodeIterationChangesJson,
   decodeIterationsJson,
@@ -28,7 +32,7 @@ import {
   type AzureDevOpsPullRequest,
   type AzureDevOpsRepositoryLocation,
 } from "./azureDevOpsPullRequestJson.ts";
-import type { ProviderListCursor } from "@t3tools/source-control-core/server/PullRequestProvider";
+import type { ProviderListCursor } from "@upcode/source-control-core/server/PullRequestProvider";
 
 /**
  * Names the read that produced unusable output, so a failure reports the call it came from
@@ -235,6 +239,18 @@ export class AzureDevOpsPullRequestCli extends Context.Service<
       readonly number: number;
       readonly threadId: number;
       readonly resolved: boolean;
+      /** The exact Azure state; wins over `resolved`. */
+      readonly status?: PullRequestThreadStatus | undefined;
+    }) => Effect.Effect<void, AzureDevOpsPullRequestCliError>;
+
+    /** Rewrites one remark of a thread. */
+    readonly updateThreadComment: (input: {
+      readonly cwd: string;
+      readonly location: AzureDevOpsRepositoryLocation;
+      readonly number: number;
+      readonly threadId: number;
+      readonly commentId: number;
+      readonly body: string;
     }) => Effect.Effect<void, AzureDevOpsPullRequestCliError>;
 
     /**
@@ -296,7 +312,7 @@ export class AzureDevOpsPullRequestCli extends Context.Service<
       readonly requested: boolean;
     }) => Effect.Effect<void, AzureDevOpsPullRequestCliError>;
   }
->()("@t3tools/source-control-azure-devops/server/AzureDevOpsPullRequestCli") {}
+>()("@upcode/source-control-azure-devops/server/AzureDevOpsPullRequestCli") {}
 
 function statusArgs(state: PullRequestListState): ReadonlyArray<string> {
   switch (state) {
@@ -391,6 +407,29 @@ export const make = Effect.gen(function* () {
    * refused write into a failure, so anything that comes back counts as posted.
    */
   const decodeUnit = (): Result.Result<undefined, unknown> => Result.succeed(undefined);
+
+  // Mentions name people by identity id. Names do not change within a session, so each id is
+  // asked for once; a lookup that fails leaves the id as written rather than failing the read.
+  const mentionNames = new Map<string, string>();
+  const nameMentions = (cwd: string, conversation: AzureDevOpsConversation) => {
+    const unknown = conversationMentionIds(conversation).filter((id) => !mentionNames.has(id));
+    const named = () => withResolvedMentions(conversation, mentionNames);
+    if (unknown.length === 0) return Effect.succeed(named());
+    return executeJson({
+      cwd,
+      usePatRead: true,
+      args: ["identities", "resolve", "--ids", unknown.join(",")],
+    }).pipe(
+      Effect.map((result) => {
+        const decoded = decodeIdentityNamesJson(result.stdout.trim());
+        if (Result.isSuccess(decoded)) {
+          for (const [id, name] of decoded.success) mentionNames.set(id, name);
+        }
+        return named();
+      }),
+      Effect.orElseSucceed(named),
+    );
+  };
 
   const executeJson = (input: {
     readonly cwd: string;
@@ -711,7 +750,7 @@ export const make = Effect.gen(function* () {
         routeParameters: pullRequestRoute(input),
         maxOutputBytes: REVIEW_HISTORY_MAX_OUTPUT_BYTES,
         decode: decodeConversationJson,
-      }),
+      }).pipe(Effect.flatMap((conversation) => nameMentions(input.cwd, conversation))),
 
     createThread: (input) =>
       invoke({
@@ -760,7 +799,22 @@ export const make = Effect.gen(function* () {
         resource: "pullRequestThread",
         routeParameters: [...pullRequestRoute(input), `threadId=${input.threadId}`],
         method: "PATCH",
-        body: { status: input.resolved ? "fixed" : "active" },
+        body: { status: input.status ?? (input.resolved ? "fixed" : "active") },
+        decode: decodeUnit,
+      }),
+
+    updateThreadComment: (input) =>
+      invoke({
+        cwd: input.cwd,
+        operation: "updateThreadComment",
+        resource: "pullRequestThreadComments",
+        routeParameters: [
+          ...pullRequestRoute(input),
+          `threadId=${input.threadId}`,
+          `commentId=${input.commentId}`,
+        ],
+        method: "PATCH",
+        body: { content: input.body },
         decode: decodeUnit,
       }),
 

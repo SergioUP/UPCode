@@ -1,8 +1,8 @@
-import { classifyMarkdownImageSource } from "@t3tools/client-runtime/markdown-images";
+import { classifyMarkdownImageSource } from "@upcode/client-runtime/markdown-images";
 import {
   resolveMediaSource,
   type ResolveMediaSourceInput,
-} from "@t3tools/client-runtime/media-source";
+} from "@upcode/client-runtime/media-source";
 
 /** A project draft names its workspace explicitly because it has no thread. */
 export function resolveMobileMarkdownMediaSource(href: string, input: ResolveMediaSourceInput) {

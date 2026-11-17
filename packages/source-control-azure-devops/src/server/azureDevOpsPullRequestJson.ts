@@ -8,11 +8,12 @@ import type {
   PullRequestMergeMethod,
   PullRequestMergeability,
   PullRequestReviewThread,
+  PullRequestThreadStatus,
   PullRequestState,
   PullRequestThreadComment,
-} from "@t3tools/contracts";
-import { TrimmedNonEmptyString } from "@t3tools/contracts";
-import { decodeJsonResult } from "@t3tools/shared/schemaJson";
+} from "@upcode/contracts";
+import { TrimmedNonEmptyString } from "@upcode/contracts";
+import { decodeJsonResult } from "@upcode/shared/schemaJson";
 
 import { azureDevOpsPullRequestWebUrl } from "./azureDevOpsPullRequests.ts";
 
@@ -359,6 +360,21 @@ const threadIsResolved = (status: string | null): boolean => {
   return ["fixed", "closed", "wontfix", "bydesign", "notapplicable"].includes(normalized);
 };
 
+const THREAD_STATUSES: ReadonlyArray<PullRequestThreadStatus> = [
+  "active",
+  "pending",
+  "fixed",
+  "wontFix",
+  "closed",
+  "byDesign",
+];
+
+/** Azure's own state for a thread; one this build has not heard of is `unknown`, not an error. */
+function toThreadStatus(value: string | null): PullRequestThreadStatus {
+  const wanted = value?.trim().toLowerCase();
+  return THREAD_STATUSES.find((status) => status.toLowerCase() === wanted) ?? "unknown";
+}
+
 /** The comments of one thread, oldest first, dropping the ones that are not remarks. */
 const threadComments = (
   thread: Schema.Schema.Type<typeof RawThreadSchema>,
@@ -423,7 +439,8 @@ export function decodeConversationJson(
         reviewState: null,
       });
     }
-    if (path === null) continue;
+    // A thread with no file is a conversation about the whole change: as open or settled as one
+    // on a line, so it is a thread here too, with no path.
     // A thread carries both anchors when it was moved across the change; the
     // right side is the one a reader of today's diff can still find it on.
     const rightLine = thread.threadContext?.rightFileStart?.line ?? null;
@@ -432,8 +449,9 @@ export function decodeConversationJson(
       id: String(thread.id),
       path,
       line: rightLine ?? leftLine,
-      side: rightLine !== null ? "right" : "left",
+      side: rightLine !== null || leftLine === null ? "right" : "left",
       isResolved: threadIsResolved(thread.status ?? null),
+      status: toThreadStatus(thread.status ?? null),
       isOutdated: false,
       comments: threadRemarks,
     });
@@ -442,6 +460,66 @@ export function decodeConversationJson(
     comments: comments.toSorted((left, right) => left.createdAt.localeCompare(right.createdAt)),
     threads,
   });
+}
+
+const RawIdentityNamesSchema = Schema.Struct({
+  value: Schema.Array(
+    Schema.Struct({
+      id: Schema.optional(Schema.NullOr(Schema.String)),
+      providerDisplayName: Schema.optional(Schema.NullOr(Schema.String)),
+      customDisplayName: Schema.optional(Schema.NullOr(Schema.String)),
+    }),
+  ),
+});
+const decodeIdentityNames = decodeJsonResult(RawIdentityNamesSchema);
+
+/** Azure writes a mention into a remark as `@<identity id>`, which reads as noise. */
+const MENTION = /@<([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})>/gi;
+
+/** The identity ids mentioned anywhere in a conversation, lowercased and without repeats. */
+export function conversationMentionIds(conversation: AzureDevOpsConversation): string[] {
+  const ids = new Set<string>();
+  const scan = (body: string) => {
+    for (const match of body.matchAll(MENTION)) ids.add(match[1]!.toLowerCase());
+  };
+  for (const comment of conversation.comments) scan(comment.body);
+  for (const thread of conversation.threads)
+    for (const comment of thread.comments) scan(comment.body);
+  return [...ids];
+}
+
+/** Identity id to display name, from Azure's identities answer. */
+export function decodeIdentityNamesJson(
+  raw: string,
+): Result.Result<ReadonlyMap<string, string>, DecodeFailure> {
+  const decoded = decodeIdentityNames(raw);
+  if (!Result.isSuccess(decoded)) return Result.fail(decoded.failure);
+  const names = new Map<string, string>();
+  for (const identity of decoded.success.value) {
+    const id = trimmed(identity.id)?.toLowerCase();
+    const name = trimmed(identity.customDisplayName) ?? trimmed(identity.providerDisplayName);
+    if (id !== undefined && id !== null && name !== null) names.set(id, name);
+  }
+  return Result.succeed(names);
+}
+
+/** The conversation with every mention whose person is known written as `@Name`. */
+export function withResolvedMentions(
+  conversation: AzureDevOpsConversation,
+  names: ReadonlyMap<string, string>,
+): AzureDevOpsConversation {
+  const resolve = (body: string) =>
+    body.replace(MENTION, (whole, id: string) => {
+      const name = names.get(id.toLowerCase());
+      return name === undefined ? whole : `@${name}`;
+    });
+  return {
+    comments: conversation.comments.map((comment) => ({ ...comment, body: resolve(comment.body) })),
+    threads: conversation.threads.map((thread) => ({
+      ...thread,
+      comments: thread.comments.map((comment) => ({ ...comment, body: resolve(comment.body) })),
+    })),
+  };
 }
 
 export function decodeThreadsJson(

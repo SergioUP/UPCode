@@ -3,7 +3,7 @@ import {
   DEFAULT_SERVER_SETTINGS,
   SETTINGS_SECRET_REDACTED,
   type ServerSettings,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 
 import { mapSettingsSecrets, SECRET_REDACTED } from "../settingsSecrets.ts";
 import { sshServerSecretName } from "./sshServerSecrets.ts";

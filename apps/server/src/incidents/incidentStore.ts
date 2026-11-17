@@ -1,5 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off globalDate:off cryptoRandomUUID:off preferSchemaOverJson:off -- Incident Center keeps one small JSON snapshot on the server's state dir.
-import { IncidentStoreError, type Incident, type IncidentEvidence } from "@t3tools/contracts";
+import { IncidentStoreError, type Incident, type IncidentEvidence } from "@upcode/contracts";
 import * as Effect from "effect/Effect";
 import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";

@@ -1,7 +1,7 @@
 import { assert, it } from "@effect/vitest";
 
-import { ProviderInstanceId } from "@t3tools/contracts";
-import { createModelSelection } from "@t3tools/shared/model";
+import { ProviderInstanceId } from "@upcode/contracts";
+import { createModelSelection } from "@upcode/shared/model";
 
 import {
   getCodexContextWindowTokens,

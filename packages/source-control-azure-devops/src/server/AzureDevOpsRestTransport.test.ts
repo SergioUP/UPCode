@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "@effect/vitest";
 import * as Effect from "effect/Effect";
-import { DEFAULT_SERVER_SETTINGS } from "@t3tools/contracts";
-import * as TestSourceControlHost from "@t3tools/source-control-testing/TestSourceControlHost";
-import * as SourceControlHost from "@t3tools/source-control-core/server/SourceControlHost";
+import { DEFAULT_SERVER_SETTINGS } from "@upcode/contracts";
+import * as TestSourceControlHost from "@upcode/source-control-testing/TestSourceControlHost";
+import * as SourceControlHost from "@upcode/source-control-core/server/SourceControlHost";
 import { makeAzureDevOpsRestTransport, parseAzureRemote } from "./AzureDevOpsRestTransport.ts";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -174,7 +174,7 @@ describe("Azure DevOps remote resolution for PAT REST calls", () => {
   it("reads an HTTPS remote with encoded project and repository names", () => {
     expect(
       parseAzureRemote(
-        "https://dev.azure.com/upango/UPG%20-%20Portal%20Empleado/_git/Portal%20Web",
+        "https://dev.azure.com/sergioup/UPG%20-%20Portal%20Empleado/_git/Portal%20Web",
       ),
     ).toEqual({
       organization: "upango",

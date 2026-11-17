@@ -26,15 +26,15 @@ import {
   type VaultGraphNode,
   type VaultGraphScanInput,
   type VaultGraphSnapshot,
-} from "@t3tools/contracts";
-import { expandHomePath } from "@t3tools/provider-core/server/pathExpansion";
+} from "@upcode/contracts";
+import { expandHomePath } from "@upcode/provider-core/server/pathExpansion";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
 
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@upcode/shared/HostProcess";
 
 /** Directories that are never part of the picture. */
 const SKIPPED_DIRECTORIES = new Set([
@@ -78,7 +78,7 @@ export class VaultGraphScanner extends Context.Service<
       input: VaultGraphScanInput,
     ) => Effect.Effect<VaultGraphSnapshot, VaultGraphError>;
   }
->()("t3/vaultGraph/VaultGraphScanner") {}
+>()("upcode/vaultGraph/VaultGraphScanner") {}
 
 function toVaultError(vaultPath: string, cause: unknown): VaultGraphError {
   const code = (cause as NodeJS.ErrnoException | undefined)?.code;

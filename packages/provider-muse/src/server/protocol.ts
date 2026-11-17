@@ -1,4 +1,4 @@
-import type { ProviderApprovalDecision } from "@t3tools/contracts";
+import type { ProviderApprovalDecision } from "@upcode/contracts";
 import * as Schema from "effect/Schema";
 
 const NonEmptyString = Schema.String.check(Schema.isMinLength(1));
@@ -177,7 +177,7 @@ export const MuseDelta = Schema.Struct({
   field: Schema.optional(Schema.String),
 });
 
-/** The T3 decision for one native Muse choice, or none when T3 has no equivalent. */
+/** The UPCode decision for one native Muse choice, or none when UPCode has no equivalent. */
 export function museApprovalDecision(
   choice: Pick<MuseApproval["availableChoices"][number], "decision" | "scope">,
 ): ProviderApprovalDecision | undefined {

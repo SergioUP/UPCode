@@ -1,4 +1,4 @@
-import type { AzureDevOpsWorkItem, AzureDevOpsWorkItemStateOption } from "@t3tools/contracts";
+import type { AzureDevOpsWorkItem, AzureDevOpsWorkItemStateOption } from "@upcode/contracts";
 
 import { AreaChip, AssigneeAvatar, LabelChip, StatePill } from "./IssueCard";
 import { iterationName, relativeTime, stateHex } from "./issueVisuals";

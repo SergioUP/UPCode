@@ -6,7 +6,7 @@ import * as NodePath from "node:path";
 
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@upcode/shared/HostProcess";
 import { type CliShimTarget, renderCliShim } from "./DesktopCliShim.ts";
 
 const directories: Array<string> = [];
@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 const tempRoot = () => {
-  const root = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-cli-shim-"));
+  const root = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "upcode-cli-shim-"));
   directories.push(root);
   return root;
 };
@@ -27,10 +27,10 @@ const writeExecutable = (path: string, content: string) => {
   NodeFS.writeFileSync(path, content, { mode: 0o755 });
 };
 
-/** Writes the launcher for `target` at `<root>/bin/upcode`, with `<root>/home` as its T3 home. */
+/** Writes the launcher for `target` at `<root>/bin/upcode`, with `<root>/home` as its UPCode home. */
 const writeShim = (root: string, target: CliShimTarget) => {
   const shim = NodePath.join(root, "bin", "upcode");
-  writeExecutable(shim, renderCliShim({ target, shimPath: shim, t3Home: `${root}/home` }));
+  writeExecutable(shim, renderCliShim({ target, shimPath: shim, upcodeHome: `${root}/home` }));
   return shim;
 };
 
@@ -42,7 +42,7 @@ const run = (shim: string, args: ReadonlyArray<string>, env: NodeJS.ProcessEnv =
 
 /** An app executable that reports its environment and arguments. */
 const REPORTER =
-  '#!/bin/sh\necho "node=$ELECTRON_RUN_AS_NODE cli=$T3CODE_CLI_PATH home=$T3CODE_HOME"\nprintf "%s\\n" "$@"\nexit 3\n';
+  '#!/bin/sh\necho "node=$ELECTRON_RUN_AS_NODE cli=$UPCODE_CLI_PATH home=$UPCODE_HOME"\nprintf "%s\\n" "$@"\nexit 3\n';
 
 /**
  * A stand-in AppImage whose image holds the reporter. `--appimage-mount`
@@ -53,8 +53,8 @@ const REPORTER =
 const fakeAppImage = (canMount = true) => {
   const root = tempRoot();
   const image = NodePath.join(root, "image");
-  writeExecutable(NodePath.join(image, "t3code"), REPORTER);
-  const appImage = NodePath.join(root, "T3 Code.AppImage");
+  writeExecutable(NodePath.join(image, "upcode"), REPORTER);
+  const appImage = NodePath.join(root, "UPCode.AppImage");
   writeExecutable(
     appImage,
     [
@@ -68,7 +68,7 @@ const fakeAppImage = (canMount = true) => {
       "",
     ].join("\n"),
   );
-  const shim = writeShim(root, { kind: "appimage", appImage, executableName: "t3code" });
+  const shim = writeShim(root, { kind: "appimage", appImage, executableName: "upcode" });
   return { root, image, appImage, shim };
 };
 
@@ -110,7 +110,7 @@ describe("renderCliShim", () => {
   );
 
   it.skipIf(HostProcess.Platform.defaultValue() === "win32")(
-    "keeps the install's own home even if T3CODE_HOME is inherited",
+    "keeps the install's own home even if UPCODE_HOME is inherited",
     () => {
       const root = tempRoot();
       writeExecutable(NodePath.join(root, "app"), REPORTER);
@@ -121,7 +121,7 @@ describe("renderCliShim", () => {
       });
       // sudo clears the environment, so the launcher supplies its own.
       expect(run(shim, []).stdout).toContain(`home=${root}/home`);
-      expect(run(shim, [], { T3CODE_HOME: "/elsewhere" }).stdout).toContain(`home=${root}/home`);
+      expect(run(shim, [], { UPCODE_HOME: "/elsewhere" }).stdout).toContain(`home=${root}/home`);
       // Run by a relative path, it still names itself absolutely.
       const relative = NodeChildProcess.spawnSync("./bin/upcode", [], {
         cwd: root,
@@ -135,15 +135,15 @@ describe("renderCliShim", () => {
     "runs an installed app's server directly",
     () => {
       const root = tempRoot();
-      const executable = NodePath.join(root, "opt", "T3 Code", "t3code");
+      const executable = NodePath.join(root, "opt", "UPCode", "upcode");
       writeExecutable(executable, REPORTER);
       const shim = writeShim(root, {
         kind: "direct",
         executable,
-        entry: "/opt/T3's/app.asar/bin.mjs",
+        entry: "/opt/UPCode's/app.asar/bin.mjs",
       });
       expect(run(shim, ["browser", "setup"]).stdout.split("\n").slice(1)).toEqual([
-        "/opt/T3's/app.asar/bin.mjs",
+        "/opt/UPCode's/app.asar/bin.mjs",
         "browser",
         "setup",
         "",
@@ -157,7 +157,7 @@ describe("renderCliShim", () => {
       const root = tempRoot();
       const shim = writeShim(root, {
         kind: "direct",
-        executable: NodePath.join(root, "Gone.app/Contents/MacOS/T3 Code"),
+        executable: NodePath.join(root, "Gone.app/Contents/MacOS/UPCode"),
         entry: "/bin.mjs",
       });
       const result = run(shim, ["--version"]);
@@ -167,35 +167,35 @@ describe("renderCliShim", () => {
   );
 
   it("writes a Windows launcher that keeps cmd from reinterpreting paths", () => {
-    const executable = "C:\\Apps\\R&whoami&X 100%\\!CHANNEL!\\T3 Code.exe";
+    const executable = "C:\\Apps\\R&whoami&X 100%\\!CHANNEL!\\UPCode.exe";
     const script = renderCliShim({
       target: { kind: "windows", executable, entry: "C:\\Apps\\server.asar\\bin.mjs" },
       shimPath: "C:\\Users\\José\\.upcode\\bin\\upcode.cmd",
-      t3Home: "C:\\Users\\José\\.upcode",
+      upcodeHome: "C:\\Users\\José\\.upcode",
     });
     const lines = script.split("\r\n");
     expect(lines).toContain("setlocal EnableExtensions DisableDelayedExpansion");
     expect(lines).toContain("chcp 65001 >nul");
     expect(lines).toContain(
-      'if exist "C:\\Apps\\R&whoami&X 100%%\\!CHANNEL!\\T3 Code.exe" goto run',
+      'if exist "C:\\Apps\\R&whoami&X 100%%\\!CHANNEL!\\UPCode.exe" goto run',
     );
     // Paths only ever appear quoted or inside `set "..."`, never bare where `&` would split them.
     const bare = lines.filter(
       (line) => line.includes("whoami") && !/"[^"]*whoami[^"]*"/.test(line),
     );
     expect(bare).toEqual([]);
-    expect(lines).toContain('set "T3CODE_CLI_PATH=C:\\Users\\José\\.upcode\\bin\\upcode.cmd"');
-    expect(lines).toContain('set "T3CODE_HOME=C:\\Users\\José\\.upcode"');
+    expect(lines).toContain('set "UPCODE_CLI_PATH=C:\\Users\\José\\.upcode\\bin\\upcode.cmd"');
+    expect(lines).toContain('set "UPCODE_HOME=C:\\Users\\José\\.upcode"');
   });
 
   it("switches the Windows console to UTF-8 only when a path needs it", () => {
     const ascii = renderCliShim({
-      target: { kind: "windows", executable: "C:\\T3\\T3 Code.exe", entry: "C:\\T3\\bin.mjs" },
+      target: { kind: "windows", executable: "C:\\UPCode\\UPCode.exe", entry: "C:\\UPCode\\bin.mjs" },
       shimPath: "C:\\Users\\me\\.upcode\\bin\\upcode.cmd",
-      t3Home: "C:\\Users\\me\\.upcode",
+      upcodeHome: "C:\\Users\\me\\.upcode",
     });
     // A Ctrl-C that ends the batch would leave the console switched.
     expect(ascii).not.toContain("chcp");
-    expect(ascii.split("\r\n")).toContain("exit /b %t3_exit%");
+    expect(ascii.split("\r\n")).toContain("exit /b %upcode_exit%");
   });
 });

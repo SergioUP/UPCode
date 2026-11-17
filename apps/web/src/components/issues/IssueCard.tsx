@@ -1,4 +1,4 @@
-import type { AzureDevOpsWorkItem } from "@t3tools/contracts";
+import type { AzureDevOpsWorkItem } from "@upcode/contracts";
 import { useMemo, type CSSProperties } from "react";
 
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";

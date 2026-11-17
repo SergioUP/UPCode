@@ -1,4 +1,4 @@
-import type { AzureDevOpsWorkItemLink, EnvironmentId } from "@t3tools/contracts";
+import type { AzureDevOpsWorkItemLink, EnvironmentId } from "@upcode/contracts";
 
 import { azureDevOps } from "../../state/azureDevOps";
 import { useEnvironmentQuery } from "../../state/query";

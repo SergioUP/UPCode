@@ -1,6 +1,6 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, it } from "@effect/vitest";
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@upcode/shared/HostProcess";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as FileSystem from "effect/FileSystem";
@@ -17,20 +17,20 @@ const resolveWindowsUserData = (appDataDirectory: string) =>
   }).pipe(Effect.provide(DesktopPreReadyFileSystem.layer));
 
 it.layer(NodeServices.layer)("DesktopPreReadyFileSystem", (it) => {
-  it.effect("selects a separate Windows profile without copying T3 state", () =>
+  it.effect("selects a separate Windows profile without copying UPCode state", () =>
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
-      const root = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-pre-ready-fs-" });
-      yield* fileSystem.makeDirectory(path.join(root, "T3 Code (Alpha)"));
-      yield* fileSystem.writeFileString(path.join(root, "T3 Code (Alpha)", "Local State"), "keys");
+      const root = yield* fileSystem.makeTempDirectoryScoped({ prefix: "upcode-pre-ready-fs-" });
+      yield* fileSystem.makeDirectory(path.join(root, "UPCode (Alpha)"));
+      yield* fileSystem.writeFileString(path.join(root, "UPCode (Alpha)", "Local State"), "keys");
 
       const userData = yield* resolveWindowsUserData(root);
 
       assert.equal(userData, path.join(root, "upcode"));
       assert.isFalse(yield* fileSystem.exists(path.join(userData, "Local State")));
       assert.equal(
-        yield* fileSystem.readFileString(path.join(root, "T3 Code (Alpha)", "Local State")),
+        yield* fileSystem.readFileString(path.join(root, "UPCode (Alpha)", "Local State")),
         "keys",
       );
     }),
@@ -41,7 +41,7 @@ it.layer(NodeServices.layer)("DesktopPreReadyFileSystem", (it) => {
     () =>
       Effect.gen(function* () {
         const fileSystem = yield* FileSystem.FileSystem;
-        const root = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-pre-ready-fs-" });
+        const root = yield* fileSystem.makeTempDirectoryScoped({ prefix: "upcode-pre-ready-fs-" });
         yield* fileSystem.chmod(root, 0o000);
         yield* Effect.addFinalizer(() => fileSystem.chmod(root, 0o700).pipe(Effect.orDie));
 

@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
-import type { ServerProviderModel } from "@t3tools/contracts";
-import type * as ModelCatalog from "@t3tools/provider-core/server/ModelCatalog";
+import type { ServerProviderModel } from "@upcode/contracts";
+import type * as ModelCatalog from "@upcode/provider-core/server/ModelCatalog";
 
 import { applyCodexModelCatalog } from "./codexModelCatalog.ts";
 
@@ -89,7 +89,7 @@ describe("applyCodexModelCatalog", () => {
     );
   });
 
-  it("offers the T3 context-window ladder on discovered models", () => {
+  it("offers the UPCode context-window ladder on discovered models", () => {
     const withWindow = applyCodexModelCatalog(
       draft("1.2.0", [
         model({

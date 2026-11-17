@@ -1,5 +1,5 @@
 /**
- * `t3 browser setup` - prepares a Linux host for T3's headless browser, which
+ * `upcode browser setup` - prepares a Linux host for UPCode's headless browser, which
  * server browser tabs and HTML render previews share. It is the fix every
  * browser host error names, so it does the whole job in one run:
  *
@@ -10,7 +10,7 @@
  * Both need root. Without it, the command prints what it would change and the
  * `sudo` line to run. It is safe to run again; it skips what is already done.
  */
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@upcode/shared/HostProcess";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -53,12 +53,12 @@ const runStep = Effect.fn("browserSetup.runStep")(function* (
 });
 
 /**
- * The T3 home to check. Under `sudo` the process home is root's, so an
- * unspecified home falls back to the invoking user's `~/.t3`.
+ * The UPCode home to check. Under `sudo` the process home is root's, so an
+ * unspecified home falls back to the invoking user's `~/.upcode`.
  */
 const setupBaseDir = Effect.fn("browserSetup.baseDir")(function* (explicit: Option.Option<string>) {
   const env = yield* HostProcess.Environment;
-  const raw = Option.getOrUndefined(explicit) ?? env.T3CODE_HOME;
+  const raw = Option.getOrUndefined(explicit) ?? env.UPCODE_HOME;
   if (raw !== undefined || env.SUDO_USER === undefined) return yield* resolveBaseDir(raw);
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
   const entry = yield* spawner
@@ -68,7 +68,7 @@ const setupBaseDir = Effect.fn("browserSetup.baseDir")(function* (explicit: Opti
     .pipe(Effect.orElseSucceed(() => ""));
   const home = entry.trim().split(":")[5];
   const path = yield* Path.Path;
-  return home ? path.join(home, ".t3") : yield* resolveBaseDir(undefined);
+  return home ? path.join(home, ".upcode") : yield* resolveBaseDir(undefined);
 });
 
 /** Whether apt has an installable candidate for `name`. */
@@ -81,7 +81,7 @@ const aptOffers = Effect.fn("browserSetup.aptOffers")(function* (name: string) {
   return candidate !== undefined && candidate !== "(none)";
 });
 
-/** The installed browser in this T3 home, if any, to check its libraries. */
+/** The installed browser in this UPCode home, if any, to check its libraries. */
 const installedBrowser = Effect.fn("browserSetup.installedBrowser")(function* (baseDir: string) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
@@ -101,12 +101,12 @@ const installedBrowser = Effect.fn("browserSetup.installedBrowser")(function* (b
 
 const browserSetupCommand = Command.make("setup", { baseDir: baseDirFlag }).pipe(
   Command.withDescription(
-    "Set up this Linux host for T3's browser: allow Chrome's sandbox and install its libraries.",
+    "Set up this Linux host for UPCode's browser: allow Chrome's sandbox and install its libraries.",
   ),
   Command.withHandler(({ baseDir }) =>
     Effect.gen(function* () {
       if ((yield* HostProcess.Platform) !== "linux") {
-        return yield* Console.log("Nothing to set up: T3's browser runs as is on this system.");
+        return yield* Console.log("Nothing to set up: UPCode's browser runs as is on this system.");
       }
       const fs = yield* FileSystem.FileSystem;
       const isRoot = (yield* HostProcess.UserId) === 0;
@@ -122,19 +122,19 @@ const browserSetupCommand = Command.make("setup", { baseDir: baseDirFlag }).pipe
       if (!needsProfile && missing.length === 0) {
         return yield* Console.log(
           Option.isSome(browser)
-            ? "This host is ready for T3's browser."
-            : "Chrome's sandbox is allowed here. T3's browser installs on first use; if it then reports missing libraries, run this again.",
+            ? "This host is ready for UPCode's browser."
+            : "Chrome's sandbox is allowed here. UPCode's browser installs on first use; if it then reports missing libraries, run this again.",
         );
       }
 
       if (!isRoot) {
         if (needsProfile) {
           yield* Console.log(
-            `This host blocks the sandbox T3's browser runs in. Setup installs an AppArmor profile at ${PreviewBrowserHost.APPARMOR_PROFILE_PATH} that allows it.`,
+            `This host blocks the sandbox UPCode's browser runs in. Setup installs an AppArmor profile at ${PreviewBrowserHost.APPARMOR_PROFILE_PATH} that allows it.`,
           );
         }
         if (missing.length > 0) {
-          yield* Console.log(`T3's browser is missing ${missing.join(", ")}; setup installs them.`);
+          yield* Console.log(`UPCode's browser is missing ${missing.join(", ")}; setup installs them.`);
         }
         return yield* Console.log(`\nThis needs root. Run:\n\n  ${setupCommand}\n`);
       }
@@ -158,13 +158,13 @@ const browserSetupCommand = Command.make("setup", { baseDir: baseDirFlag }).pipe
           "-r",
           PreviewBrowserHost.APPARMOR_PROFILE_PATH,
         ]);
-        yield* Console.log("Allowed Chrome's sandbox for T3's browser.");
+        yield* Console.log("Allowed Chrome's sandbox for UPCode's browser.");
       }
 
       if (missing.length > 0) {
         if (!hasApt) {
           return yield* Console.log(
-            `T3's browser is missing ${missing.join(", ")}. Install them with your package manager, then run this again.`,
+            `UPCode's browser is missing ${missing.join(", ")}. Install them with your package manager, then run this again.`,
           );
         }
         yield* runStep("refresh the package lists", "apt-get", ["update"]);
@@ -180,12 +180,12 @@ const browserSetupCommand = Command.make("setup", { baseDir: baseDirFlag }).pipe
         yield* Console.log("Installed the browser's libraries.");
       }
 
-      yield* Console.log("This host is ready for T3's browser.");
+      yield* Console.log("This host is ready for UPCode's browser.");
     }),
   ),
 );
 
 export const browserCommand = Command.make("browser").pipe(
-  Command.withDescription("Manage T3's headless browser on this host."),
+  Command.withDescription("Manage UPCode's headless browser on this host."),
   Command.withSubcommands([browserSetupCommand]),
 );

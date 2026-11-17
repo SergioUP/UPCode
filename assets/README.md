@@ -6,7 +6,7 @@ The three Icon Composer projects are the source of truth for full application ic
 - `nightly/app-icon.icon`
 - `prod/app-icon.icon`
 
-Each project uses `text.svg` for the T3 mark and `background.svg` when the background is a vector layer. Additional layers use semantic names that describe their role and placement.
+Each project uses `text.svg` for the UPCode mark and `background.svg` when the background is a vector layer. Additional layers use semantic names that describe their role and placement.
 
 Run `vp run icons:export` from the repository root to regenerate the tracked iOS, Linux, Windows, and web assets. The development web exports are also copied to `apps/web/public` for the browser favicon and splash screen. Run `vp run icons:check` to verify that the generated assets and public copies match their sources without changing files.
 
@@ -52,16 +52,16 @@ Do not edit the generated PNG or ICO files directly.
 ## UPCode fork
 
 The tracked exports carry the **UPCode** mark (a black rounded tile with the white
-`UP` monogram), not the T3 artwork. Two caveats before touching anything here:
+`UP` monogram), not the UPCode artwork. Two caveats before touching anything here:
 
-- The three Icon Composer projects still hold the T3 layers, so **do not run
+- The three Icon Composer projects still hold the UPCode layers, so **do not run
   `vp run icons:export` or `icons:check`** until `Assets/text.svg` is redrawn with
-  the UP monogram. A run would silently put T3 back in every surface.
+  the UP monogram. A run would silently put UPCode back in every surface.
 - The exports and the copies in `apps/web/public` were generated on Windows from
   the UP logo artwork: tile corner radius 22.37%, mark 70% of the canvas width,
   the macOS rendition inset 100px for the classic safe area, and the iOS rendition
   a full square because iOS masks the corners itself and rejects alpha.
-- The file names still say `blueprint-*`, `nightly-*` and `t3-black-*`. They are
+- The file names still say `blueprint-*`, `nightly-*` and `upcode-black-*`. They are
   the same art in all three brands until the projects are redrawn and renamed.
 
 ## Android launcher and splash artwork

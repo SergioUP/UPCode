@@ -2,7 +2,7 @@
 
 ## Objetivo y límites
 
-Convertir el fork de T3 Code en una superficie de trabajo que ayude a **retomar, ejecutar, verificar y cerrar** tareas de desarrollo. El caso principal es una integración ERP/PIM → Shopify en UPANGO, pero las capacidades generales deben servir para otros proyectos.
+Convertir el fork de UPCode en una superficie de trabajo que ayude a **retomar, ejecutar, verificar y cerrar** tareas de desarrollo. El caso principal es una integración ERP/PIM → Shopify en UPANGO, pero las capacidades generales deben servir para otros proyectos.
 
 El producto actual ya dispone de proyectos, conversaciones, diffs y checkpoints, enlaces de PR, control de código con Azure DevOps, clientes web/escritorio/móvil y permisos por entorno. Estas ideas proponen **componer y ampliar** esas capacidades; la integración existente de repositorios y PR de Azure DevOps no equivale a gestionar work items. Antes de implementar cada fase, comprobar el contrato y el comportamiento vigente del fork.
 
@@ -35,9 +35,9 @@ Al abrir UPCode, mostrar una vista de continuidad en lugar de obligar a reconstr
 
 Azure DevOps debe tener una **interfaz propia dentro de UPCode**, no solo aparecer como un enlace en Mission Control. Su objeto principal es el **work item**: tarea, historia, bug u otro tipo definido por el proceso del proyecto. La interfaz reúne work items, repositorios, ramas, conversaciones y PR sin convertir UPCode en una copia completa de Azure Boards.
 
-**Decisión de autenticación del fork:** una configuración de organización y un Personal Access Token (PAT) constituyen la única identidad de Azure DevOps para todo UPCode: work items, repositorios, ramas, PR, revisiones y operaciones que ya ofrecía T3. El servidor llama directamente a las API HTTPS de Azure DevOps; no depende de `az`, `az login` ni de Azure DevOps CLI para autenticar o consultar. Las operaciones Git locales siguen siendo Git. El PAT se guarda exclusivamente en el almacén de secretos del servidor, se redacta en respuestas al cliente y se puede sustituir o revocar. Nunca se añade a URL, logs, repositorio, Obsidian o memoria personal. Una configuración con PAT caducado o sin permisos muestra un error concreto; no cambia silenciosamente a credenciales de Azure CLI.
+**Decisión de autenticación del fork:** una configuración de organización y un Personal Access Token (PAT) constituyen la única identidad de Azure DevOps para todo UPCode: work items, repositorios, ramas, PR, revisiones y operaciones que ya ofrecía UPCode. El servidor llama directamente a las API HTTPS de Azure DevOps; no depende de `az`, `az login` ni de Azure DevOps CLI para autenticar o consultar. Las operaciones Git locales siguen siendo Git. El PAT se guarda exclusivamente en el almacén de secretos del servidor, se redacta en respuestas al cliente y se puede sustituir o revocar. Nunca se añade a URL, logs, repositorio, Obsidian o memoria personal. Una configuración con PAT caducado o sin permisos muestra un error concreto; no cambia silenciosamente a credenciales de Azure CLI.
 
-En T3 Code, un **thread es la conversación de trabajo**. Recomiendo un work item **principal** por thread para que el contexto y el cierre no sean ambiguos; un work item puede agrupar varios threads, ramas y PR. Se pueden mostrar work items relacionados sin tratarlos como principales. El vínculo debe ser explícito, persistente y reversible, e incluir organización, proyecto e ID del work item. La cadena visible será **work item ↔ thread ↔ repositorio/worktree/rama ↔ diff/checkpoint ↔ PR**.
+En UPCode, un **thread es la conversación de trabajo**. Recomiendo un work item **principal** por thread para que el contexto y el cierre no sean ambiguos; un work item puede agrupar varios threads, ramas y PR. Se pueden mostrar work items relacionados sin tratarlos como principales. El vínculo debe ser explícito, persistente y reversible, e incluir organización, proyecto e ID del work item. La cadena visible será **work item ↔ thread ↔ repositorio/worktree/rama ↔ diff/checkpoint ↔ PR**.
 
 ### Interfaz propuesta
 
@@ -140,7 +140,7 @@ Al terminar la jornada, generar un cierre útil para el propio desarrollador y, 
 
 ## Arquitectura sugerida
 
-| Pieza                                            | Responsabilidad propuesta                                                                                        | Encaje con T3 Code                                                                                          |
+| Pieza                                            | Responsabilidad propuesta                                                                                        | Encaje con UPCode                                                                                          |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Servicio de contexto de trabajo en `apps/server` | Componer hechos de proyecto, thread, Git, PR y work items; devolver resúmenes acotados y estado de actualización | El servidor posee filesystem, Git, credenciales y estado del entorno                                        |
 | Servicio de work items de Azure DevOps           | Búsqueda, lectura, vínculos y actualizaciones autorizadas                                                        | Reutilizar los proveedores de control de código para repositorios y PR; el work item tiene identidad propia |

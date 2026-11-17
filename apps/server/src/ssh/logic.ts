@@ -12,7 +12,7 @@ import {
   SETTINGS_SECRET_REDACTED,
   type SshServer,
   type SshServerSummary,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 
 /** Past this the answer stops being something a person or a model can read. */
 export const MAX_SSH_OUTPUT_CHARS = 20_000;

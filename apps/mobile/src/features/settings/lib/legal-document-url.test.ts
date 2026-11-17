@@ -4,17 +4,17 @@ import { isLegalDocumentUrl } from "./legal-document-url";
 
 describe("isLegalDocumentUrl", () => {
   it.each([
-    "https://t3.codes/legal",
-    "https://t3.codes/legal/",
-    "https://t3.codes/privacy-policy?source=app",
-    "https://t3.codes/terms-of-service#updates",
-    "https://t3.codes/security-policy",
+    "https://upcode.codes/legal",
+    "https://upcode.codes/legal/",
+    "https://upcode.codes/privacy-policy?source=app",
+    "https://upcode.codes/terms-of-service#updates",
+    "https://upcode.codes/security-policy",
   ])("allows a configured legal document: %s", (url) => {
     expect(isLegalDocumentUrl(url)).toBe(true);
   });
 
   it.each([
-    "https://t3.codes/download",
+    "https://upcode.codes/download",
     "https://example.com/legal",
     "javascript:alert(1)",
     "not-a-url",

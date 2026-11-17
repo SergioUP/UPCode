@@ -1,8 +1,8 @@
 // @effect-diagnostics globalFetchInEffect:off globalTimersInEffect:off preferSchemaOverJson:off -- This Azure REST boundary owns the PAT, timeout and untrusted JSON envelope.
 import * as Effect from "effect/Effect";
-import { AzureDevOpsWorkspaceError } from "@t3tools/contracts";
-import { readSourceControlHostSettings } from "@t3tools/source-control-core/client/definition";
-import { settings as azureSettings } from "@t3tools/source-control-azure-devops/client/definition";
+import { AzureDevOpsWorkspaceError } from "@upcode/contracts";
+import { readSourceControlHostSettings } from "@upcode/source-control-core/client/definition";
+import { settings as azureSettings } from "@upcode/source-control-azure-devops/client/definition";
 import * as ServerSettings from "./serverSettings.ts";
 import * as AzureDevOpsAzCli from "./azureDevOpsAzCli.ts";
 
@@ -133,7 +133,7 @@ const workItemSearchClause = (query: string | undefined): string => {
   return ` AND [System.Title] CONTAINS '${wiqlLiteral(trimmed)}'`;
 };
 
-/** T3's `az devops`/`az repos` calls authenticate through this environment variable. */
+/** UPCode's `az devops`/`az repos` calls authenticate through this environment variable. */
 const applyAzCliPat = (pat: string) => {
   if (pat) process.env.AZURE_DEVOPS_EXT_PAT = pat;
   else delete process.env.AZURE_DEVOPS_EXT_PAT;
@@ -194,7 +194,7 @@ export const make = Effect.gen(function* () {
     }),
   );
 
-  // Keep T3's az CLI calls (az devops / az repos) authenticated with the saved PAT.
+  // Keep UPCode's az CLI calls (az devops / az repos) authenticated with the saved PAT.
   yield* Effect.ignore(credentials);
 
   const requestWithHeaders = (input: {

@@ -1,4 +1,4 @@
-import { SUBAGENT_AVATAR_MAX_LENGTH } from "@t3tools/contracts";
+import { SUBAGENT_AVATAR_MAX_LENGTH } from "@upcode/contracts";
 
 /** The avatar is stored in the settings JSON, so it stays small on purpose. */
 export const SUBAGENT_AVATAR_PIXELS = 128;

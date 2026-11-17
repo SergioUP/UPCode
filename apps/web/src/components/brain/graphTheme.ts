@@ -13,7 +13,7 @@
  * @module brain/graphTheme
  */
 
-import type { VaultGraphNode } from "@t3tools/contracts";
+import type { VaultGraphNode } from "@upcode/contracts";
 
 /** A black backdrop preserves saturated halos through the additive bloom pass. */
 export const BRAIN_BACKGROUND = "#000000";

@@ -635,8 +635,7 @@ layer("AzureDevOpsPullRequestCli.layer", (it) => {
       mockedExecute.mockReturnValue(Effect.succeed(output("{}")));
       const provider = yield* AzureDevOpsPullRequestProvider.make;
 
-      // False for a remark because nothing here can post one, so there is none to rewrite.
-      expect(provider.capabilities.edit).toEqual({ changeRequest: true, comment: false });
+      expect(provider.capabilities.edit).toEqual({ changeRequest: true, comment: true });
       assert.isDefined(provider.updateChangeRequest);
       yield* provider.updateChangeRequest({
         cwd: "/w",

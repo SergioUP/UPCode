@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test UPCode Mobile"
+  short_description: "Test iOS and Android in UPCode's Device panel"
+  default_prompt: "Use $test-upcode-mobile to verify the affected native mobile flow through UPCode's Device panel and AgentDevice."

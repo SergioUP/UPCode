@@ -30,7 +30,7 @@ export class DesktopUserDataInitializationError extends Schema.TaggedError<Deskt
   }
 }
 
-/** Select Electron's profile independently of the server's T3 home. */
+/** Select Electron's profile independently of the server's UPCode home. */
 export const resolveUserDataPath = Effect.fn("desktop.userData.resolveUserDataPath")(
   function* (input: {
     readonly appDataDirectory: string;
@@ -38,7 +38,7 @@ export const resolveUserDataPath = Effect.fn("desktop.userData.resolveUserDataPa
     readonly platform: NodeJS.Platform;
   }) {
     const path = yield* Path.Path;
-    // UPCode starts with a fresh Electron profile; never import T3 cookies or safeStorage state.
+    // UPCode starts with a fresh Electron profile; never import UPCode cookies or safeStorage state.
     return path.join(input.appDataDirectory, input.isDevelopment ? "upcode-dev" : "upcode");
   },
 );

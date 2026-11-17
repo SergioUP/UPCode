@@ -9,15 +9,15 @@ import {
   TrimmedNonEmptyString,
   type SourceControlRepositoryVisibility,
   type VcsError,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 
-import * as SourceControlHost from "@t3tools/source-control-core/server/SourceControlHost";
+import * as SourceControlHost from "@upcode/source-control-core/server/SourceControlHost";
 import {
   decodeAzureDevOpsPullRequestJson,
   decodeAzureDevOpsPullRequestListJson,
   type NormalizedAzureDevOpsPullRequestRecord,
 } from "./azureDevOpsPullRequests.ts";
-import * as SourceControlProvider from "@t3tools/source-control-core/server/SourceControlProvider";
+import * as SourceControlProvider from "@upcode/source-control-core/server/SourceControlProvider";
 import {
   makeAzureDevOpsRestTransport,
   AzureDevOpsRestTransportError,
@@ -34,6 +34,7 @@ function isSupportedPatRead(args: ReadonlyArray<string>): boolean {
   const command = args.slice(0, 3).join(" ");
   if (command === "repos pr show" || command === "repos pr list") return true;
   if (args[0] === "account" && args[1] === "show") return true;
+  if (args[0] === "identities" && args[1] === "resolve") return true;
   if (args[0] !== "devops" || args[1] !== "invoke") return false;
   const resourceIndex = args.indexOf("--resource");
   return (
@@ -319,7 +320,7 @@ export class AzureDevOpsCli extends Context.Service<
       readonly remoteName?: string;
     }) => Effect.Effect<void, AzureDevOpsCliError>;
   }
->()("@t3tools/source-control-azure-devops/server/AzureDevOpsCli") {}
+>()("@upcode/source-control-azure-devops/server/AzureDevOpsCli") {}
 
 function normalizeChangeRequestId(reference: string): string {
   const trimmed = reference.trim().replace(/^#/, "");

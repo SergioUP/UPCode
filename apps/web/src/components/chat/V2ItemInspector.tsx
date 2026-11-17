@@ -3,16 +3,16 @@ import type {
   OrchestrationV2ProjectedTurnItem,
   RunId,
   ThreadId,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import {
   toolCallLines,
   turnItemDetailRevision,
   turnItemNeedsDetailFetch,
   turnItemOutputImages,
   turnItemOutputText,
-} from "@t3tools/client-runtime/work-log/item-detail";
-import { formatDiffCount } from "@t3tools/client-runtime/diff-count";
-import { isJavaScriptReplTool } from "@t3tools/shared/toolActivity";
+} from "@upcode/client-runtime/work-log/item-detail";
+import { formatDiffCount } from "@upcode/client-runtime/diff-count";
+import { isJavaScriptReplTool } from "@upcode/shared/toolActivity";
 import { FileDiff } from "@pierre/diffs/react";
 import { getFiletypeFromFileName } from "@pierre/diffs";
 import {

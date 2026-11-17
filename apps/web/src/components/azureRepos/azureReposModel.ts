@@ -1,4 +1,4 @@
-import type { AzureDevOpsPullRequest } from "@t3tools/contracts";
+import type { AzureDevOpsPullRequest } from "@upcode/contracts";
 
 export type PullRequestScope = "mine" | "all";
 

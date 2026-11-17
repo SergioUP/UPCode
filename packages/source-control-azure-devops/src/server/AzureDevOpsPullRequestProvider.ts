@@ -1,7 +1,7 @@
-import { SourceControlProviderKind } from "@t3tools/contracts";
+import { SourceControlProviderKind } from "@upcode/contracts";
 import * as Effect from "effect/Effect";
 import * as Semaphore from "effect/Semaphore";
-import type { PullRequestCapabilities, PullRequestViewerPermissions } from "@t3tools/contracts";
+import type { PullRequestCapabilities, PullRequestViewerPermissions } from "@upcode/contracts";
 
 import * as AzureDevOpsPullRequestCli from "./AzureDevOpsPullRequestCli.ts";
 import {
@@ -25,7 +25,7 @@ import {
   type ProviderChangeRequestSummary,
   type ProviderDiffSlice,
   type PullRequestProviderApi,
-} from "@t3tools/source-control-core/server/PullRequestProvider";
+} from "@upcode/source-control-core/server/PullRequestProvider";
 import type {
   AzureDevOpsChangeEntry,
   AzureDevOpsItemContent,
@@ -68,15 +68,21 @@ const CAPABILITIES: PullRequestCapabilities = {
   reactions: false,
   // Threads reply and settle through the same REST route that reads them. There are no verdicts
   // to vote with: a review is remarks, posted one at a time.
-  review: { inlineComment: true, reply: true, resolve: true, verdicts: ["comment"] },
+  review: {
+    inlineComment: true,
+    reply: true,
+    resolve: true,
+    // Azure's own states, so a thread can be moved to any of them rather than only settled.
+    threadStatuses: ["active", "pending", "fixed", "wontFix", "closed", "byDesign"],
+    verdicts: ["comment"],
+  },
   // `az repos pr reviewer add` and `remove` name identities, and nothing anywhere in `az repos`
   // lists the ones this repository could name — that lives behind the identity and graph APIs, a
   // different service with its own permissions. So the page takes a name here rather than being
   // handed a menu built out of a guess.
   reviewers: { request: true, listCandidates: false },
   // A new title and description travel on the same `az repos pr update` that moves a pull request.
-  // Rewriting a remark is Azure's per-comment edit, which this has not wired up.
-  edit: { changeRequest: true, comment: false },
+  edit: { changeRequest: true, comment: true },
   // Azure does keep a viewed record of its own, but only behind the undocumented contribution
   // endpoint its web UI talks to, keyed on an iteration so a push would drop every mark anyway.
   // So they are kept here instead, and the client says whose they are rather than implying the
@@ -736,9 +742,28 @@ export const make = Effect.gen(function* () {
               number,
               threadId: Number(input.threadId),
               resolved: input.resolved,
+              status: input.status,
             })
             .pipe(Effect.mapError(fail("setThreadResolution"))),
         ),
+      ),
+
+    // A remark's id travels as `<thread>:<comment>`, the way the conversation carried it.
+    updateComment: (input) =>
+      writeLocation(input, "updateComment").pipe(
+        Effect.flatMap(({ location, number }) => {
+          const [threadId, commentId] = input.commentId.split(":");
+          return cli
+            .updateThreadComment({
+              cwd: input.cwd,
+              location,
+              number,
+              threadId: Number(threadId),
+              commentId: Number(commentId),
+              body: input.body,
+            })
+            .pipe(Effect.mapError(fail("updateComment")));
+        }),
       ),
 
     setReaction: () => unsupported("setReaction"),

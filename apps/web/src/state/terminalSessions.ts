@@ -5,7 +5,7 @@ import {
   selectRunningSubprocessTerminalIds,
   type KnownTerminalSession,
   type TerminalSessionState,
-} from "@t3tools/client-runtime/state/terminal";
+} from "@upcode/client-runtime/state/terminal";
 import {
   ThreadId,
   AuthTerminalReadScope,
@@ -13,7 +13,7 @@ import {
   type EnvironmentId,
   type TerminalAttachInput,
   type TerminalSummary,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import { useMemo } from "react";
 
 import { useEnvironmentQuery } from "./query";

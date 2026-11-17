@@ -18,7 +18,7 @@ import {
   type AzureDevOpsWorkItem,
   type AzureDevOpsWorkItemStateOption,
   type JiraSettings,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import * as ServerSettings from "./serverSettings.ts";
 
 const MAX_BODY_BYTES = 8 * 1024 * 1024;

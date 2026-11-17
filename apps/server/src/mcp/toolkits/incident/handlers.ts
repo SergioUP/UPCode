@@ -1,4 +1,4 @@
-import { OrchestratorMcpFailure } from "@t3tools/contracts";
+import { OrchestratorMcpFailure } from "@upcode/contracts";
 import * as Effect from "effect/Effect";
 import * as IncidentStore from "../../../incidents/incidentStore.ts";
 import * as McpInvocationContext from "../../McpInvocationContext.ts";
@@ -35,7 +35,7 @@ const resolveIncident = Effect.gen(function* () {
 });
 
 export const layer = McpToolAccess.toLayer(IncidentToolkit, {
-  t3_incident_save_evidence: McpToolAccess.actsAsCaller((params) =>
+  upcode_incident_save_evidence: McpToolAccess.actsAsCaller((params) =>
     Effect.gen(function* () {
       const { store, incident } = yield* resolveIncident;
       const updated = yield* store
@@ -52,7 +52,7 @@ export const layer = McpToolAccess.toLayer(IncidentToolkit, {
       return { incidentId: updated.id, evidenceCount: updated.evidence.length };
     }),
   ),
-  t3_incident_update_summary: McpToolAccess.actsAsCaller((params) =>
+  upcode_incident_update_summary: McpToolAccess.actsAsCaller((params) =>
     Effect.gen(function* () {
       const { store, incident } = yield* resolveIncident;
       const updated = yield* store

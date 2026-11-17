@@ -1,6 +1,6 @@
-import type { ServerUpdateState } from "@t3tools/client-runtime/state/server";
-import type { EnvironmentId, ServerConfig } from "@t3tools/contracts";
-import { cliReleaseChannelOf } from "@t3tools/shared/cliRelease";
+import type { ServerUpdateState } from "@upcode/client-runtime/state/server";
+import type { EnvironmentId, ServerConfig } from "@upcode/contracts";
+import { cliReleaseChannelOf } from "@upcode/shared/cliRelease";
 
 import {
   resolveServerSelfUpdateCapability,

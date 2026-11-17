@@ -1,4 +1,4 @@
-import type { VaultGraphNode } from "@t3tools/contracts";
+import type { VaultGraphNode } from "@upcode/contracts";
 
 /** A folder or a file as the explorer draws it, built from the graph's flat paths. */
 export interface VaultTreeEntry {

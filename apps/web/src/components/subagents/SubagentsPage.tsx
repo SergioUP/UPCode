@@ -1,7 +1,7 @@
 ﻿"use client";
 
-import type { EnvironmentId, Subagent } from "@t3tools/contracts";
-import { SUBAGENT_NAME_MAX_LENGTH, SUBAGENT_PROMPT_MAX_LENGTH } from "@t3tools/contracts";
+import type { EnvironmentId, Subagent } from "@upcode/contracts";
+import { SUBAGENT_NAME_MAX_LENGTH, SUBAGENT_PROMPT_MAX_LENGTH } from "@upcode/contracts";
 import {
   ArrowLeftIcon,
   CameraIcon,

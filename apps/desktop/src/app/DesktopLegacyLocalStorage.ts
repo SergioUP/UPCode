@@ -11,7 +11,7 @@ export class DesktopLegacyLocalStorage extends Context.Service<
     readonly take: Effect.Effect<Option.Option<Readonly<Record<string, string>>>>;
     readonly complete: Effect.Effect<void>;
   }
->()("@t3tools/desktop/app/DesktopLegacyLocalStorage") {}
+>()("@upcode/desktop/app/DesktopLegacyLocalStorage") {}
 
 export const layer = Layer.succeed(
   DesktopLegacyLocalStorage,

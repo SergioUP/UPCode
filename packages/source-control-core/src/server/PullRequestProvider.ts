@@ -26,6 +26,7 @@ import type {
   PullRequestReviewCommentDraft,
   PullRequestReviewDecision,
   PullRequestReviewThread,
+  PullRequestThreadStatus,
   PullRequestThreadCommentsResult,
   PullRequestReviewVerdict,
   PullRequestReviewerCandidateList,
@@ -36,8 +37,8 @@ import type {
   PullRequestUpdateMethod,
   PullRequestViewerPermissions,
   SourceControlProviderKind,
-} from "@t3tools/contracts";
-import { SourceControlProviderKind as SourceControlProviderKindSchema } from "@t3tools/contracts";
+} from "@upcode/contracts";
+import { SourceControlProviderKind as SourceControlProviderKindSchema } from "@upcode/contracts";
 
 /**
  * The one failure shape every provider reports, so the service can decide what a failure means
@@ -717,6 +718,8 @@ export interface PullRequestProviderApi {
       readonly number: number;
       readonly threadId: string;
       readonly resolved: boolean;
+      /** The exact state for a host with several; wins over `resolved`. */
+      readonly status?: PullRequestThreadStatus | undefined;
     },
   ) => Effect.Effect<void, PullRequestProviderError>;
 }

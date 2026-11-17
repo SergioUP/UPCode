@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { ProviderDriverKind, type ServerProviderModel } from "@t3tools/contracts";
+import { ProviderDriverKind, type ServerProviderModel } from "@upcode/contracts";
 
 import { resolveContextWindowDescriptor } from "./ContextWindowSelector";
 

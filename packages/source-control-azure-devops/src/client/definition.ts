@@ -7,15 +7,15 @@ import {
   makeProviderSettingsSchema,
   SourceControlProviderKind,
   TrimmedString,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { canonicalRepositoryKey } from "@t3tools/shared/sourceControl";
+import { canonicalRepositoryKey } from "@upcode/shared/sourceControl";
 import {
   defineSourceControlClient,
   isChangeRequestAuthorityOfProject,
   isChangeRequestPath,
-} from "@t3tools/source-control-core/client/definition";
+} from "@upcode/source-control-core/client/definition";
 
 const CHECKOUT_COMMAND = /^az\s+repos\s+pr\s+checkout\s+(.+)$/i;
 const CHANGE_REQUEST_REFERENCE =

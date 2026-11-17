@@ -1,4 +1,4 @@
-import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
+import type { EnvironmentId, ThreadId } from "@upcode/contracts";
 import { Link } from "@tanstack/react-router";
 import { ClipboardListIcon, SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";

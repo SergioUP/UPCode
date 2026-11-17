@@ -2,7 +2,10 @@ import * as Result from "effect/Result";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  conversationMentionIds,
   decodeConversationJson,
+  decodeIdentityNamesJson,
+  withResolvedMentions,
   decodeItemContentJson,
   decodeIterationChangesJson,
   decodeIterationsJson,
@@ -238,6 +241,56 @@ describe("decodeViewerJson", () => {
   });
 });
 
+describe("decodeReviewThreadsJson", () => {
+  it("carries Azure's own state, and counts only the open ones as unresolved", () => {
+    const { threads } = expectSuccess(
+      decodeConversationJson(
+        asJson({
+          value: [
+            {
+              id: 1,
+              status: "active",
+              threadContext: { filePath: "/src/a.ts", rightFileStart: { line: 12 } },
+              comments: [{ id: 1, content: "Why?", publishedDate: "2026-07-02T00:00:00Z" }],
+            },
+            {
+              id: 2,
+              status: "wontFix",
+              comments: [{ id: 1, content: "Meh.", publishedDate: "2026-07-02T00:00:00Z" }],
+            },
+            {
+              id: 3,
+              status: "somethingNew",
+              comments: [{ id: 1, content: "?", publishedDate: "2026-07-02T00:00:00Z" }],
+            },
+            // Only Azure's own note: an event, not a conversation.
+            {
+              id: 4,
+              status: "closed",
+              comments: [{ id: 1, content: "voted", commentType: "system", publishedDate: "x" }],
+            },
+          ],
+        }),
+      ),
+    );
+
+    expect(
+      threads.map((thread) => [
+        thread.id,
+        thread.path,
+        thread.line,
+        thread.status,
+        thread.isResolved,
+      ]),
+    ).toEqual([
+      ["1", "/src/a.ts", 12, "active", false],
+      ["2", null, null, "wontFix", true],
+      ["3", null, null, "unknown", false],
+    ]);
+    expect(threads[0]?.comments[0]?.id).toBe("1:1");
+  });
+});
+
 describe("decodeThreadsJson", () => {
   it("takes every real comment of every thread, oldest first", () => {
     const comments = expectSuccess(
@@ -361,7 +414,7 @@ describe("decodeThreadsJson", () => {
                 { id: 2, content: "Renamed.", publishedDate: "2026-07-02T01:00:00Z" },
               ],
             },
-            // A conversation thread pins to no file, so it stays timeline-only.
+            // A conversation thread pins to no file, but is still open or settled like any other.
             {
               id: 10,
               comments: [{ id: 1, content: "Looks good.", publishedDate: "2026-07-02T02:00:00Z" }],
@@ -378,6 +431,7 @@ describe("decodeThreadsJson", () => {
         line: 7,
         side: "right",
         isResolved: true,
+        status: "fixed",
         isOutdated: false,
         comments: [
           {
@@ -393,6 +447,25 @@ describe("decodeThreadsJson", () => {
             author: null,
             body: "Renamed.",
             createdAt: "2026-07-02T01:00:00Z",
+            editedAt: null,
+            url: null,
+          },
+        ],
+      },
+      {
+        id: "10",
+        path: null,
+        line: null,
+        side: "right",
+        isResolved: false,
+        status: "unknown",
+        isOutdated: false,
+        comments: [
+          {
+            id: "10:1",
+            author: null,
+            body: "Looks good.",
+            createdAt: "2026-07-02T02:00:00Z",
             editedAt: null,
             url: null,
           },
@@ -697,7 +770,7 @@ describe("what az devops invoke answers with", () => {
             path: "/README.md",
             objectId: "8f8047a49",
             gitObjectType: "blob",
-            content: "# T3Demo\n",
+            content: "# UPCodeDemo\n",
             contentMetadata: {
               contentType: "application/octet-stream",
               encoding: 65001,
@@ -708,6 +781,45 @@ describe("what az devops invoke answers with", () => {
           }),
         ),
       ),
-    ).toEqual({ contents: "# T3Demo\n", isBinary: false });
+    ).toEqual({ contents: "# UPCodeDemo\n", isBinary: false });
+  });
+});
+
+describe("mentions", () => {
+  const id = "33B826CB-1F5A-6027-BDE3-516B0EAD16F9";
+  const conversation = expectSuccess(
+    decodeConversationJson(
+      asJson({
+        value: [
+          {
+            id: 1,
+            status: "active",
+            comments: [
+              {
+                id: 1,
+                content: `Mira esto @<${id}> y @<${id}>`,
+                publishedDate: "2026-07-02T00:00:00Z",
+              },
+            ],
+          },
+        ],
+      }),
+    ),
+  );
+
+  it("names the people a remark mentions by identity id, once each", () => {
+    expect(conversationMentionIds(conversation)).toEqual([id.toLowerCase()]);
+    const names = expectSuccess(
+      decodeIdentityNamesJson(
+        asJson({ value: [{ id: id.toLowerCase(), providerDisplayName: "Mario Munuera" }] }),
+      ),
+    );
+    const named = withResolvedMentions(conversation, names);
+    expect(named.comments[0]?.body).toBe("Mira esto @Mario Munuera y @Mario Munuera");
+    expect(named.threads[0]?.comments[0]?.body).toBe("Mira esto @Mario Munuera y @Mario Munuera");
+  });
+
+  it("leaves a mention as written when nobody is known by that id", () => {
+    expect(withResolvedMentions(conversation, new Map()).comments[0]?.body).toContain(`@<${id}>`);
   });
 });

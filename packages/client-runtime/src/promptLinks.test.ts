@@ -3,7 +3,7 @@ import {
   ProviderInstanceId,
   type RepositoryIdentity,
   type ThreadPullRequestLink,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -23,16 +23,16 @@ describe("findPromptLinkProject", () => {
     const projects = [
       {
         id: "fork",
-        repositoryIdentity: identity("github.com/pingdotgg/t3code", "github.com/me/t3code"),
+        repositoryIdentity: identity("github.com/SergioUP/UPCode", "github.com/me/upcode"),
       },
       { id: "none", repositoryIdentity: null },
-      { id: "recent", repositoryIdentity: identity("github.com/PingDotGG/T3Code") },
-      { id: "older", repositoryIdentity: identity("github.com/pingdotgg/t3code") },
+      { id: "recent", repositoryIdentity: identity("github.com/SergioUP/UPCode") },
+      { id: "older", repositoryIdentity: identity("github.com/SergioUP/UPCode") },
     ];
-    expect(findPromptLinkProject(projects, { owner: "pingdotgg", name: "t3code" })?.id).toBe(
+    expect(findPromptLinkProject(projects, { owner: "SergioUP", name: "UPCode" })?.id).toBe(
       "recent",
     );
-    expect(findPromptLinkProject(projects, { owner: "me", name: "t3code" })?.id).toBe("fork");
+    expect(findPromptLinkProject(projects, { owner: "me", name: "upcode" })?.id).toBe("fork");
     expect(findPromptLinkProject(projects, { owner: "gitlab", name: "x" })).toBeUndefined();
   });
 });
@@ -41,9 +41,9 @@ describe("findPromptLinkPullRequestThread", () => {
   const link = (number: number, source: ThreadPullRequestLink["source"] = "created") =>
     ({
       host: "github.com",
-      repository: "pingdotgg/t3code",
+      repository: "SergioUP/UPCode",
       number,
-      url: `https://github.com/pingdotgg/t3code/pull/${number}`,
+      url: `https://github.com/SergioUP/UPCode/pull/${number}`,
       source,
       linkedAt: "2026-01-01T00:00:00.000Z",
       snapshot: null,
@@ -61,7 +61,7 @@ describe("findPromptLinkPullRequestThread", () => {
         pullRequests: [link(7, "stack-dismissed")],
       },
     ];
-    const pullRequest = { owner: "PingDotGG", name: "t3code", number: 7 };
+    const pullRequest = { owner: "SergioUP", name: "UPCode", number: 7 };
     expect(findPromptLinkPullRequestThread(threads, pullRequest)?.id).toBe("new");
     expect(findPromptLinkPullRequestThread(threads, { ...pullRequest, number: 9 })).toBeUndefined();
   });

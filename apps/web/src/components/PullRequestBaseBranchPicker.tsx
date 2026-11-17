@@ -1,4 +1,4 @@
-import type { EnvironmentId, VcsRef } from "@t3tools/contracts";
+import type { EnvironmentId, VcsRef } from "@upcode/contracts";
 import { ChevronDownIcon, GitBranchIcon } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 

@@ -1,8 +1,8 @@
-import type { AzureDevOpsPullRequest, EnvironmentId, PullRequestRef } from "@t3tools/contracts";
+import type { AzureDevOpsPullRequest, EnvironmentId, PullRequestRef } from "@upcode/contracts";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeftIcon, DatabaseIcon, FolderIcon, RefreshCwIcon, SettingsIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { parseChangeRequestUrl } from "@t3tools/shared/changeRequestUrl";
+import { parseChangeRequestUrl } from "@upcode/shared/changeRequestUrl";
 import { findProjectForChangeRequest } from "../../lib/openPullRequestLink";
 import { azureDevOps } from "../../state/azureDevOps";
 import { useProjects } from "../../state/entities";
@@ -16,6 +16,7 @@ import { Button } from "../ui/button";
 import { SidebarInset } from "../ui/sidebar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { PullRequestDetailPanel } from "../pullRequest/PullRequestDetailPanel";
+import { AzureReposPendingMailbox } from "./AzureReposPendingMailbox";
 import { AzurePicker, AzureReposDashboard, type AzureReposView } from "./AzureReposDashboard";
 import { relativeDate } from "./azureReposModel";
 
@@ -59,7 +60,10 @@ function AzureReposWorkspace({ environmentId }: { environmentId: EnvironmentId }
       /* Use the defaults if browser storage is unavailable. */
     }
     const view: AzureReposView =
-      stored?.view === "prs" || stored?.view === "repos" || stored?.view === "activity"
+      stored?.view === "prs" ||
+      stored?.view === "repos" ||
+      stored?.view === "activity" ||
+      stored?.view === "pending"
         ? stored.view
         : "summary";
     return {
@@ -241,6 +245,9 @@ function AzureReposWorkspace({ environmentId }: { environmentId: EnvironmentId }
               now={now}
               view={current?.view ?? "summary"}
               onViewChange={(view) => change({ view })}
+              pendingView={
+                <AzureReposPendingMailbox environmentId={environmentId} onOpen={setDetail} />
+              }
             />
           )}
         </>

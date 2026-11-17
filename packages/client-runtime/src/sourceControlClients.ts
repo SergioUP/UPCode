@@ -1,29 +1,29 @@
 /**
  * The source control host definitions web and mobile ship, and the one lookup they use.
  *
- * Adding a host means writing its `@t3tools/source-control-<host>` package with a
+ * Adding a host means writing its `@upcode/source-control-<host>` package with a
  * `./client/definition` entry and adding it here; clients then label, list, and check out its
  * change requests without further branches.
  *
  * @module client-runtime/sourceControlClients
  */
-import * as AzureDevOps from "@t3tools/source-control-azure-devops/client/definition";
-import * as Bitbucket from "@t3tools/source-control-bitbucket/client/definition";
+import * as AzureDevOps from "@upcode/source-control-azure-devops/client/definition";
+import * as Bitbucket from "@upcode/source-control-bitbucket/client/definition";
 import {
   makeSourceControlClientRegistry,
   readSourceControlHostSettings,
-} from "@t3tools/source-control-core/client/definition";
-import type { ServerSettings } from "@t3tools/contracts";
+} from "@upcode/source-control-core/client/definition";
+import type { ServerSettings } from "@upcode/contracts";
 
 export {
   UNKNOWN_SOURCE_CONTROL_CLIENT,
   type ChangeRequestTerminology,
   type SourceControlClientDefinition,
-} from "@t3tools/source-control-core/client/definition";
-import * as Forgejo from "@t3tools/source-control-forgejo/client/definition";
-import * as GitCafe from "@t3tools/source-control-gitcafe/client/definition";
-import * as GitHub from "@t3tools/source-control-github/client/definition";
-import * as GitLab from "@t3tools/source-control-gitlab/client/definition";
+} from "@upcode/source-control-core/client/definition";
+import * as Forgejo from "@upcode/source-control-forgejo/client/definition";
+import * as GitCafe from "@upcode/source-control-gitcafe/client/definition";
+import * as GitHub from "@upcode/source-control-github/client/definition";
+import * as GitLab from "@upcode/source-control-gitlab/client/definition";
 
 /**
  * GitHub comes first because a repository that has not reported its host yet reads as GitHub,
@@ -45,7 +45,7 @@ export const sourceControlClients = makeSourceControlClientRegistry(
   BUILT_IN_SOURCE_CONTROL_CLIENTS,
 );
 
-export type { GitHubSettings } from "@t3tools/source-control-github/client/definition";
+export type { GitHubSettings } from "@upcode/source-control-github/client/definition";
 
 /**
  * An environment's GitHub host choices and tokens, decoded with GitHub's settings schema. GitHub's

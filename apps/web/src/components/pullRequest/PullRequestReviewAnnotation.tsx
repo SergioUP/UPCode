@@ -9,8 +9,9 @@ import type {
   PullRequestReviewPosition,
   PullRequestReviewThread,
   PullRequestThreadCommentsResult,
+  PullRequestThreadStatus,
   PullRequestThreadComment,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import { HammerIcon, MessageSquareIcon, Trash2Icon } from "lucide-react";
 import { Circle, CircleCheck } from "lucide";
 import { useRef, useState } from "react";
@@ -20,6 +21,11 @@ import { cn } from "~/lib/utils";
 
 import { Button } from "../ui/button";
 import { MorphIcon } from "~/components/MorphIcon";
+import { PullRequestThreadStatusMenu } from "./PullRequestThreadStatusMenu";
+import {
+  pullRequestThreadDisplayStatus,
+  pullRequestThreadStatusLabel,
+} from "./pullRequestThreadStatus.logic";
 import { PullRequestEditButton } from "./PullRequestEditButton";
 import { Textarea } from "../ui/textarea";
 import { isCommentSubmitShortcut } from "../diffs/commentSubmitShortcut";
@@ -127,6 +133,8 @@ export function ReviewThreadCard({
   canEditComment,
   onEditComment,
   onToggleResolved,
+  threadStatuses,
+  onSetStatus,
   onReacted,
 }: {
   thread: PullRequestReviewThread;
@@ -151,6 +159,9 @@ export function ReviewThreadCard({
   /** Resolves to whether the host took it, like `onReply`. */
   onEditComment: (commentId: string, body: string) => Promise<boolean>;
   onToggleResolved: () => void;
+  /** The states this host moves a thread between, when it has more than resolved/unresolved. */
+  threadStatuses?: ReadonlyArray<PullRequestThreadStatus> | undefined;
+  onSetStatus?: ((status: PullRequestThreadStatus) => void) | undefined;
   onReacted: () => void;
 }) {
   // A resolved thread is finished work, so it opens collapsed and stays one line until asked for.
@@ -249,8 +260,12 @@ export function ReviewThreadCard({
           aria-expanded={expanded}
           onClick={() => setExpanded((current) => !current)}
         >
-          {thread.isResolved ? "Resolved" : "Open"} · {commentCount}{" "}
-          {commentCount === 1 ? "comment" : "comments"}
+          {thread.status
+            ? pullRequestThreadStatusLabel(thread.status)
+            : thread.isResolved
+              ? "Resolved"
+              : "Open"}{" "}
+          · {commentCount} {commentCount === 1 ? "comment" : "comments"}
         </button>
         {thread.isOutdated ? <span>outdated</span> : null}
         {onFix ? (
@@ -265,7 +280,16 @@ export function ReviewThreadCard({
             {fixPending ? "Preparing..." : fixLabel}
           </Button>
         ) : null}
-        {canResolve ? (
+        {canResolve && threadStatuses && onSetStatus ? (
+          <div className={onFix ? undefined : "ml-auto"}>
+            <PullRequestThreadStatusMenu
+              status={pullRequestThreadDisplayStatus(thread)}
+              statuses={threadStatuses}
+              disabled={pending}
+              onSelect={onSetStatus}
+            />
+          </div>
+        ) : canResolve ? (
           <Button
             size="xs"
             variant="ghost"

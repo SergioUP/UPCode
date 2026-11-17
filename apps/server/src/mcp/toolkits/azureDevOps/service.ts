@@ -14,7 +14,7 @@ import {
   OrchestratorMcpFailure,
   type AzureDevOpsWorkspaceError,
   type ThreadId,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -92,7 +92,7 @@ export class AzureWorkItemMcpService extends Context.Service<
       threadId: ThreadId | undefined,
     ) => Effect.Effect<AzureLinkResult, OrchestratorMcpFailure>;
   }
->()("t3/mcp/toolkits/azureDevOps/service/AzureWorkItemMcpService") {}
+>()("upcode/mcp/toolkits/azureDevOps/service/AzureWorkItemMcpService") {}
 
 /** The project an id belongs to, from the caller's own assignments. */
 const resolveProject = (workspace: Workspace, workItemId: number) =>

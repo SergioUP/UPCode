@@ -8,7 +8,7 @@ import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 
-import * as HostProcess from "@t3tools/shared/HostProcess";
+import * as HostProcess from "@upcode/shared/HostProcess";
 import * as DesktopCliCommand from "./DesktopCliCommand.ts";
 import * as DesktopCliShim from "./DesktopCliShim.ts";
 import * as DesktopEnvironment from "./DesktopEnvironment.ts";
@@ -24,7 +24,7 @@ const environmentFor = (
     homeDirectory: input.home,
     baseDir: input.baseDir,
     stateDir: path.join(input.baseDir, "userdata"),
-    serverRoot: "/opt/T3 Code/resources/app.asar",
+    serverRoot: "/opt/UPCode/resources/app.asar",
     appImagePath: Option.none(),
   } as unknown as DesktopEnvironment.DesktopEnvironment["Service"]);
 
@@ -60,8 +60,8 @@ const fakePowerShell = (initial: string) => {
       const env = options.env ?? {};
       let exitCode = 0;
       let stdout = "";
-      if (env.T3_SET === "1") {
-        registry.path = env.T3_PATH ?? "";
+      if (env.UPCODE_SET === "1") {
+        registry.path = env.UPCODE_PATH ?? "";
         registry.writes += 1;
       } else if (registry.failReads) {
         exitCode = 1;
@@ -139,19 +139,19 @@ it.layer(NodeServices.layer)("DesktopCliCommand", (it) => {
     }).pipe(Effect.scoped),
   );
 
-  it.effect("leaves an existing official t3 command alone", () =>
+  it.effect("leaves an existing official upcode command alone", () =>
     Effect.gen(function* () {
       const fs = yield* FileSystem.FileSystem;
       const path = yield* Path.Path;
       const home = yield* fs.makeTempDirectoryScoped();
-      const official = path.join(home, ".local", "bin", "t3");
+      const official = path.join(home, ".local", "bin", "upcode");
       yield* fs.makeDirectory(path.dirname(official), { recursive: true });
-      yield* fs.writeFileString(official, "official T3");
+      yield* fs.writeFileString(official, "official UPCode");
       const command = yield* commandIn({ home });
       const installed = yield* command.install;
       expect(installed.installedPath).toBe(path.join(home, ".local", "bin", "upcode"));
       yield* command.uninstall;
-      expect(yield* fs.readFileString(official)).toBe("official T3");
+      expect(yield* fs.readFileString(official)).toBe("official UPCode");
     }).pipe(Effect.scoped),
   );
 

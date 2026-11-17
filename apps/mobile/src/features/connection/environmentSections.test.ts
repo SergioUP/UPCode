@@ -1,5 +1,5 @@
-import { EnvironmentId } from "@t3tools/contracts";
-import type { RelayClientEnvironmentRecord } from "@t3tools/contracts/relay";
+import { EnvironmentId } from "@upcode/contracts";
+import type { RelayClientEnvironmentRecord } from "@upcode/contracts/relay";
 import { describe, expect, it } from "vite-plus/test";
 import type { ConnectedEnvironmentSummary } from "../../state/remote-runtime-types";
 import { relayManagedEnvironmentIds, splitEnvironmentSections } from "./environmentSections";
@@ -47,7 +47,7 @@ describe("relayManagedEnvironmentIds", () => {
 });
 
 describe("mobile environment settings sections", () => {
-  it("keeps saved relay-managed connections under T3 Connect", () => {
+  it("keeps saved relay-managed connections under UPCode Connect", () => {
     const local = connectedEnvironment({
       environmentId: "environment-local",
       isRelayManaged: false,
@@ -158,7 +158,7 @@ describe("mobile environment settings sections", () => {
     expect(sections.availableCloudEnvironments).toEqual([]);
   });
 
-  it("offers T3 Connect for a machine saved only over the LAN, as an added route", () => {
+  it("offers UPCode Connect for a machine saved only over the LAN, as an added route", () => {
     const local = connectedEnvironment({
       environmentId: "environment-desk",
       isRelayManaged: false,

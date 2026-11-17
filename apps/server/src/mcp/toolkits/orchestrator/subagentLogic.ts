@@ -8,7 +8,7 @@
  * @module mcp/toolkits/orchestrator/subagentLogic
  */
 
-import type { Subagent } from "@t3tools/contracts";
+import type { Subagent } from "@upcode/contracts";
 
 /** Resolves by exact id first, then by name, case-insensitively. */
 export function findSubagent(

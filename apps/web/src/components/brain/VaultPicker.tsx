@@ -1,6 +1,6 @@
 "use client";
 
-import type { EnvironmentId } from "@t3tools/contracts";
+import type { EnvironmentId } from "@upcode/contracts";
 import { FolderOpenIcon, ScanSearchIcon, StarIcon } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 

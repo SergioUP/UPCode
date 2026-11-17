@@ -1,4 +1,4 @@
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { sourceControlClients } from "@upcode/client-runtime/source-control-clients";
 import { useAtomCommand } from "~/state/use-atom-command";
 import type {
   EnvironmentId,
@@ -7,7 +7,7 @@ import type {
   PullRequestRef,
   PullRequestReviewThread,
   ScopedThreadRef,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import {
   ArrowDownUpIcon,
   ChevronDownIcon,
@@ -63,10 +63,12 @@ import {
 import {
   canEditPullRequestChangeRequest,
   canEditPullRequestComment,
+  canResolvePullRequestThread,
 } from "./pullRequestEditing.logic";
 import { PullRequestMarkdown } from "./PullRequestMarkdown";
 import { PullRequestCommentBody } from "./PullRequestCommentBody";
 import { PullRequestMarkdownEditor } from "./PullRequestMarkdownEditor";
+import { PullRequestThreadStatusControl } from "./PullRequestThreadStatusMenu";
 import { PullRequestReactionBar } from "./PullRequestReactions";
 import { PullRequestConversationGhost } from "./PullRequestGhosts";
 import { sectionCollapseAnchorScrollTop } from "./pullRequestSummaryScroll.logic";
@@ -371,7 +373,7 @@ const COMMENT_PAGE = 10;
  * whether a reader wants bot reports and finished threads in front of them is a habit, not a
  * property of one change.
  */
-const COMMENT_FILTER_STORAGE_KEY = "t3code:pull-request-comment-filter:v1";
+const COMMENT_FILTER_STORAGE_KEY = "upcode:pull-request-comment-filter:v1";
 const CommentFilterSchema = Schema.Struct({ bots: Schema.Boolean, resolved: Schema.Boolean });
 const DEFAULT_COMMENT_FILTER: typeof CommentFilterSchema.Type = { bots: false, resolved: false };
 
@@ -641,6 +643,18 @@ export function PullRequestSummaryTab({
               <HammerIcon className="size-3" />
               {pendingFinding === pullRequestFindingKey(finding) ? "Preparing..." : fixFindingLabel}
             </Button>
+          ) : null}
+          {thread !== undefined && thread.comments[0]?.id === comment.id ? (
+            <PullRequestThreadStatusControl
+              thread={thread}
+              statuses={detail.capabilities.review.threadStatuses}
+              canResolve={
+                detail.capabilities.review.resolve && canResolvePullRequestThread(detail, thread)
+              }
+              environmentId={environmentId}
+              reference={reference}
+              onRefresh={onRefresh}
+            />
           ) : null}
           {reactionBar}
         </div>

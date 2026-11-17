@@ -217,6 +217,8 @@ import {
   PullRequestSubmitReviewInput,
   PullRequestThreadCommentsInput,
   PullRequestThreadCommentsResult,
+  PullRequestPendingInput,
+  PullRequestPendingResult,
   PullRequestThreadReplyInput,
   PullRequestThreadResolutionInput,
   PullRequestUnavailableError,
@@ -570,6 +572,7 @@ export const WS_METHODS = {
   // Pull request methods
   pullRequestsList: "pullRequests.list",
   pullRequestsListStats: "pullRequests.listStats",
+  pullRequestsPending: "pullRequests.pending",
   pullRequestsSummary: "pullRequests.summary",
   pullRequestsRouting: "pullRequests.routing",
   pullRequestsRoutingIdentity: "pullRequests.routingIdentity",
@@ -663,7 +666,7 @@ const WsServerRefreshProvidersRpc = Rpc.make(WS_METHODS.serverRefreshProviders, 
     /** With `instanceId` and `cwd`: rescan the workspace's skills and slash
      * commands even when a snapshot for that cwd already exists. */
     fresh: Schema.optional(Schema.Boolean),
-    /** Explicit user request: bypass T3-owned caches and rediscover models.
+    /** Explicit user request: bypass UPCode-owned caches and rediscover models.
      * Background status refreshes must not open agent sessions. */
     refreshModels: Schema.optional(Schema.Boolean),
   }),
@@ -1186,6 +1189,15 @@ const WsPullRequestsListStatsRpc = Rpc.make(WS_METHODS.pullRequestsListStats, {
   error: PullRequestRpcError,
 });
 
+/**
+ * What is waiting on the viewer across their open pull requests: the conversations nobody closed.
+ */
+const WsPullRequestsPendingRpc = Rpc.make(WS_METHODS.pullRequestsPending, {
+  payload: PullRequestPendingInput,
+  success: PullRequestPendingResult,
+  error: PullRequestRpcError,
+});
+
 const WsPullRequestsRoutingRpc = Rpc.make(WS_METHODS.pullRequestsRouting, {
   payload: PullRequestRef,
   success: PullRequestRoutingResult,
@@ -1645,7 +1657,7 @@ const WsVcsInitRpc = Rpc.make(WS_METHODS.vcsInit, {
 
 /**
  * Ephemeral live diff preview for compact/mobile surfaces.
- * Not the persisted T3 Review model. Future review sessions should use
+ * Not the persisted UPCode Review model. Future review sessions should use
  * review.open* + review.getSnapshot.
  */
 const WsReviewGetDiffPreviewRpc = Rpc.make(WS_METHODS.reviewGetDiffPreview, {
@@ -2084,7 +2096,7 @@ const WsSubscribeResourceTelemetryRpc = Rpc.make(WS_METHODS.subscribeResourceTel
  * be added without authorization.
  */
 export class RpcScopeAuthorization extends RpcMiddleware.Service<RpcScopeAuthorization>()(
-  "t3/contracts/RpcScopeAuthorization",
+  "upcode/contracts/RpcScopeAuthorization",
   { error: EnvironmentAuthorizationError },
 ) {}
 
@@ -2182,6 +2194,7 @@ export const WsRpcGroupCore = RpcGroup.make(
   WsPullRequestsRunActionRpc,
   WsPullRequestsUpdateRpc,
   WsPullRequestsCommentRpc,
+  WsPullRequestsPendingRpc,
   WsPullRequestsUpdateCommentRpc,
   WsPullRequestsSubmitReviewRpc,
   WsPullRequestsReplyToThreadRpc,
@@ -2294,7 +2307,7 @@ export const WsRpcGroupCore = RpcGroup.make(
 
 /**
  * The UPANGO-facing half of the group: Azure DevOps and incidents. Nothing here
- * is T3 Code upstream, which is why they are the ones split off.
+ * is UPCode upstream, which is why they are the ones split off.
  */
 export const WsRpcGroupUpango = RpcGroup.make(
   WsAzureDevOpsConfigRpc,

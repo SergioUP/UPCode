@@ -2,8 +2,8 @@ import {
   canonicalRepositoryKey,
   isSshRemoteUrl,
   sourceControlRepositorySelector,
-} from "@t3tools/shared/sourceControl";
-import { normalizeGitRemoteUrl } from "@t3tools/shared/git";
+} from "@upcode/shared/sourceControl";
+import { normalizeGitRemoteUrl } from "@upcode/shared/git";
 import * as Cache from "effect/Cache";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
@@ -17,6 +17,7 @@ import * as PubSub from "effect/PubSub";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import type * as Scope from "effect/Scope";
+import * as Result from "effect/Result";
 import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 import {
@@ -48,6 +49,9 @@ import {
   type PullRequestListInput,
   type PullRequestListProjectError,
   type PullRequestListResult,
+  type PullRequestPendingEntry,
+  type PullRequestPendingInput,
+  type PullRequestPendingResult,
   type PullRequestListStatsInput,
   type PullRequestListStatsResult,
   type PullRequestProviderSummary,
@@ -74,25 +78,25 @@ import {
   type SourceControlProviderInfo,
   SourceControlProviderKind,
   type ThreadPullRequestKey,
-} from "@t3tools/contracts";
-import { resolveProjectSettings } from "@t3tools/shared/projectSettings";
-import { detectSourceControlProviderFromRemoteUrl } from "@t3tools/shared/sourceControl";
+} from "@upcode/contracts";
+import { resolveProjectSettings } from "@upcode/shared/projectSettings";
+import { detectSourceControlProviderFromRemoteUrl } from "@upcode/shared/sourceControl";
 
 import * as ProjectService from "../project/ProjectService.ts";
 import * as ServerSettings from "../serverSettings.ts";
-import { readSourceControlHostSettings } from "@t3tools/source-control-core/client/definition";
-import { settings as azureDevOpsSettings } from "@t3tools/source-control-azure-devops/client/definition";
+import { readSourceControlHostSettings } from "@upcode/source-control-core/client/definition";
+import { settings as azureDevOpsSettings } from "@upcode/source-control-azure-devops/client/definition";
 import * as PullRequestFilesViewed from "../persistence/PullRequestFilesViewed.ts";
 import * as RepositoryIdentityResolver from "../project/RepositoryIdentityResolver.ts";
 import * as SourceControlProviderRegistry from "../sourceControl/SourceControlProviderRegistry.ts";
-import * as SourceControlRateLimit from "@t3tools/source-control-core/server/SourceControlRateLimit";
+import * as SourceControlRateLimit from "@upcode/source-control-core/server/SourceControlRateLimit";
 import {
   type ProviderChangeRequest,
   type ProviderListCursor,
   type ProviderChangeRequestWatchFingerprint,
   type PullRequestProviderApi,
   PullRequestProviderError,
-} from "@t3tools/source-control-core/server/PullRequestProvider";
+} from "@upcode/source-control-core/server/PullRequestProvider";
 import * as PullRequestReadCache from "./PullRequestReadCache.ts";
 import * as PullRequestProviderRegistry from "./PullRequestProviderRegistry.ts";
 import * as ViewedFiles from "./pullRequestViewedFiles.ts";
@@ -201,7 +205,7 @@ export type PullRequestError = PullRequestUnavailableError | PullRequestOperatio
 const routingCredential = Context.Reference<{
   readonly credentialFingerprint: string;
   readonly viewer: string;
-} | null>("t3/PullRequestService/routingCredential", { defaultValue: () => null });
+} | null>("upcode/PullRequestService/routingCredential", { defaultValue: () => null });
 // Internal only: the client cannot choose its cache's credential namespace.
 const credentialNamespace = Symbol("pullRequestCredentialNamespace");
 type CredentialRef = PullRequestRef & { readonly [credentialNamespace]?: string };
@@ -277,6 +281,10 @@ export class PullRequestService extends Context.Service<
     readonly activity: (
       input: PullRequestRef,
     ) => Effect.Effect<PullRequestActivity, PullRequestError>;
+    /** The viewer's open pull requests that still have conversations nobody closed. */
+    readonly pending: (
+      input: PullRequestPendingInput,
+    ) => Effect.Effect<PullRequestPendingResult, PullRequestError>;
     readonly threadComments: (
       input: PullRequestThreadCommentsInput,
     ) => Effect.Effect<PullRequestThreadCommentsResult, PullRequestError>;
@@ -327,7 +335,7 @@ export class PullRequestService extends Context.Service<
       options?: { readonly notifyReaders?: boolean },
     ) => Effect.Effect<void>;
   }
->()("t3/pullRequest/PullRequestService") {}
+>()("upcode/pullRequest/PullRequestService") {}
 
 /** What a verdict is called when refusing it, so the sentence reads as an action. */
 const VERDICT_LABELS: Record<PullRequestReviewVerdict, string> = {
@@ -2435,6 +2443,7 @@ export const make = Effect.gen(function* () {
                 number: input.number,
                 threadId: input.threadId,
                 resolved: input.resolved,
+                ...(input.status === undefined ? {} : { status: input.status }),
               })
               .pipe(Effect.mapError(toPullRequestError("setThreadResolution")));
           }),
@@ -3258,6 +3267,13 @@ export const make = Effect.gen(function* () {
       : lastGoodDetail.serveHeld(key, read, "revalidate");
   };
 
+  // Reading a pull request's conversations is one host call each, so the inbox reads only the
+  // newest few and says so, rather than fanning a call out across everything the viewer opened.
+  const PENDING_MAX_PULL_REQUESTS = 30;
+  const PENDING_THREADS_PER_PULL_REQUEST = 20;
+  const PENDING_PREVIEW_LENGTH = 240;
+  const PENDING_READ_CONCURRENCY = 4;
+
   const activityCache = yield* Cache.makeWith(
     (key: string) => {
       return activityUncached(refOfCacheKey(key));
@@ -3295,6 +3311,104 @@ export const make = Effect.gen(function* () {
     const key = refCacheKey(input);
     return Cache.get(activityCache, key);
   };
+
+  // What is waiting on the viewer is what they opened and what they were asked to review; the
+  // same change request can be both, so the two listings are folded into one by identity.
+  const pendingCandidates = (input: PullRequestPendingInput) => {
+    const listing = (involvement: "authored" | "reviewing") =>
+      list({
+        state: "open",
+        involvement,
+        ...(input.projectIds === undefined ? {} : { projectIds: input.projectIds }),
+        ...(input.host === undefined ? {} : { host: input.host }),
+      });
+    return Effect.all(
+      { authored: listing("authored"), reviewing: listing("reviewing") },
+      { concurrency: 2 },
+    ).pipe(
+      Effect.map(({ authored, reviewing }) => {
+        const seen = new Set<string>();
+        const entries = [...authored.entries, ...reviewing.entries]
+          .filter((entry) => {
+            const key = `${entry.projectId} ${entry.host} ${entry.repository}#${entry.number}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .toSorted((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+        return {
+          entries,
+          errors: [...authored.errors, ...reviewing.errors],
+          truncated: authored.truncated || reviewing.truncated,
+        };
+      }),
+    );
+  };
+
+  const pending: PullRequestService["Service"]["pending"] = (input) =>
+    pendingCandidates(input).pipe(
+      Effect.flatMap((listed) => {
+        const candidates = listed.entries.slice(0, PENDING_MAX_PULL_REQUESTS);
+        return Effect.forEach(
+          candidates,
+          (pullRequest) =>
+            activity({
+              projectId: pullRequest.projectId,
+              host: pullRequest.host,
+              repository: pullRequest.repository,
+              number: pullRequest.number,
+            }).pipe(
+              Effect.map((read): PullRequestPendingEntry | null => {
+                const open = read.reviewThreads.filter(
+                  (thread) => !thread.isResolved && !thread.isOutdated,
+                );
+                if (open.length === 0) return null;
+                const threads = open
+                  .map((thread) => {
+                    const last = thread.comments.at(-1);
+                    return {
+                      threadId: thread.id,
+                      path: thread.path,
+                      line: thread.line,
+                      status: thread.status ?? "active",
+                      lastAuthor: last?.author ?? null,
+                      preview: (last?.body ?? "").trim().slice(0, PENDING_PREVIEW_LENGTH),
+                      commentCount: thread.commentCount ?? thread.comments.length,
+                      updatedAt: last?.editedAt ?? last?.createdAt ?? pullRequest.updatedAt,
+                    };
+                  })
+                  .toSorted((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+                  .slice(0, PENDING_THREADS_PER_PULL_REQUEST);
+                return { pullRequest, unresolvedCount: open.length, threads };
+              }),
+              Effect.mapError((error) => ({ pullRequest, error })),
+              Effect.result,
+            ),
+          { concurrency: PENDING_READ_CONCURRENCY },
+        ).pipe(
+          Effect.map((results): PullRequestPendingResult => {
+            const entries: PullRequestPendingEntry[] = [];
+            const errors: PullRequestPendingResult["errors"][number][] = [];
+            for (const result of results) {
+              if (Result.isSuccess(result)) {
+                if (result.success !== null) entries.push(result.success);
+              } else {
+                errors.push({
+                  projectId: result.failure.pullRequest.projectId,
+                  projectTitle: result.failure.pullRequest.projectTitle,
+                  message: `#${result.failure.pullRequest.number}: ${result.failure.error.message}`,
+                });
+              }
+            }
+            return {
+              entries,
+              errors: [...listed.errors, ...errors],
+              truncated: listed.truncated || listed.entries.length > candidates.length,
+            };
+          }),
+        );
+      }),
+    );
 
   const diffCache = yield* Cache.makeWith(
     (key: string) => {
@@ -3595,6 +3709,7 @@ export const make = Effect.gen(function* () {
       Cache.get(watchFingerprintCache, refCacheKey(input)),
     ),
     activity: credentialCached(activity),
+    pending,
     preview: credentialCached(preview),
     threadComments,
     diff: credentialCached(diff),

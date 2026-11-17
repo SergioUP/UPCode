@@ -3,7 +3,7 @@ import {
   type EnvironmentId,
   type ProjectId,
   type ProjectPrompt,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { useEnvironmentSettings } from "../../hooks/useSettings";
 import { useEnvironmentScope } from "../../state/session";
@@ -12,7 +12,7 @@ import { useComposerHandleContext } from "../../composerHandleContext";
 import {
   mapAtomCommandResult,
   squashAtomCommandFailure,
-} from "@t3tools/client-runtime/state/runtime";
+} from "@upcode/client-runtime/state/runtime";
 import { MessageSquareTextIcon, PencilIcon, PlusIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { randomUUID } from "~/lib/utils";

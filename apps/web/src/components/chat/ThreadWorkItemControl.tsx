@@ -1,5 +1,5 @@
-import { scopeThreadRef } from "@t3tools/client-runtime/environment";
-import type { EnvironmentId, ThreadId } from "@t3tools/contracts";
+import { scopeThreadRef } from "@upcode/client-runtime/environment";
+import type { EnvironmentId, ThreadId } from "@upcode/contracts";
 import { ClipboardListIcon } from "lucide-react";
 
 import { useEnvironmentQuery } from "../../state/query";

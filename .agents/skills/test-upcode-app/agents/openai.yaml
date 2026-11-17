@@ -1,0 +1,4 @@
+interface:
+  display_name: "UPCode App Testing"
+  short_description: "Test web and desktop in UPCode's Browser panel"
+  default_prompt: "Use $test-upcode-app to verify the affected web or desktop flow through UPCode's Browser panel."

@@ -1,8 +1,8 @@
 // @effect-diagnostics globalFetch:off globalTimers:off -- This isolated REST adapter uses native fetch so its PAT never enters the subprocess environment.
 import * as Effect from "effect/Effect";
 import { ChildProcessSpawner } from "effect/process";
-import { readSourceControlHostSettings } from "@t3tools/source-control-core/client/definition";
-import type * as SourceControlHost from "@t3tools/source-control-core/server/SourceControlHost";
+import { readSourceControlHostSettings } from "@upcode/source-control-core/client/definition";
+import type * as SourceControlHost from "@upcode/source-control-core/server/SourceControlHost";
 import { settings as azureSettings } from "../client/definition.ts";
 
 const API_VERSION = "7.1";
@@ -271,7 +271,7 @@ export function makeAzureDevOpsRestTransport(host: SourceControlHost.SourceContr
           resource === "pullRequestThreads"
             ? `pullRequests/${pr}/threads`
             : resource === "pullRequestThreadComments"
-              ? `pullRequests/${pr}/threads/${encodeURIComponent(route.threadId ?? "")}/comments`
+              ? `pullRequests/${pr}/threads/${encodeURIComponent(route.threadId ?? "")}/comments${route.commentId === undefined ? "" : `/${encodeURIComponent(route.commentId)}`}`
               : resource === "pullRequestThread"
                 ? `pullRequests/${pr}/threads/${encodeURIComponent(route.threadId ?? "")}`
                 : resource === "pullRequestIterations"
@@ -285,6 +285,14 @@ export function makeAzureDevOpsRestTransport(host: SourceControlHost.SourceContr
         raw = yield* request({
           ...input,
           path: `/${p}/_apis/git/repositories/${r}/${suffix}${query(params)}`,
+        });
+      } else if (args[0] === "identities" && args[1] === "resolve") {
+        // Azure writes a mention into a remark as `@<identity id>`; this names those ids.
+        const ids = option(args, "--ids") ?? "";
+        raw = yield* request({
+          ...input,
+          service: "identities",
+          path: `/_apis/identities${query({ identityIds: ids, queryMembership: "None" })}`,
         });
       } else if (args[0] === "account" && args[1] === "show") {
         const connection = parseJson<{ authenticatedUser?: { uniqueName?: string } }>(

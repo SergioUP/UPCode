@@ -9,7 +9,7 @@ import type {
   PullRequestReviewPosition,
   PullRequestReviewThread,
   PullRequestThreadCommentsResult,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -115,7 +115,7 @@ type ReviewAnnotation = DiffLineAnnotation<ReviewAnnotationGroup>;
 /** Commits per press of "Show more" in the scope menu. */
 const COMMIT_PAGE_SIZE = 10;
 
-const PULL_REQUEST_FILE_TREE_STORAGE_KEY = "t3code.pullRequestFileTreeOpen";
+const PULL_REQUEST_FILE_TREE_STORAGE_KEY = "upcode.pullRequestFileTreeOpen";
 
 /** One answer from the host: a whole number of files, and where the next one carries on. */
 interface DiffSlice {
@@ -989,6 +989,20 @@ function PullRequestCodeTab({
             }),
           )
         }
+        threadStatuses={detail.capabilities.review.threadStatuses}
+        onSetStatus={(status) =>
+          void runThreadCommand("The conversation could not be updated", () =>
+            setThreadResolution({
+              environmentId,
+              input: {
+                ...reference,
+                threadId: thread.id,
+                resolved: status === "fixed",
+                status,
+              },
+            }),
+          )
+        }
         onReacted={onRefresh}
       />
     ),
@@ -1451,6 +1465,8 @@ function PullRequestCodeTab({
   // five copies of its path.
   const orphanFiles = new Map<string, PullRequestReviewThread[]>();
   for (const thread of orphanThreads) {
+    // A conversation about the whole change has no file to be stranded from.
+    if (thread.path === null) continue;
     const existing = orphanFiles.get(thread.path);
     if (existing) existing.push(thread);
     else orphanFiles.set(thread.path, [thread]);

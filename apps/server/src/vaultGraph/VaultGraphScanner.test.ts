@@ -14,7 +14,7 @@ const writeVault = (files: Record<string, string>) =>
   Effect.gen(function* () {
     const fileSystem = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
-    const root = yield* fileSystem.makeTempDirectoryScoped({ prefix: "t3-vault-graph-" });
+    const root = yield* fileSystem.makeTempDirectoryScoped({ prefix: "upcode-vault-graph-" });
     for (const [relativePath, content] of Object.entries(files)) {
       const filePath = path.join(root, relativePath);
       yield* fileSystem.makeDirectory(path.dirname(filePath), { recursive: true });

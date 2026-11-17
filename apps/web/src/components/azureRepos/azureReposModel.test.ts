@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { AzureDevOpsPullRequest } from "@t3tools/contracts";
+import type { AzureDevOpsPullRequest } from "@upcode/contracts";
 import { latestCreation, relativeDate, reviewState } from "./azureReposModel";
 
 const pr: AzureDevOpsPullRequest = {

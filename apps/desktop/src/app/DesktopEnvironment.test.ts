@@ -14,9 +14,9 @@ const defaultInput = {
   platform: "darwin",
   processArch: "arm64",
   appVersion: "0.0.22",
-  appPath: "/Applications/T3 Code.app/Contents/Resources/app.asar",
+  appPath: "/Applications/UPCode.app/Contents/Resources/app.asar",
   isPackaged: false,
-  resourcesPath: "/Applications/T3 Code.app/Contents/Resources",
+  resourcesPath: "/Applications/UPCode.app/Contents/Resources",
   runningUnderArm64Translation: false,
 } satisfies DesktopEnvironment.MakeDesktopEnvironmentInput;
 
@@ -44,33 +44,33 @@ describe("DesktopEnvironment", () => {
       const environment = yield* makeEnvironment(
         {},
         {
-          UPCODE_HOME: " /tmp/t3 ",
-          T3CODE_COMMIT_HASH: " 0123456789abcdef ",
-          T3CODE_PORT: "4949",
+          UPCODE_HOME: " /tmp/upcode ",
+          UPCODE_COMMIT_HASH: " 0123456789abcdef ",
+          UPCODE_PORT: "4949",
           VITE_DEV_SERVER_URL: "http://localhost:5173",
-          T3CODE_DEV_REMOTE_T3_SERVER_ENTRY_PATH: " /remote/server.mjs ",
-          T3CODE_OTLP_TRACES_URL: " http://127.0.0.1:4318/v1/traces ",
-          T3CODE_OTLP_METRICS_URL: " http://127.0.0.1:4318/v1/metrics ",
-          T3CODE_OTLP_LOGS_URL: " http://127.0.0.1:4318/v1/logs ",
-          T3CODE_OTLP_EXPORT_INTERVAL_MS: "2500",
-          T3CODE_OTLP_HEADERS: "authorization=Basic%20abc%3D%3D,x-tenant=t3",
-          T3CODE_OTLP_PROTOCOL: "http/protobuf",
+          UPCODE_DEV_REMOTE_UPCODE_SERVER_ENTRY_PATH: " /remote/server.mjs ",
+          UPCODE_OTLP_TRACES_URL: " http://127.0.0.1:4318/v1/traces ",
+          UPCODE_OTLP_METRICS_URL: " http://127.0.0.1:4318/v1/metrics ",
+          UPCODE_OTLP_LOGS_URL: " http://127.0.0.1:4318/v1/logs ",
+          UPCODE_OTLP_EXPORT_INTERVAL_MS: "2500",
+          UPCODE_OTLP_HEADERS: "authorization=Basic%20abc%3D%3D,x-tenant=upcode",
+          UPCODE_OTLP_PROTOCOL: "http/protobuf",
         },
       );
 
       assert.equal(environment.isDevelopment, true);
       assert.equal(environment.appDataDirectory, "/Users/alice/Library/Application Support");
-      assert.equal(environment.baseDir, "/tmp/t3");
-      assert.equal(environment.stateDir, "/tmp/t3/userdata");
-      assert.equal(environment.desktopSettingsPath, "/tmp/t3/userdata/desktop-settings.json");
-      assert.equal(environment.clientSettingsPath, "/tmp/t3/userdata/client-settings.json");
+      assert.equal(environment.baseDir, "/tmp/upcode");
+      assert.equal(environment.stateDir, "/tmp/upcode/userdata");
+      assert.equal(environment.desktopSettingsPath, "/tmp/upcode/userdata/desktop-settings.json");
+      assert.equal(environment.clientSettingsPath, "/tmp/upcode/userdata/client-settings.json");
       assert.equal(
         environment.savedEnvironmentRegistryPath,
-        "/tmp/t3/userdata/saved-environments.json",
+        "/tmp/upcode/userdata/saved-environments.json",
       );
-      assert.equal(environment.serverSettingsPath, "/tmp/t3/userdata/settings.json");
-      assert.equal(environment.logDir, "/tmp/t3/userdata/logs");
-      assert.equal(environment.browserArtifactsDir, "/tmp/t3/userdata/browser-artifacts");
+      assert.equal(environment.serverSettingsPath, "/tmp/upcode/userdata/settings.json");
+      assert.equal(environment.logDir, "/tmp/upcode/userdata/logs");
+      assert.equal(environment.browserArtifactsDir, "/tmp/upcode/userdata/browser-artifacts");
       assert.equal(environment.rootDir, "/repo");
       assert.equal(environment.appRoot, "/repo");
       assert.equal(environment.serverRoot, "/repo");
@@ -83,7 +83,7 @@ describe("DesktopEnvironment", () => {
         Option.map(environment.devServerUrl, (url) => url.href),
         Option.some("http://localhost:5173/"),
       );
-      assert.deepEqual(environment.devRemoteT3ServerEntryPath, Option.some("/remote/server.mjs"));
+      assert.deepEqual(environment.devRemoteUPCodeServerEntryPath, Option.some("/remote/server.mjs"));
       assert.deepEqual(environment.configuredBackendPort, Option.some(4949));
       assert.deepEqual(environment.commitHashOverride, Option.some("0123456789abcdef"));
       assert.deepEqual(environment.otlpTracesUrl, Option.some("http://127.0.0.1:4318/v1/traces"));
@@ -94,7 +94,7 @@ describe("DesktopEnvironment", () => {
         environment.otlpHeaders,
         Option.some({
           authorization: "Basic abc==",
-          "x-tenant": "t3",
+          "x-tenant": "upcode",
         }),
       );
       assert.equal(environment.otlpProtocol, "http/protobuf");
@@ -106,15 +106,15 @@ describe("DesktopEnvironment", () => {
       const environment = yield* makeEnvironment(
         {},
         {
-          UPCODE_HOME: "/tmp/t3",
+          UPCODE_HOME: "/tmp/upcode",
         },
       );
 
       assert.equal(environment.isDevelopment, false);
-      assert.equal(environment.stateDir, "/tmp/t3/userdata");
-      assert.equal(environment.logDir, "/tmp/t3/userdata/logs");
-      assert.equal(environment.browserArtifactsDir, "/tmp/t3/userdata/browser-artifacts");
-      assert.equal(environment.serverSettingsPath, "/tmp/t3/userdata/settings.json");
+      assert.equal(environment.stateDir, "/tmp/upcode/userdata");
+      assert.equal(environment.logDir, "/tmp/upcode/userdata/logs");
+      assert.equal(environment.browserArtifactsDir, "/tmp/upcode/userdata/browser-artifacts");
+      assert.equal(environment.serverSettingsPath, "/tmp/upcode/userdata/settings.json");
       assert.equal(environment.otlpProtocol, "http/json");
     }),
   );
@@ -146,8 +146,8 @@ describe("DesktopEnvironment", () => {
       const environment = yield* makeEnvironment({
         platform: "linux",
         isPackaged: true,
-        appPath: "/tmp/.mount_t3code/resources/app.asar",
-        resourcesPath: "/tmp/.mount_t3code/resources",
+        appPath: "/tmp/.mount_upcode/resources/app.asar",
+        resourcesPath: "/tmp/.mount_upcode/resources",
       });
 
       assert.equal(environment.linuxDesktopEntryName, "com.sergioup.upcode.desktop");
@@ -172,7 +172,7 @@ describe("DesktopEnvironment", () => {
       const environment = yield* makeEnvironment(
         {},
         {
-          T3CODE_DESKTOP_APP_USER_MODEL_ID: " com.sergioup.upcode.dev.local ",
+          UPCODE_DESKTOP_APP_USER_MODEL_ID: " com.sergioup.upcode.dev.local ",
           VITE_DEV_SERVER_URL: "http://localhost:5173",
         },
       );

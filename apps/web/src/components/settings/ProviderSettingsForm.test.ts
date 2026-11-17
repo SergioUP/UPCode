@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { ProviderDriverKind } from "@t3tools/contracts";
+import { ProviderDriverKind } from "@upcode/contracts";
 
 import { providerClients } from "./providerDriverMeta";
 import {

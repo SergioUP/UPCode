@@ -1,8 +1,8 @@
 import { afterEach, assert, describe, it, vi } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { DEFAULT_SERVER_SETTINGS } from "@t3tools/contracts";
-import * as TestSourceControlHost from "@t3tools/source-control-testing/TestSourceControlHost";
+import { DEFAULT_SERVER_SETTINGS } from "@upcode/contracts";
+import * as TestSourceControlHost from "@upcode/source-control-testing/TestSourceControlHost";
 import * as AzureDevOpsCli from "./AzureDevOpsCli.ts";
 
 const remote = "https://dev.azure.com/acme/project/_git/repository";

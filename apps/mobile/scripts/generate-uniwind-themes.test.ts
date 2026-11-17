@@ -1,6 +1,6 @@
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
-import { BUILT_IN_THEME_IDS } from "@t3tools/shared/themePalettes";
+import { BUILT_IN_THEME_IDS } from "@upcode/shared/themePalettes";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -22,7 +22,7 @@ describe("generate mobile Uniwind themes", () => {
 
     expect(
       staleOutputs,
-      "Run `vp run --filter @t3tools/mobile generate` and commit the generated outputs.",
+      "Run `vp run --filter @upcode/mobile generate` and commit the generated outputs.",
     ).toEqual([]);
   });
 

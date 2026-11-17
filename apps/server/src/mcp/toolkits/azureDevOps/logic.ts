@@ -8,7 +8,7 @@
  * @module mcp/toolkits/azureDevOps/logic
  */
 
-import type { AzureDevOpsWorkItem } from "@t3tools/contracts";
+import type { AzureDevOpsWorkItem } from "@upcode/contracts";
 import * as Schema from "effect/Schema";
 
 /** States that mean the work is over, across the processes this company uses. */

@@ -1,6 +1,7 @@
-import type { AzureDevOpsPullRequest, AzureDevOpsRepository } from "@t3tools/contracts";
+import type { AzureDevOpsPullRequest, AzureDevOpsRepository } from "@upcode/contracts";
 import {
   ActivityIcon,
+  InboxIcon,
   CheckCircle2Icon,
   CircleIcon,
   Clock3Icon,
@@ -29,6 +30,7 @@ const VIEWS = [
   { id: "prs", label: "Pull Requests", icon: PullRequestGlyph.pullRequest },
   { id: "repos", label: "Repositorios", icon: DatabaseIcon },
   { id: "activity", label: "Actividad", icon: ActivityIcon },
+  { id: "pending", label: "Pendiente", icon: InboxIcon },
 ] as const;
 export type AzureReposView = (typeof VIEWS)[number]["id"];
 
@@ -135,6 +137,7 @@ export function AzureReposDashboard({
   loading,
   view,
   onViewChange,
+  pendingView,
   now,
 }: {
   repositories: readonly Repository[];
@@ -145,6 +148,8 @@ export function AzureReposDashboard({
   loading: boolean;
   view: AzureReposView;
   onViewChange: (view: AzureReposView) => void;
+  /** The mailbox of open conversations, owned by the page because opening one opens a PR. */
+  pendingView: ReactNode;
   now: number;
 }) {
   const [inspectedId, setInspectedId] = useState("");
@@ -457,6 +462,7 @@ export function AzureReposDashboard({
               {repoDetail}
             </div>
           )}
+          {view === "pending" && pendingView}
           {view === "activity" && (
             <Panel
               title="Actividad de pull requests"

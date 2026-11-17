@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { SETTINGS_SECRET_REDACTED, type SshServer } from "@t3tools/contracts";
+import { SETTINGS_SECRET_REDACTED, type SshServer } from "@upcode/contracts";
 
 import {
   allowsAccess,

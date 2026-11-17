@@ -2,7 +2,7 @@ import type {
   PullRequestActor,
   PullRequestMergeability,
   PullRequestState,
-} from "@t3tools/contracts";
+} from "@upcode/contracts";
 import type { ReactNode } from "react";
 import { ArrowRightIcon, GitBranchIcon } from "lucide-react";
 

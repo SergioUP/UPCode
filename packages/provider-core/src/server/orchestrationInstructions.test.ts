@@ -1,90 +1,90 @@
 import { assert, describe, it } from "@effect/vitest";
 
 import {
-  T3_CODE_ORCHESTRATION_INSTRUCTIONS,
-  t3AcpPromptWithInstructions,
-  t3OrchestrationPromptForFirstRun,
-  t3OrchestrationSystemPrompt,
+  UPCODE_ORCHESTRATION_INSTRUCTIONS,
+  upcodeAcpPromptWithInstructions,
+  upcodeOrchestrationPromptForFirstRun,
+  upcodeOrchestrationSystemPrompt,
 } from "./orchestrationInstructions.ts";
 
-describe("T3 orchestration provider instructions", () => {
+describe("UPCode orchestration provider instructions", () => {
   it("distinguishes delegated subagents from ordinary top-level threads", () => {
-    assert.include(T3_CODE_ORCHESTRATION_INSTRUCTIONS, "Use `delegate_task`");
-    assert.include(T3_CODE_ORCHESTRATION_INSTRUCTIONS, "ordinary top-level T3 conversations");
-    assert.include(T3_CODE_ORCHESTRATION_INSTRUCTIONS, "Never use them merely");
-    assert.include(T3_CODE_ORCHESTRATION_INSTRUCTIONS, "cross-provider");
-    assert.include(T3_CODE_ORCHESTRATION_INSTRUCTIONS, "call `delegate_task` again");
+    assert.include(UPCODE_ORCHESTRATION_INSTRUCTIONS, "Use `delegate_task`");
+    assert.include(UPCODE_ORCHESTRATION_INSTRUCTIONS, "ordinary top-level UPCode conversations");
+    assert.include(UPCODE_ORCHESTRATION_INSTRUCTIONS, "Never use them merely");
+    assert.include(UPCODE_ORCHESTRATION_INSTRUCTIONS, "cross-provider");
+    assert.include(UPCODE_ORCHESTRATION_INSTRUCTIONS, "call `delegate_task` again");
     assert.include(
-      T3_CODE_ORCHESTRATION_INSTRUCTIONS,
-      "Do not use `t3_thread_send` on `childThreadId`",
+      UPCODE_ORCHESTRATION_INSTRUCTIONS,
+      "Do not use `upcode_thread_send` on `childThreadId`",
     );
   });
 
   it("documents structured schedules instead of JSON strings", () => {
-    assert.include(T3_CODE_ORCHESTRATION_INSTRUCTIONS, "structured object, never as JSON text");
-    assert.include(T3_CODE_ORCHESTRATION_INSTRUCTIONS, '"everyMs":3600000');
-    assert.include(T3_CODE_ORCHESTRATION_INSTRUCTIONS, "bindToCurrentThread=false");
+    assert.include(UPCODE_ORCHESTRATION_INSTRUCTIONS, "structured object, never as JSON text");
+    assert.include(UPCODE_ORCHESTRATION_INSTRUCTIONS, '"everyMs":3600000');
+    assert.include(UPCODE_ORCHESTRATION_INSTRUCTIONS, "bindToCurrentThread=false");
   });
 
   it("injects prompt fallback only for an MCP-enabled first run", () => {
     const prompt = "Inspect the repository.";
-    const injected = t3OrchestrationPromptForFirstRun({
+    const injected = upcodeOrchestrationPromptForFirstRun({
       prompt,
       runOrdinal: 1,
-      hasT3Mcp: true,
+      hasUPCodeMcp: true,
     });
 
-    assert.include(injected, "<t3_code_orchestration_instructions>");
+    assert.include(injected, "<upcode_code_orchestration_instructions>");
     assert.include(injected, `<user_request>\n${prompt}\n</user_request>`);
     assert.equal(
-      t3OrchestrationPromptForFirstRun({ prompt, runOrdinal: 2, hasT3Mcp: true }),
+      upcodeOrchestrationPromptForFirstRun({ prompt, runOrdinal: 2, hasUPCodeMcp: true }),
       prompt,
     );
     assert.equal(
-      t3OrchestrationPromptForFirstRun({ prompt, runOrdinal: 1, hasT3Mcp: false }),
+      upcodeOrchestrationPromptForFirstRun({ prompt, runOrdinal: 1, hasUPCodeMcp: false }),
       prompt,
     );
   });
 
-  it("only exposes the system prompt when the T3 MCP server is attached", () => {
-    assert.equal(t3OrchestrationSystemPrompt(false), undefined);
-    assert.equal(t3OrchestrationSystemPrompt(true), T3_CODE_ORCHESTRATION_INSTRUCTIONS);
+  it("only exposes the system prompt when the UPCode MCP server is attached", () => {
+    assert.equal(upcodeOrchestrationSystemPrompt(false), undefined);
+    assert.equal(upcodeOrchestrationSystemPrompt(true), UPCODE_ORCHESTRATION_INSTRUCTIONS);
   });
 
   it("gives ACP sessions provider-neutral mode, browser, and orchestration guidance", () => {
-    const injected = t3AcpPromptWithInstructions({
+    const injected = upcodeAcpPromptWithInstructions({
       prompt: "Inspect the repository.",
-      state: { interactionMode: "default", hasT3Mcp: true },
+      state: { interactionMode: "default", hasUPCodeMcp: true },
     });
 
-    assert.include(injected, "T3 Code interaction mode: Default");
-    assert.include(injected, "T3 Code collaborative browser");
-    assert.include(injected, "T3 Code orchestration");
+    assert.include(injected, "UPCode interaction mode: Default");
+    assert.include(injected, "UPCode collaborative browser");
+    assert.include(injected, "UPCode orchestration");
     assert.include(injected, "<user_request>\nInspect the repository.\n</user_request>");
   });
 
   it("reinjects ACP guidance only when mode or tool availability changes", () => {
     const prompt = "Continue.";
-    const defaultState = { interactionMode: "default", hasT3Mcp: true } as const;
+    const defaultState = { interactionMode: "default", hasUPCodeMcp: true } as const;
 
     assert.equal(
-      t3AcpPromptWithInstructions({ prompt, state: defaultState, previousState: defaultState }),
+      upcodeAcpPromptWithInstructions({ prompt, state: defaultState, previousState: defaultState }),
       prompt,
     );
     assert.include(
-      t3AcpPromptWithInstructions({
+      upcodeAcpPromptWithInstructions({
         prompt,
         state: { ...defaultState, interactionMode: "plan" },
         previousState: defaultState,
       }),
-      "T3 Code interaction mode: Plan",
+      "UPCode interaction mode: Plan",
     );
-    const withoutMcp = t3AcpPromptWithInstructions({
+    const withoutMcp = upcodeAcpPromptWithInstructions({
       prompt,
-      state: { interactionMode: "default", hasT3Mcp: false },
+      state: { interactionMode: "default", hasUPCodeMcp: false },
     });
-    assert.include(withoutMcp, "T3 Code interaction mode: Default");
-    assert.notInclude(withoutMcp, "T3 Code collaborative browser");
-    assert.notInclude(withoutMcp, "T3 Code orchestration");
+    assert.include(withoutMcp, "UPCode interaction mode: Default");
+    assert.notInclude(withoutMcp, "UPCode collaborative browser");
+    assert.notInclude(withoutMcp, "UPCode orchestration");
   });
 });

@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["UPCodeComposerEditorModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.upcodecomposereditor.UPCodeComposerEditorModule"]
+  }
+}
