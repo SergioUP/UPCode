@@ -1270,40 +1270,6 @@ layer("AzureDevOpsPullRequestCli.layer", (it) => {
     }),
   );
 
-  it.effect("writes a thread's state, a reply and an edit as REST calls with a body", () =>
-    Effect.gen(function* () {
-      mockedExecute.mockReturnValue(Effect.succeed(output("{}")));
-      const cli = yield* AzureDevOpsPullRequestCli.AzureDevOpsPullRequestCli;
-      const location = { project: "platform", repository: "web" };
-
-      yield* cli.setThreadStatus({
-        cwd: "/w",
-        location,
-        number: 42,
-        threadId: "7",
-        status: "byDesign",
-      });
-      yield* cli.replyToThread({ cwd: "/w", location, number: 42, threadId: "7", body: "Done." });
-      yield* cli.updateThreadComment({
-        cwd: "/w",
-        location,
-        number: 42,
-        threadId: "7",
-        commentId: "2",
-        body: "Fixed.",
-      });
-
-      const call = (index: number) => argsOfCall(index);
-      expect(call(0)).toContain("PATCH");
-      expect(call(0)).toContain('{"status":"byDesign"}');
-      expect(call(0)).toContain("threadId=7");
-      expect(call(1)).toContain("POST");
-      expect(call(1)).toContain("pullRequestThreadComments");
-      expect(call(2)).toContain("commentId=2");
-      expect(call(2)).toContain('{"content":"Fixed."}');
-    }),
-  );
-
   it.effect("reads a long review's threads, which are past the default output limit", () =>
     Effect.gen(function* () {
       const response = json({ value: threadRows(800) });

@@ -58,6 +58,7 @@ const CAPABILITIES: PullRequestCapabilities = {
   // Azure serves no patch of its own, so the one the Code tab reads is built here out of the
   // files an iteration changed and both sides of each of them.
   diff: true,
+  // A remark is a thread POST: on the conversation, or pinned to a line with a thread context.
   comment: true,
   actions: [...definition.changeRequestActions],
   // Azure squashes as a completion option; it has no rebase strategy of its own.
@@ -65,15 +66,15 @@ const CAPABILITIES: PullRequestCapabilities = {
   // `az repos pr list` filters by status, creator, reviewer and branch, and by no text at all.
   search: false,
   reactions: false,
-  // Azure keeps a review as conversations with a state of their own rather than as a verdict, so
-  // a thread can be answered and moved between those states; a line comment or a verdict is not
-  // offered.
+  // Threads reply and settle through the same REST route that reads them. There are no verdicts
+  // to vote with: a review is remarks, posted one at a time.
   review: {
-    inlineComment: false,
+    inlineComment: true,
     reply: true,
     resolve: true,
+    // Azure's own states, so a thread can be moved to any of them rather than only settled.
     threadStatuses: ["active", "pending", "fixed", "wontFix", "closed", "byDesign"],
-    verdicts: [],
+    verdicts: ["comment"],
   },
   // `az repos pr reviewer add` and `remove` name identities, and nothing anywhere in `az repos`
   // lists the ones this repository could name — that lives behind the identity and graph APIs, a
@@ -178,6 +179,31 @@ export const make = Effect.gen(function* () {
       }),
     );
 
+  /**
+   * A write needs the project and repository the checkout names: the pull request read carries
+   * them, and a checkout that names nothing has nowhere to post to.
+   */
+  const writeLocation = (
+    input: { readonly cwd: string; readonly number: number },
+    operation: string,
+  ) =>
+    cli.getPullRequest({ cwd: input.cwd, number: input.number }).pipe(
+      Effect.mapError(fail(operation)),
+      Effect.flatMap((pullRequest) =>
+        pullRequest.location === null
+          ? Effect.fail(
+              new PullRequestProviderError({
+                provider: SourceControlProviderKind.make("azure-devops"),
+                operation,
+                reason: "failed",
+                detail:
+                  "The checkout does not name the Azure DevOps repository this pull request lives in.",
+              }),
+            )
+          : Effect.succeed({ location: pullRequest.location, number: input.number }),
+      ),
+    );
+
   /** A pull request Azure could not place has no diff to read, which reads as an empty one. */
   const EMPTY_DIFF_SLICE: ProviderDiffSlice = { patch: "", truncated: false, nextCursor: null };
 
@@ -211,33 +237,6 @@ export const make = Effect.gen(function* () {
       }),
     );
   };
-
-  /**
-   * Runs a write against the pull request's repository. A pull request Azure could not place has
-   * no route to write to, which is said rather than guessed at.
-   */
-  const withLocation = (
-    operation: string,
-    input: { readonly cwd: string; readonly number: number },
-    write: (
-      location: AzureDevOpsRepositoryLocation,
-    ) => Effect.Effect<void, AzureDevOpsPullRequestCli.AzureDevOpsPullRequestCliError>,
-  ): Effect.Effect<void, PullRequestProviderError> =>
-    locationOf(input).pipe(
-      Effect.mapError(fail(operation)),
-      Effect.flatMap((location) =>
-        location === null
-          ? Effect.fail(
-              new PullRequestProviderError({
-                provider: SourceControlProviderKind.make("azure-devops"),
-                operation,
-                reason: "failed",
-                detail: "Azure DevOps did not say which repository this pull request is in.",
-              }),
-            )
-          : write(location).pipe(Effect.mapError(fail(operation))),
-      ),
-    );
 
   /**
    * Everything a diff read needs before it can ask for a file: where the repository lives, and
@@ -424,44 +423,31 @@ export const make = Effect.gen(function* () {
       cli.getPullRequest({ cwd: input.cwd, number: input.number }).pipe(
         Effect.mapError(fail("getChangeRequestActivity")),
         Effect.flatMap((pullRequest) =>
-          pullRequest.location === null
-            ? Effect.succeed<ProviderChangeRequestActivity>({
-                comments: [],
-                commentCount: 0,
-                commentsTruncated: true,
-                reviewThreads: [],
-                commits: [],
-              })
-            : Effect.all(
-                {
-                  comments: cli.listThreads({
-                    cwd: input.cwd,
-                    location: pullRequest.location,
-                    number: input.number,
-                  }),
-                  threads: cli.listReviewThreads({
-                    cwd: input.cwd,
-                    location: pullRequest.location,
-                    number: input.number,
-                  }),
-                },
-                { concurrency: 2 },
-              ).pipe(
-                Effect.map(({ comments, threads }): ProviderChangeRequestActivity => ({
-                  comments,
-                  commentCount: comments.length,
-                  commentsTruncated: false,
-                  reviewThreads: threads,
-                  commits: [],
-                })),
-                Effect.orElseSucceed((): ProviderChangeRequestActivity => ({
-                  comments: [],
-                  commentCount: 0,
-                  commentsTruncated: true,
-                  reviewThreads: [],
-                  commits: [],
-                })),
-              ),
+          (pullRequest.location === null
+            ? Effect.succeed({ comments: [], threads: [], truncated: true })
+            : cli
+                .listConversation({
+                  cwd: input.cwd,
+                  location: pullRequest.location,
+                  number: input.number,
+                })
+                .pipe(
+                  Effect.map((conversation) => ({ ...conversation, truncated: false })),
+                  Effect.orElseSucceed(() => ({
+                    comments: [],
+                    threads: [],
+                    truncated: true,
+                  })),
+                )
+          ).pipe(
+            Effect.map((conversation): ProviderChangeRequestActivity => ({
+              comments: conversation.comments,
+              commentCount: conversation.comments.length,
+              commentsTruncated: conversation.truncated,
+              reviewThreads: conversation.threads,
+              commits: [],
+            })),
+          ),
         ),
       ),
 
@@ -679,49 +665,104 @@ export const make = Effect.gen(function* () {
         .pipe(Effect.mapError(fail("setReviewerRequest"))),
 
     comment: (input) =>
-      withLocation("comment", input, (location) =>
-        cli.createThread({ cwd: input.cwd, location, number: input.number, body: input.body }),
+      writeLocation(input, "comment").pipe(
+        Effect.flatMap(({ location, number }) =>
+          cli
+            .createThread({ cwd: input.cwd, location, number, body: input.body })
+            .pipe(Effect.mapError(fail("comment"))),
+        ),
       ),
 
-    updateComment: (input) =>
-      withLocation("updateComment", input, (location) => {
-        // A remark's id travels as `<thread>:<comment>`, the way the conversation carried it.
-        const [threadId, commentId] = input.commentId.split(":");
-        return cli.updateThreadComment({
-          cwd: input.cwd,
-          location,
-          number: input.number,
-          threadId: threadId ?? "",
-          commentId: commentId ?? "",
-          body: input.body,
-        });
-      }),
-
-    // Declared unsupported above, so the service refuses this before a provider is reached. It
-    // exists because every provider answers the whole port.
-    submitReview: () => unsupported("submitReview"),
+    submitReview: (input) =>
+      // Azure has no verdict to vote with: a "comment" review posts the words on
+      // the conversation and every line remark as the thread it is anchored to.
+      writeLocation(input, "submitReview").pipe(
+        Effect.flatMap(({ location, number }) =>
+          Effect.all(
+            [
+              ...(input.body.trim() === ""
+                ? []
+                : [
+                    cli
+                      .createThread({ cwd: input.cwd, location, number, body: input.body })
+                      .pipe(Effect.mapError(fail("submitReview"))),
+                  ]),
+              ...input.comments.map((draft) => {
+                const position = draft.position;
+                return cli
+                  .createThread({
+                    cwd: input.cwd,
+                    location,
+                    number,
+                    body: draft.body,
+                    context:
+                      position.kind === "deleted" ||
+                      (position.kind === "context" && position.side === "left")
+                        ? {
+                            path: draft.oldPath ?? draft.path,
+                            line: position.oldLine,
+                            side: "left",
+                          }
+                        : {
+                            path: draft.path,
+                            line: position.newLine,
+                            side: "right",
+                          },
+                  })
+                  .pipe(Effect.mapError(fail("submitReview")));
+              }),
+            ],
+            { discard: true },
+          ),
+        ),
+      ),
 
     replyToThread: (input) =>
-      withLocation("replyToThread", input, (location) =>
-        cli.replyToThread({
-          cwd: input.cwd,
-          location,
-          number: input.number,
-          threadId: input.threadId,
-          body: input.body,
-        }),
+      writeLocation(input, "replyToThread").pipe(
+        Effect.flatMap(({ location, number }) =>
+          cli
+            .replyToThread({
+              cwd: input.cwd,
+              location,
+              number,
+              threadId: Number(input.threadId),
+              body: input.body,
+            })
+            .pipe(Effect.mapError(fail("replyToThread"))),
+        ),
       ),
 
-    // Azure's states are the vocabulary: with no exact one asked for, resolved means `fixed` and
-    // unresolved means `active`, which is what its own Resolve and Reactivate buttons do.
     setThreadResolution: (input) =>
-      withLocation("setThreadResolution", input, (location) =>
-        cli.setThreadStatus({
-          cwd: input.cwd,
-          location,
-          number: input.number,
-          threadId: input.threadId,
-          status: input.status ?? (input.resolved ? "fixed" : "active"),
+      writeLocation(input, "setThreadResolution").pipe(
+        Effect.flatMap(({ location, number }) =>
+          cli
+            .setThreadStatus({
+              cwd: input.cwd,
+              location,
+              number,
+              threadId: Number(input.threadId),
+              resolved: input.resolved,
+              status: input.status,
+            })
+            .pipe(Effect.mapError(fail("setThreadResolution"))),
+        ),
+      ),
+
+    // A remark's id travels as `<thread>:<comment>`, the way the conversation carried it.
+    updateComment: (input) =>
+      writeLocation(input, "updateComment").pipe(
+        Effect.flatMap(({ location, number }) => {
+          const [threadId, commentId] = input.commentId.split(":");
+          return cli
+            .updateThreadComment({
+              cwd: input.cwd,
+              location,
+              number,
+              threadId: Number(threadId),
+              commentId: Number(commentId),
+              body: input.body,
+            })
+            .pipe(Effect.mapError(fail("updateComment")));
         }),
       ),
 

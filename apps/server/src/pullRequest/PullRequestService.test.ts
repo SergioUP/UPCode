@@ -2533,6 +2533,40 @@ it.effect.each([
   }),
 );
 
+it.effect("opens an Azure Repos PR in the configured organization without its checkout", () =>
+  Effect.gen(function* () {
+    const seen: string[] = [];
+    const service = yield* makeService({
+      settings: {
+        ...DEFAULT_SERVER_SETTINGS,
+        sourceControlHosts: {
+          "azure-devops": { organization: "upango", personalAccessToken: "secret" },
+        },
+      },
+      projects: [project({ id: "inbox", title: "Inbox", workspaceRoot: "/home/alex" })],
+      providers: [
+        fakeProvider(SourceControlProviderKind.make("azure-devops"), {
+          getChangeRequestSummary: (input) =>
+            Effect.sync(() => {
+              seen.push(input.repository);
+              return changeRequest(7, "2026-07-02T00:00:00Z");
+            }),
+        }),
+      ],
+    });
+    yield* service.summary(
+      {
+        projectId: "inbox" as ProjectId,
+        host: "dev.azure.com",
+        repository: "upango/project/_git/web",
+        number: 7,
+      },
+      { recoverTransientFailure: false },
+    );
+    assert.deepStrictEqual(seen, ["upango/project/_git/web"]);
+  }),
+);
+
 it.effect("refuses Azure cross-organization reads and writes without its checkout", () =>
   Effect.gen(function* () {
     const service = yield* makeService({

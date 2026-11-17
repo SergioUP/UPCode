@@ -8,11 +8,11 @@ import type {
   PullRequestMergeMethod,
   PullRequestMergeability,
   PullRequestReviewThread,
+  PullRequestThreadStatus,
   PullRequestState,
   PullRequestThreadComment,
-  PullRequestThreadStatus,
 } from "@upcode/contracts";
-import { isPullRequestThreadStatusOpen, TrimmedNonEmptyString } from "@upcode/contracts";
+import { TrimmedNonEmptyString } from "@upcode/contracts";
 import { decodeJsonResult } from "@upcode/shared/schemaJson";
 
 import { azureDevOpsPullRequestWebUrl } from "./azureDevOpsPullRequests.ts";
@@ -84,21 +84,24 @@ const RawPullRequestSchema = Schema.Struct({
 });
 
 /** A pull request thread, which is how Azure keeps its conversation. */
+const RawThreadPositionSchema = Schema.Struct({
+  line: Schema.optional(Schema.NullOr(Schema.Int)),
+  offset: Schema.optional(Schema.NullOr(Schema.Int)),
+});
+
 const RawThreadSchema = Schema.Struct({
   id: Schema.Int,
   isDeleted: Schema.optional(Schema.NullOr(Schema.Boolean)),
-  /** Azure's own state for the conversation: active, pending, fixed, wontFix, closed, byDesign. */
+  /** `Active` and `Pending` are open threads; `Fixed` and friends read as settled. */
   status: Schema.optional(Schema.NullOr(Schema.String)),
   threadContext: Schema.optional(
     Schema.NullOr(
       Schema.Struct({
         filePath: Schema.optional(Schema.NullOr(Schema.String)),
-        rightFileStart: Schema.optional(
-          Schema.NullOr(Schema.Struct({ line: Schema.optional(Schema.NullOr(Schema.Int)) })),
-        ),
-        leftFileStart: Schema.optional(
-          Schema.NullOr(Schema.Struct({ line: Schema.optional(Schema.NullOr(Schema.Int)) })),
-        ),
+        leftFileStart: Schema.optional(Schema.NullOr(RawThreadPositionSchema)),
+        leftFileEnd: Schema.optional(Schema.NullOr(RawThreadPositionSchema)),
+        rightFileStart: Schema.optional(Schema.NullOr(RawThreadPositionSchema)),
+        rightFileEnd: Schema.optional(Schema.NullOr(RawThreadPositionSchema)),
       }),
     ),
   ),
@@ -110,7 +113,6 @@ const RawThreadSchema = Schema.Struct({
           content: Schema.optional(Schema.NullOr(Schema.String)),
           author: Schema.optional(Schema.NullOr(RawIdentitySchema)),
           publishedDate: Schema.optional(Schema.NullOr(Schema.String)),
-          lastContentUpdatedDate: Schema.optional(Schema.NullOr(Schema.String)),
           isDeleted: Schema.optional(Schema.NullOr(Schema.Boolean)),
           /** `system` marks the notes Azure writes itself, which are events, not comments. */
           commentType: Schema.optional(Schema.NullOr(Schema.String)),
@@ -346,54 +348,17 @@ export function decodeViewerJson(raw: string): Result.Result<string | null, Deco
     : Result.fail(decoded.failure);
 }
 
-/**
- * Azure keeps its conversation as threads of comments, and every one of them is a remark
- * somebody wrote: a reply under a thread is as much of the conversation as the line that opened
- * it. A thread pinned to a file is a line-level review comment.
- *
- * Azure answers the whole thread collection in one response, with no cursor and no page to
- * follow, so what this returns is everything the host has.
- */
-export function decodeThreadsJson(
-  raw: string,
-): Result.Result<ReadonlyArray<PullRequestComment>, DecodeFailure> {
-  const decoded = decodeThreadPage(raw);
-  if (!Result.isSuccess(decoded)) {
-    return Result.fail(decoded.failure);
-  }
-  const comments: PullRequestComment[] = [];
-  for (const entry of decoded.success.value) {
-    const decodedThread = decodeThreadEntry(entry);
-    if (Exit.isFailure(decodedThread)) continue;
-    const thread = decodedThread.value;
-    if (thread.isDeleted === true) continue;
-    const path = trimmed(thread.threadContext?.filePath);
-    for (const comment of thread.comments ?? []) {
-      const publishedDate = trimmed(comment.publishedDate);
-      if (
-        comment.isDeleted === true ||
-        comment.commentType?.trim().toLowerCase() === "system" ||
-        (comment.content ?? "").trim().length === 0 ||
-        publishedDate === null
-      ) {
-        continue;
-      }
-      comments.push({
-        id: `${thread.id}:${comment.id ?? 0}`,
-        kind: path === null ? "issue-comment" : "review-comment",
-        author: toActor(comment.author),
-        body: comment.content ?? "",
-        createdAt: publishedDate,
-        url: null,
-        path,
-        reviewState: null,
-      });
-    }
-  }
-  return Result.succeed(
-    comments.toSorted((left, right) => left.createdAt.localeCompare(right.createdAt)),
-  );
+/** The conversation one pull request carries: the flat timeline and the line-anchored threads. */
+export interface AzureDevOpsConversation {
+  readonly comments: ReadonlyArray<PullRequestComment>;
+  readonly threads: ReadonlyArray<PullRequestReviewThread>;
 }
+
+/** Azure's thread statuses that read as settled; the rest stay open. */
+const threadIsResolved = (status: string | null): boolean => {
+  const normalized = status?.trim().toLowerCase() ?? "";
+  return ["fixed", "closed", "wontfix", "bydesign", "notapplicable"].includes(normalized);
+};
 
 const THREAD_STATUSES: ReadonlyArray<PullRequestThreadStatus> = [
   "active",
@@ -404,68 +369,106 @@ const THREAD_STATUSES: ReadonlyArray<PullRequestThreadStatus> = [
   "byDesign",
 ];
 
-/** Azure answers a state by name; one this build has not heard of is `unknown`, not an error. */
-export function toThreadStatus(value: string | null | undefined): PullRequestThreadStatus {
+/** Azure's own state for a thread; one this build has not heard of is `unknown`, not an error. */
+function toThreadStatus(value: string | null): PullRequestThreadStatus {
   const wanted = value?.trim().toLowerCase();
   return THREAD_STATUSES.find((status) => status.toLowerCase() === wanted) ?? "unknown";
 }
 
+/** The comments of one thread, oldest first, dropping the ones that are not remarks. */
+const threadComments = (
+  thread: Schema.Schema.Type<typeof RawThreadSchema>,
+): ReadonlyArray<PullRequestThreadComment> => {
+  const comments: PullRequestThreadComment[] = [];
+  for (const comment of thread.comments ?? []) {
+    const publishedDate = trimmed(comment.publishedDate);
+    if (
+      comment.isDeleted === true ||
+      comment.commentType?.trim().toLowerCase() === "system" ||
+      (comment.content ?? "").trim().length === 0 ||
+      publishedDate === null
+    ) {
+      continue;
+    }
+    comments.push({
+      id: `${thread.id}:${comment.id ?? 0}`,
+      author: toActor(comment.author),
+      body: comment.content ?? "",
+      createdAt: publishedDate,
+      editedAt: null,
+      url: null,
+    });
+  }
+  return comments.toSorted((left, right) => left.createdAt.localeCompare(right.createdAt));
+};
+
 /**
- * Azure's conversations as the neutral review threads the page already renders, general threads
- * included: a thread with no file is a conversation about the whole change, and is exactly as
- * open or resolved as one on a line, so it has `path: null` rather than being left out.
+ * Azure keeps its conversation as threads of comments, and every one of them is a remark
+ * somebody wrote: a reply under a thread is as much of the conversation as the line that opened
+ * it. A thread pinned to a file is a line-level review comment.
+ *
+ * Azure answers the whole thread collection in one response, with no cursor and no page to
+ * follow, so what this returns is everything the host has.
  */
-export function decodeReviewThreadsJson(
+export function decodeConversationJson(
   raw: string,
-): Result.Result<ReadonlyArray<PullRequestReviewThread>, DecodeFailure> {
+): Result.Result<AzureDevOpsConversation, DecodeFailure> {
   const decoded = decodeThreadPage(raw);
-  if (!Result.isSuccess(decoded)) return Result.fail(decoded.failure);
+  if (!Result.isSuccess(decoded)) {
+    return Result.fail(decoded.failure);
+  }
+  const comments: PullRequestComment[] = [];
   const threads: PullRequestReviewThread[] = [];
   for (const entry of decoded.success.value) {
     const decodedThread = decodeThreadEntry(entry);
     if (Exit.isFailure(decodedThread)) continue;
     const thread = decodedThread.value;
     if (thread.isDeleted === true) continue;
-    const comments: PullRequestThreadComment[] = [];
-    for (const comment of thread.comments ?? []) {
-      const publishedDate = trimmed(comment.publishedDate);
-      if (
-        comment.isDeleted === true ||
-        comment.commentType?.trim().toLowerCase() === "system" ||
-        (comment.content ?? "").trim().length === 0 ||
-        publishedDate === null
-      ) {
-        continue;
-      }
-      const editedAt = trimmed(comment.lastContentUpdatedDate);
+    const threadRemarks = threadComments(thread);
+    if (threadRemarks.length === 0) continue;
+    const path = trimmed(thread.threadContext?.filePath);
+    for (const comment of threadRemarks) {
       comments.push({
-        id: `${thread.id}:${comment.id ?? 0}`,
-        author: toActor(comment.author),
-        body: comment.content ?? "",
-        createdAt: publishedDate,
-        ...(editedAt !== null && editedAt !== publishedDate ? { editedAt } : {}),
+        id: comment.id,
+        kind: path === null ? "issue-comment" : "review-comment",
+        author: comment.author,
+        body: comment.body,
+        createdAt: comment.createdAt,
         url: null,
+        path,
+        reviewState: null,
       });
     }
-    // A thread of nothing but Azure's own notes (a vote, a push) is an event, not a conversation.
-    if (comments.length === 0) continue;
-    const status = toThreadStatus(thread.status);
+    // A thread with no file is a conversation about the whole change: as open or settled as one
+    // on a line, so it is a thread here too, with no path.
+    // A thread carries both anchors when it was moved across the change; the
+    // right side is the one a reader of today's diff can still find it on.
     const rightLine = thread.threadContext?.rightFileStart?.line ?? null;
     const leftLine = thread.threadContext?.leftFileStart?.line ?? null;
-    const line = rightLine ?? leftLine;
     threads.push({
       id: String(thread.id),
-      path: trimmed(thread.threadContext?.filePath)?.replace(/^\//, "") ?? null,
-      line: line !== null && line > 0 ? line : null,
-      side: rightLine === null && leftLine !== null ? "left" : "right",
-      isResolved: !isPullRequestThreadStatusOpen(status),
-      status,
+      path,
+      line: rightLine ?? leftLine,
+      side: rightLine !== null || leftLine === null ? "right" : "left",
+      isResolved: threadIsResolved(thread.status ?? null),
+      status: toThreadStatus(thread.status ?? null),
       isOutdated: false,
-      comments,
-      commentCount: comments.length,
+      comments: threadRemarks,
     });
   }
-  return Result.succeed(threads);
+  return Result.succeed({
+    comments: comments.toSorted((left, right) => left.createdAt.localeCompare(right.createdAt)),
+    threads,
+  });
+}
+
+export function decodeThreadsJson(
+  raw: string,
+): Result.Result<ReadonlyArray<PullRequestComment>, DecodeFailure> {
+  const decoded = decodeConversationJson(raw);
+  return Result.isSuccess(decoded)
+    ? Result.succeed(decoded.success.comments)
+    : Result.fail(decoded.failure);
 }
 
 /**

@@ -52,6 +52,20 @@ const runAz = (args: string[], timeoutMs = 8_000): Effect.Effect<RunResult> =>
 
 const LOGIN_SCRIPT = "az extension add --name azure-devops && az login --allow-no-subscriptions";
 
+/** Azure DevOps resource token; kept inside the server and never returned to clients. */
+export const getAccessToken = () =>
+  runAz([
+    "account",
+    "get-access-token",
+    "--resource",
+    "499b84ac-1321-427f-aa17-267ca6975798",
+    "--query",
+    "accessToken",
+    "--output",
+    "tsv",
+    "--only-show-errors",
+  ]).pipe(Effect.map((result) => (result.code === 0 ? result.stdout.trim() || null : null)));
+
 export const make = Effect.gen(function* () {
   const hostPlatform = yield* HostProcess.Platform;
   const status = () =>

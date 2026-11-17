@@ -418,3 +418,140 @@ describe("what one diff slice spends", () => {
     }),
   );
 });
+
+describe("review writes", () => {
+  type PostedThread = {
+    readonly body: string;
+    readonly context?: { readonly path: string; readonly line: number; readonly side: string };
+  };
+
+  const providerRecordingThreads = (
+    posted: Array<PostedThread>,
+    replies: Array<{ threadId: number; body: string }>,
+    statuses: Array<{ threadId: number; resolved: boolean }>,
+  ) =>
+    make.pipe(
+      Effect.provide(
+        Layer.mock(AzureDevOpsPullRequestCli.AzureDevOpsPullRequestCli)({
+          getPullRequest: () => Effect.succeed(PULL_REQUEST),
+          createThread: (input) =>
+            Effect.sync(() => {
+              posted.push({
+                body: input.body,
+                ...(input.context === undefined ? {} : { context: input.context }),
+              });
+            }),
+          replyToThread: (input) =>
+            Effect.sync(() => {
+              replies.push({ threadId: input.threadId, body: input.body });
+            }),
+          setThreadStatus: (input) =>
+            Effect.sync(() => {
+              statuses.push({ threadId: input.threadId, resolved: input.resolved });
+            }),
+        }),
+      ),
+    );
+
+  it.effect("posts a conversation remark as a thread on the pull request's repository", () =>
+    Effect.gen(function* () {
+      const posted: Array<PostedThread> = [];
+      const replies: Array<{ threadId: number; body: string }> = [];
+      const statuses: Array<{ threadId: number; resolved: boolean }> = [];
+      const provider = yield* providerRecordingThreads(posted, replies, statuses);
+
+      yield* provider.comment({
+        cwd: "/w",
+        repository: "acme/web",
+        host: "dev.azure.com",
+        number: 7,
+        body: "Mind the lock.",
+      });
+
+      expect(posted).toEqual([{ body: "Mind the lock." }]);
+      expect(replies).toEqual([]);
+    }),
+  );
+
+  it.effect("pins every line remark of a comment review to its line and side", () =>
+    Effect.gen(function* () {
+      const posted: Array<PostedThread> = [];
+      const replies: Array<{ threadId: number; body: string }> = [];
+      const statuses: Array<{ threadId: number; resolved: boolean }> = [];
+      const provider = yield* providerRecordingThreads(posted, replies, statuses);
+
+      yield* provider.submitReview({
+        cwd: "/w",
+        repository: "acme/web",
+        host: "dev.azure.com",
+        number: 7,
+        verdict: "comment",
+        body: "",
+        comments: [
+          {
+            path: "src/app.ts",
+            position: { kind: "added", newLine: 3 },
+            body: "Rename this.",
+          },
+          {
+            path: "src/gone.ts",
+            oldPath: "src/old.ts",
+            position: { kind: "deleted", oldLine: 8 },
+            body: "Moved, not deleted?",
+          },
+          {
+            path: "src/app.ts",
+            position: { kind: "context", oldLine: 2, newLine: 2, side: "left" },
+            body: "Left side here.",
+          },
+        ],
+      });
+
+      expect(posted).toEqual([
+        { body: "Rename this.", context: { path: "src/app.ts", line: 3, side: "right" } },
+        { body: "Moved, not deleted?", context: { path: "src/old.ts", line: 8, side: "left" } },
+        { body: "Left side here.", context: { path: "src/app.ts", line: 2, side: "left" } },
+      ]);
+    }),
+  );
+
+  it.effect("replies into the thread the conversation carried and settles it on request", () =>
+    Effect.gen(function* () {
+      const posted: Array<PostedThread> = [];
+      const replies: Array<{ threadId: number; body: string }> = [];
+      const statuses: Array<{ threadId: number; resolved: boolean }> = [];
+      const provider = yield* providerRecordingThreads(posted, replies, statuses);
+
+      yield* provider.replyToThread({
+        cwd: "/w",
+        repository: "acme/web",
+        host: "dev.azure.com",
+        number: 7,
+        threadId: "42",
+        body: "Taken care of.",
+      });
+      yield* provider.setThreadResolution({
+        cwd: "/w",
+        repository: "acme/web",
+        host: "dev.azure.com",
+        number: 7,
+        threadId: "42",
+        resolved: true,
+      });
+      yield* provider.setThreadResolution({
+        cwd: "/w",
+        repository: "acme/web",
+        host: "dev.azure.com",
+        number: 7,
+        threadId: "43",
+        resolved: false,
+      });
+
+      expect(replies).toEqual([{ threadId: 42, body: "Taken care of." }]);
+      expect(statuses).toEqual([
+        { threadId: 42, resolved: true },
+        { threadId: 43, resolved: false },
+      ]);
+    }),
+  );
+});

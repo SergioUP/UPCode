@@ -9,21 +9,21 @@ import type {
   PullRequestInvolvement,
   PullRequestListState,
   PullRequestMergeMethod,
-  PullRequestReviewThread,
   PullRequestThreadStatus,
 } from "@upcode/contracts";
 
 import * as AzureDevOpsCli from "./AzureDevOpsCli.ts";
 import {
+  decodeConversationJson,
   decodeItemContentJson,
   decodeIterationChangesJson,
   decodeIterationsJson,
   decodePullRequestJson,
   decodePullRequestListJson,
-  decodeReviewThreadsJson,
   decodeThreadsJson,
   decodeViewerJson,
   type AzureDevOpsChangeEntry,
+  type AzureDevOpsConversation,
   type AzureDevOpsItemContent,
   type AzureDevOpsIteration,
   type AzureDevOpsPullRequest,
@@ -202,44 +202,52 @@ export class AzureDevOpsPullRequestCli extends Context.Service<
       readonly number: number;
     }) => Effect.Effect<ReadonlyArray<PullRequestComment>, AzureDevOpsPullRequestCliError>;
 
-    /** The same collection as `listThreads`, read as conversations with Azure's own state. */
-    readonly listReviewThreads: (input: {
+    /** One read for both halves of the conversation: the flat timeline and the line threads. */
+    readonly listConversation: (input: {
       readonly cwd: string;
       readonly location: AzureDevOpsRepositoryLocation;
       readonly number: number;
-    }) => Effect.Effect<ReadonlyArray<PullRequestReviewThread>, AzureDevOpsPullRequestCliError>;
+    }) => Effect.Effect<AzureDevOpsConversation, AzureDevOpsPullRequestCliError>;
 
-    /** Opens a conversation about the whole change. */
+    /** Posts a remark as a new thread: on the conversation, or pinned to a line with a context. */
     readonly createThread: (input: {
       readonly cwd: string;
       readonly location: AzureDevOpsRepositoryLocation;
       readonly number: number;
       readonly body: string;
+      readonly context?:
+        | { readonly path: string; readonly line: number; readonly side: "left" | "right" }
+        | undefined;
     }) => Effect.Effect<void, AzureDevOpsPullRequestCliError>;
 
+    /** Replies under a remark that is already on the pull request. */
     readonly replyToThread: (input: {
       readonly cwd: string;
       readonly location: AzureDevOpsRepositoryLocation;
       readonly number: number;
-      readonly threadId: string;
+      readonly threadId: number;
       readonly body: string;
     }) => Effect.Effect<void, AzureDevOpsPullRequestCliError>;
 
-    readonly updateThreadComment: (input: {
-      readonly cwd: string;
-      readonly location: AzureDevOpsRepositoryLocation;
-      readonly number: number;
-      readonly threadId: string;
-      readonly commentId: string;
-      readonly body: string;
-    }) => Effect.Effect<void, AzureDevOpsPullRequestCliError>;
-
+    /** Settles a thread, or opens it again: Azure words resolve as the thread's own status. */
     readonly setThreadStatus: (input: {
       readonly cwd: string;
       readonly location: AzureDevOpsRepositoryLocation;
       readonly number: number;
-      readonly threadId: string;
-      readonly status: PullRequestThreadStatus;
+      readonly threadId: number;
+      readonly resolved: boolean;
+      /** The exact Azure state; wins over `resolved`. */
+      readonly status?: PullRequestThreadStatus | undefined;
+    }) => Effect.Effect<void, AzureDevOpsPullRequestCliError>;
+
+    /** Rewrites one remark of a thread. */
+    readonly updateThreadComment: (input: {
+      readonly cwd: string;
+      readonly location: AzureDevOpsRepositoryLocation;
+      readonly number: number;
+      readonly threadId: number;
+      readonly commentId: number;
+      readonly body: string;
     }) => Effect.Effect<void, AzureDevOpsPullRequestCliError>;
 
     /**
@@ -391,17 +399,27 @@ export const make = Effect.gen(function* () {
   // how to read all of them.
   const detectArgs = ["--detect", "true"] as const;
 
+  /**
+   * A write's answer carries nothing this layer reads back: the transport has already turned a
+   * refused write into a failure, so anything that comes back counts as posted.
+   */
+  const decodeUnit = (): Result.Result<undefined, unknown> => Result.succeed(undefined);
+
   const executeJson = (input: {
     readonly cwd: string;
     readonly args: ReadonlyArray<string>;
     readonly maxOutputBytes?: number;
     readonly usePatRead?: boolean;
+    readonly method?: string;
+    readonly body?: unknown;
   }) =>
     azure.execute({
       cwd: input.cwd,
       args: [...input.args, "--only-show-errors", "--output", "json"],
       ...(input.usePatRead ? { usePatRead: true } : {}),
       ...(input.maxOutputBytes === undefined ? {} : { maxOutputBytes: input.maxOutputBytes }),
+      ...(input.method === undefined ? {} : { method: input.method }),
+      ...(input.body === undefined ? {} : { body: input.body }),
     });
 
   /**
@@ -418,12 +436,16 @@ export const make = Effect.gen(function* () {
     readonly routeParameters: ReadonlyArray<string>;
     readonly queryParameters?: ReadonlyArray<string>;
     readonly maxOutputBytes?: number;
+    readonly method?: string;
+    readonly body?: unknown;
     readonly decode: (raw: string) => Result.Result<A, unknown>;
   }): Effect.Effect<A, AzureDevOpsPullRequestCliError> =>
     executeJson({
       cwd: input.cwd,
       usePatRead: true,
       ...(input.maxOutputBytes === undefined ? {} : { maxOutputBytes: input.maxOutputBytes }),
+      ...(input.method === undefined ? {} : { method: input.method }),
+      ...(input.body === undefined ? {} : { body: input.body }),
       args: [
         "devops",
         "invoke",
@@ -455,40 +477,6 @@ export const make = Effect.gen(function* () {
             );
       }),
     );
-
-  /**
-   * A write to the same REST routes. Only the PAT transport carries a body, so this always asks
-   * for it; `--http-method` and `--body-json` are that transport's spelling, placed before
-   * `--route-parameters` because that flag reads every `key=value` up to the next one.
-   */
-  const invokeWrite = (input: {
-    readonly cwd: string;
-    readonly resource: string;
-    readonly method: "POST" | "PATCH";
-    readonly routeParameters: ReadonlyArray<string>;
-    readonly body: unknown;
-  }): Effect.Effect<void, AzureDevOpsPullRequestCliError> =>
-    executeJson({
-      cwd: input.cwd,
-      usePatRead: true,
-      args: [
-        "devops",
-        "invoke",
-        ...detectArgs,
-        "--area",
-        "git",
-        "--resource",
-        input.resource,
-        "--api-version",
-        REST_API_VERSION,
-        "--http-method",
-        input.method,
-        "--body-json",
-        JSON.stringify(input.body),
-        "--route-parameters",
-        ...input.routeParameters,
-      ],
-    }).pipe(Effect.asVoid);
 
   /**
    * Azure names its own items with a leading slash, which the repository paths carried around
@@ -536,6 +524,7 @@ export const make = Effect.gen(function* () {
     const top = remaining + 1;
     return executeJson({
       cwd: input.cwd,
+      usePatRead: true,
       maxOutputBytes: PULL_REQUEST_LIST_MAX_OUTPUT_BYTES,
       args: [
         "repos",
@@ -605,7 +594,11 @@ export const make = Effect.gen(function* () {
 
   return AzureDevOpsPullRequestCli.of({
     getViewer: (input) =>
-      executeJson({ cwd: input.cwd, args: ["account", "show", "--query", "user"] }).pipe(
+      executeJson({
+        cwd: input.cwd,
+        usePatRead: true,
+        args: ["account", "show", "--query", "user"],
+      }).pipe(
         Effect.flatMap((result): Effect.Effect<string, AzureDevOpsPullRequestCliError> => {
           // `--query user` narrows the payload to the account, so it is nested back under the
           // key the decoder reads to keep one shape for the signed-in user.
@@ -633,6 +626,7 @@ export const make = Effect.gen(function* () {
           () =>
             executeJson({
               cwd: input.cwd,
+              usePatRead: true,
               args: [
                 "repos",
                 "pr",
@@ -722,57 +716,80 @@ export const make = Effect.gen(function* () {
         decode: decodeThreadsJson,
       }),
 
-    listReviewThreads: (input) =>
+    listConversation: (input) =>
       invoke({
         cwd: input.cwd,
-        operation: "listReviewThreads",
+        operation: "listConversation",
         resource: "pullRequestThreads",
         routeParameters: pullRequestRoute(input),
         maxOutputBytes: REVIEW_HISTORY_MAX_OUTPUT_BYTES,
-        decode: decodeReviewThreadsJson,
+        decode: decodeConversationJson,
       }),
 
     createThread: (input) =>
-      invokeWrite({
+      invoke({
         cwd: input.cwd,
+        operation: "createThread",
         resource: "pullRequestThreads",
-        method: "POST",
         routeParameters: pullRequestRoute(input),
+        method: "POST",
         body: {
-          comments: [{ parentCommentId: 0, content: input.body, commentType: "text" }],
-          status: "active",
+          comments: [{ content: input.body, commentType: "text" }],
+          ...(input.context === undefined
+            ? {}
+            : {
+                threadContext:
+                  input.context.side === "right"
+                    ? {
+                        filePath: toItemPath(input.context.path),
+                        rightFileStart: { line: input.context.line, offset: 1 },
+                        rightFileEnd: { line: input.context.line, offset: 1 },
+                      }
+                    : {
+                        filePath: toItemPath(input.context.path),
+                        leftFileStart: { line: input.context.line, offset: 1 },
+                        leftFileEnd: { line: input.context.line, offset: 1 },
+                      },
+              }),
         },
+        decode: decodeUnit,
       }),
 
     replyToThread: (input) =>
-      invokeWrite({
+      invoke({
         cwd: input.cwd,
+        operation: "replyToThread",
         resource: "pullRequestThreadComments",
-        method: "POST",
         routeParameters: [...pullRequestRoute(input), `threadId=${input.threadId}`],
-        body: { parentCommentId: 1, content: input.body, commentType: "text" },
+        method: "POST",
+        body: { content: input.body, commentType: "text" },
+        decode: decodeUnit,
+      }),
+
+    setThreadStatus: (input) =>
+      invoke({
+        cwd: input.cwd,
+        operation: "setThreadStatus",
+        resource: "pullRequestThread",
+        routeParameters: [...pullRequestRoute(input), `threadId=${input.threadId}`],
+        method: "PATCH",
+        body: { status: input.status ?? (input.resolved ? "fixed" : "active") },
+        decode: decodeUnit,
       }),
 
     updateThreadComment: (input) =>
-      invokeWrite({
+      invoke({
         cwd: input.cwd,
+        operation: "updateThreadComment",
         resource: "pullRequestThreadComments",
-        method: "PATCH",
         routeParameters: [
           ...pullRequestRoute(input),
           `threadId=${input.threadId}`,
           `commentId=${input.commentId}`,
         ],
-        body: { content: input.body },
-      }),
-
-    setThreadStatus: (input) =>
-      invokeWrite({
-        cwd: input.cwd,
-        resource: "pullRequestThreads",
         method: "PATCH",
-        routeParameters: [...pullRequestRoute(input), `threadId=${input.threadId}`],
-        body: { status: input.status },
+        body: { content: input.body },
+        decode: decodeUnit,
       }),
 
     listIterations: (input) =>

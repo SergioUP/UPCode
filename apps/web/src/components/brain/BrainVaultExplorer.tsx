@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 
 import { cn } from "~/lib/utils";
 import { buildVaultTree, type VaultTreeEntry } from "./brainVault";
+import { fileColor, folderColor } from "./graphTheme";
 
 function TreeRow(props: {
   readonly entry: VaultTreeEntry;
@@ -13,6 +14,14 @@ function TreeRow(props: {
 }) {
   const { entry, expanded, selected } = props;
   const isFolder = entry.kind === "folder";
+  const color = isFolder
+    ? folderColor(entry.depth, true, entry.id)
+    : fileColor(
+        entry.id.split("/").slice(0, -1).join("/"),
+        entry.id.split(".").at(-1),
+        true,
+        entry.id,
+      );
   return (
     <button
       type="button"
@@ -35,11 +44,13 @@ function TreeRow(props: {
         <span className="size-3 shrink-0" aria-hidden />
       )}
       {isFolder ? (
-        <FolderIcon className="size-3.5 shrink-0 text-white/45" aria-hidden />
+        <FolderIcon className="size-3.5 shrink-0" style={{ color }} aria-hidden />
       ) : (
-        <FileTextIcon className="size-3.5 shrink-0 text-white/35" aria-hidden />
+        <FileTextIcon className="size-3.5 shrink-0" style={{ color }} aria-hidden />
       )}
-      <span className="min-w-0 truncate">{entry.label}</span>
+      <span className="min-w-0 truncate" style={isFolder ? { color } : undefined}>
+        {entry.label}
+      </span>
     </button>
   );
 }

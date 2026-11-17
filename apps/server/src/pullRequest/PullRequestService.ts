@@ -84,6 +84,8 @@ import { detectSourceControlProviderFromRemoteUrl } from "@upcode/shared/sourceC
 
 import * as ProjectService from "../project/ProjectService.ts";
 import * as ServerSettings from "../serverSettings.ts";
+import { readSourceControlHostSettings } from "@upcode/source-control-core/client/definition";
+import { settings as azureDevOpsSettings } from "@upcode/source-control-azure-devops/client/definition";
 import * as PullRequestFilesViewed from "../persistence/PullRequestFilesViewed.ts";
 import * as RepositoryIdentityResolver from "../project/RepositoryIdentityResolver.ts";
 import * as SourceControlProviderRegistry from "../sourceControl/SourceControlProviderRegistry.ts";
@@ -964,11 +966,39 @@ export const make = Effect.gen(function* () {
                 // These providers target the repository explicitly and authenticate by host;
                 // a linked PR in a non-repository project still needs its snapshot refreshed.
                 // GitLab still selects its host from the checkout or CLI configuration.
-                const provider = ["github.com", "bitbucket.org", "codeberg.org"].includes(host)
-                  ? detectSourceControlProviderFromRemoteUrl(`https://${host}/${repository}.git`)
-                  : null;
+                const provider =
+                  ["github.com", "bitbucket.org", "codeberg.org", "dev.azure.com"].includes(host) ||
+                  host.endsWith(".visualstudio.com")
+                    ? detectSourceControlProviderFromRemoteUrl(`https://${host}/${repository}.git`)
+                    : null;
                 const api = provider === null ? null : registry.get(provider.kind);
                 if (api !== null) {
+                  if (provider?.kind === "azure-devops") {
+                    const settings = yield* serverSettings.getSettings.pipe(
+                      Effect.mapError(
+                        (cause) =>
+                          new PullRequestOperationError({
+                            operation: "resolveRepository",
+                            detail: "Azure DevOps settings could not be read.",
+                            cause,
+                          }),
+                      ),
+                    );
+                    const credential = readSourceControlHostSettings(
+                      azureDevOpsSettings,
+                      settings.sourceControlHosts["azure-devops"],
+                    );
+                    const organization =
+                      host === "dev.azure.com" ? repository.split("/")[0] : host.split(".")[0];
+                    if (
+                      !credential.organization ||
+                      organization?.toLowerCase() !== credential.organization.toLowerCase()
+                    ) {
+                      return yield* new PullRequestUnavailableError({
+                        reason: "provider-unsupported",
+                      });
+                    }
+                  }
                   const selected = yield* projects.getShell(ref.projectId).pipe(
                     Effect.mapError(
                       (cause) =>

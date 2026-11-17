@@ -28,7 +28,7 @@ function node(overrides: Partial<VaultGraphNode> = {}): VaultGraphNode {
 }
 
 describe("graphTheme", () => {
-  it("draws on pure black with hex colours three can always parse", () => {
+  it("draws on black with hex colours three can always parse", () => {
     expect(BRAIN_BACKGROUND).toBe("#000000");
     // a white fallback would be the symptom of an unparsable colour
     expect(fileColor("docs/guias", "md")).toMatch(/^#[0-9a-f]{6}$/);
@@ -54,7 +54,10 @@ describe("graphTheme", () => {
     // A type changes the tone, a folder changes the hue.
     expect(note).not.toBe(image);
     expect(note).not.toBe(otherFolder);
-    expect(nodeColorCss(node(), true)).toBe(note);
+    expect(nodeColorCss(node(), true)).toBe(fileColor("docs/guias", "md", true, node().id));
+    expect(nodeColorCss(node(), true)).not.toBe(
+      nodeColorCss(node({ id: "docs/guias/OTRA.md" }), true),
+    );
   });
 
   it("dims what a filter turned off", () => {
@@ -62,7 +65,7 @@ describe("graphTheme", () => {
     expect(fileColor("docs", "md", false)).not.toBe(fileColor("docs", "md", true));
   });
 
-  it("keeps folders small enough to be a skeleton, not the picture", () => {
+  it("keeps colourful folder hubs distinct without dwarfing the notes", () => {
     const folder = nodeRadius(node({ kind: "folder", degree: 40 }));
     const foldedFolder = nodeRadius(node({ kind: "folder", degree: 0 }));
     const file = nodeRadius(node({ kind: "file", degree: 0 }));

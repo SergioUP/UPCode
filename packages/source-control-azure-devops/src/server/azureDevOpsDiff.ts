@@ -71,9 +71,6 @@ export interface AzureDevOpsFilePatch {
  */
 const MAX_FILE_BYTES = 512 * 1024;
 
-/** Git's own default, and what the hunks from this repo's other hosts are already cut to. */
-const PATCH_CONTEXT_LINES = 3;
-
 /**
  * How far apart one file's two sides may be before it is listed without its hunks. The line diff
  * costs about the square of the edit distance, so an unbounded pair sharing almost nothing could
@@ -227,7 +224,10 @@ export function azureDevOpsFilePatch(input: {
     undefined,
     undefined,
     {
-      context: PATCH_CONTEXT_LINES,
+      // Unbounded context folds every hunk into one that spans the whole file:
+      // a reviewer reads the complete file once, with removals in red and
+      // additions in green in place, rather than a fragment with context lines.
+      context: Number.POSITIVE_INFINITY,
       maxEditLength: MAX_FILE_DIFF_EDITS,
       timeout: MAX_FILE_DIFF_MILLIS,
     },

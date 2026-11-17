@@ -2,12 +2,12 @@ import * as Result from "effect/Result";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  decodeConversationJson,
   decodeItemContentJson,
   decodeIterationChangesJson,
   decodeIterationsJson,
   decodePullRequestJson,
   decodePullRequestListJson,
-  decodeReviewThreadsJson,
   decodeThreadsJson,
   decodeViewerJson,
 } from "./azureDevOpsPullRequestJson.ts";
@@ -240,8 +240,8 @@ describe("decodeViewerJson", () => {
 
 describe("decodeReviewThreadsJson", () => {
   it("carries Azure's own state, and counts only the open ones as unresolved", () => {
-    const threads = expectSuccess(
-      decodeReviewThreadsJson(
+    const { threads } = expectSuccess(
+      decodeConversationJson(
         asJson({
           value: [
             {
@@ -280,7 +280,7 @@ describe("decodeReviewThreadsJson", () => {
         thread.isResolved,
       ]),
     ).toEqual([
-      ["1", "src/a.ts", 12, "active", false],
+      ["1", "/src/a.ts", 12, "active", false],
       ["2", null, null, "wontFix", true],
       ["3", null, null, "unknown", false],
     ]);
@@ -391,6 +391,86 @@ describe("decodeThreadsJson", () => {
     );
 
     expect(comments).toEqual([]);
+  });
+
+  it("reads a file-anchored thread as a review thread the reader can reply into", () => {
+    const conversation = expectSuccess(
+      decodeConversationJson(
+        asJson({
+          value: [
+            {
+              id: 9,
+              status: "fixed",
+              threadContext: {
+                filePath: "/src/app.ts",
+                rightFileStart: { line: 7, offset: 1 },
+                rightFileEnd: { line: 7, offset: 12 },
+              },
+              comments: [
+                { id: 1, content: "Rename this.", publishedDate: "2026-07-02T00:00:00Z" },
+                { id: 2, content: "Renamed.", publishedDate: "2026-07-02T01:00:00Z" },
+              ],
+            },
+            // A conversation thread pins to no file, but is still open or settled like any other.
+            {
+              id: 10,
+              comments: [{ id: 1, content: "Looks good.", publishedDate: "2026-07-02T02:00:00Z" }],
+            },
+          ],
+        }),
+      ),
+    );
+
+    expect(conversation.threads).toEqual([
+      {
+        id: "9",
+        path: "/src/app.ts",
+        line: 7,
+        side: "right",
+        isResolved: true,
+        status: "fixed",
+        isOutdated: false,
+        comments: [
+          {
+            id: "9:1",
+            author: null,
+            body: "Rename this.",
+            createdAt: "2026-07-02T00:00:00Z",
+            editedAt: null,
+            url: null,
+          },
+          {
+            id: "9:2",
+            author: null,
+            body: "Renamed.",
+            createdAt: "2026-07-02T01:00:00Z",
+            editedAt: null,
+            url: null,
+          },
+        ],
+      },
+      {
+        id: "10",
+        path: null,
+        line: null,
+        side: "right",
+        isResolved: false,
+        status: "unknown",
+        isOutdated: false,
+        comments: [
+          {
+            id: "10:1",
+            author: null,
+            body: "Looks good.",
+            createdAt: "2026-07-02T02:00:00Z",
+            editedAt: null,
+            url: null,
+          },
+        ],
+      },
+    ]);
+    // Both threads' remarks stay on the timeline, whichever kind they are.
+    expect(conversation.comments.map((comment) => comment.id)).toEqual(["9:1", "9:2", "10:1"]);
   });
 });
 

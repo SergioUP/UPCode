@@ -24,7 +24,7 @@ import { Spinner } from "../ui/spinner";
 import { BrainNoteReader } from "./BrainNoteReader";
 import { BrainScene, type BrainGraphNode, type BrainLink } from "./BrainScene";
 import { BrainVaultExplorer } from "./BrainVaultExplorer";
-import { clusterHue, fileColor, folderColor, folderClusterKey, nodeColorCss } from "./graphTheme";
+import { fileColor, folderColor, folderClusterKey, nodeColorCss } from "./graphTheme";
 import { VaultPicker, type VaultRootKind } from "./VaultPicker";
 
 const VAULT_STORAGE_KEY = "upcode:brain:vault";
@@ -67,7 +67,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/** "hace 2 min" sin dependencias de fechas: el cerebro sÃ³lo necesita una pista. */
+/** "hace 2 min" sin dependencias de fechas: el cerebro sólo necesita una pista. */
 function relativeTime(epochMs: number): string {
   const seconds = Math.max(0, Math.round((Date.now() - epochMs) / 1000));
   if (seconds < 45) return "ahora mismo";
@@ -401,7 +401,7 @@ export function BrainPage() {
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label={autoRotate ? "Parar la rotaciÃ³n" : "Girar automÃ¡ticamente"}
+              aria-label={autoRotate ? "Parar la rotación" : "Girar automáticamente"}
               onClick={() => setAutoRotate((value) => !value)}
             >
               {autoRotate ? <PauseIcon /> : <OrbitIcon />}
@@ -486,22 +486,22 @@ export function BrainPage() {
                   style={{ background: vaultRootKind === "obsidian" ? "#69c98a" : "#6b7280" }}
                 />
                 {vaultRootKind === "obsidian"
-                  ? "raÃ­z de vault de Obsidian (.obsidian)"
+                  ? "raíz de vault de Obsidian (.obsidian)"
                   : vaultRootKind === "plain"
                     ? "carpeta sin .obsidian: se dibuja igual"
-                    : "raÃ­z sin comprobar"}
+                    : "raíz sin comprobar"}
               </span>
               <span>
-                {snapshot.fileCount} ficheros Â· {snapshot.folderCount} carpetas Â·{" "}
-                {snapshot.sameNameLinkCount} nombres repetidos Â· {snapshot.durationMs} ms
+                {snapshot.fileCount} ficheros · {snapshot.folderCount} carpetas ·{" "}
+                {snapshot.sameNameLinkCount} nombres repetidos · {snapshot.durationMs} ms
               </span>
               <span className="text-white/35">
                 {following ? "Vigilando el vault" : "Vigilancia desactivada"}
-                {lastSyncAt === null ? "" : ` Â· leÃ­do ${relativeTime(lastSyncAt)}`}
+                {lastSyncAt === null ? "" : ` · leído ${relativeTime(lastSyncAt)}`}
               </span>
               {snapshot.truncated ? (
                 <span className="text-warning">
-                  Vault recortado: sube el lÃ­mite para verlo entero.
+                  Vault recortado: sube el límite para verlo entero.
                 </span>
               ) : null}
             </div>
@@ -554,7 +554,7 @@ export function BrainPage() {
                 </span>
                 <span className="truncate font-mono text-3xs text-white/40">
                   {selectedNode.id}
-                  {selectedNode.extension !== undefined ? ` Â· .${selectedNode.extension}` : ""}
+                  {selectedNode.extension !== undefined ? ` · .${selectedNode.extension}` : ""}
                 </span>
               </div>
               <Button

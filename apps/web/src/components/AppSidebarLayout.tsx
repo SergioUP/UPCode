@@ -242,7 +242,9 @@ export function AppSidebarLayout({ children }: { children: ReactNode }) {
   const isOnSettings = pathname === "/settings" || pathname.startsWith("/settings/");
   // The Issues board is a workspace of its own: it fills the window and brings its
   // own way back, so the thread sidebar and its floating toggle stay out of it.
-  const isFullBleed = pathname === "/issues" || pathname === "/brain";
+  // Azure Repos PRs work the same way.
+  const isFullBleed =
+    pathname === "/issues" || pathname === "/brain" || pathname === "/azure-repos";
   const isMacosDesktop = isElectron && isMacPlatform(navigator.platform);
   const [sidebarWidth, setSidebarWidth] = useState(readInitialThreadSidebarWidth);
   // Subscribed rather than read once: the clamp must track live window size,

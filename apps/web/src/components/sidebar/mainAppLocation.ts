@@ -14,7 +14,8 @@ export function isSidebarUtilityPage(pathname: string) {
     pathname === "/brain" ||
     pathname === "/agents" ||
     pathname === "/vault" ||
-    pathname === "/issues"
+    pathname === "/issues" ||
+    pathname === "/azure-repos"
   );
 }
 

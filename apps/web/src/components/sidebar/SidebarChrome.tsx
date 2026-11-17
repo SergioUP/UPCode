@@ -12,7 +12,6 @@ import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEnvironmentIdentificationMode } from "../../hooks/useSettings";
 import { useServerConfigs } from "../../state/entities";
 import { cn } from "../../lib/utils";
-import { usePullRequestsSupported } from "../../state/environments";
 import { UpMark } from "../UpMark";
 import {
   resolveEnvironmentIdentificationPillLabel,
@@ -30,13 +29,11 @@ import {
   useSidebar,
 } from "../ui/sidebar";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
-import { readPullRequestListPreferences } from "../pullRequest/pullRequestListPreferences";
 import { isSidebarUtilityPage, useNavigateToMainApp } from "./mainAppLocation";
 import { SidebarThreadUndoNotice } from "./SidebarThreadUndoNotice";
 import { SidebarProviderUpdatePill } from "./SidebarProviderUpdatePill";
 import { SidebarUpdateArchitectureWarning, SidebarUpdatePill } from "./SidebarUpdatePill";
-import { AzureDevOpsIcon } from "~/components/Icons";
-import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
+import { AzureDevOpsGlyphIcon, AzureDevOpsIcon } from "~/components/Icons";
 import { observeResize } from "~/lib/observeResize";
 
 export const SidebarChromeHeader = memo(function SidebarChromeHeader({
@@ -171,7 +168,7 @@ function SidebarUtilityItem({
   label: string;
   onClick: () => void;
   /** Each section owns a hue, so the row reads as a palette instead of grey glyphs. */
-  color?: string;
+  color?: string | undefined;
 }) {
   return (
     <SidebarMenuItem className="shrink-0">
@@ -204,9 +201,29 @@ const UTILITY_COLORS = {
   usage: "hsl(40 95% 58%)",
 } as const;
 
-export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
-  const navigate = useNavigate();
+interface SidebarUtilityEntry {
+  readonly key: string;
+  readonly icon: ReactNode;
+  readonly label: string;
+  readonly onClick: () => void;
+  /** Each section owns a hue, so the row reads as a palette instead of grey glyphs. */
+  readonly color?: string;
+}
+
+function useBackToMainApp() {
   const navigateToMainApp = useNavigateToMainApp();
+  const { isMobile, setOpenMobile } = useSidebar();
+  return useCallback(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+    void navigateToMainApp();
+  }, [isMobile, navigateToMainApp, setOpenMobile]);
+}
+
+/** The sections the utility menu offers, shared by the compact icon row and the full list. */
+function useUtilityEntries(): ReadonlyArray<SidebarUtilityEntry> {
+  const navigate = useNavigate();
   const { isMobile, setOpenMobile } = useSidebar();
   const serverConfigs = useServerConfigs();
 
@@ -233,22 +250,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     }
     return null;
   })();
-  const isOnUtilityPage = useLocation({
-    select: (location) => isSidebarUtilityPage(location.pathname),
-  });
-  const pullRequestsSupported = usePullRequestsSupported();
   const closeMobileSidebar = useCallback(() => {
     if (isMobile) {
       setOpenMobile(false);
     }
   }, [isMobile, setOpenMobile]);
-  const handlePullRequestsClick = useCallback(() => {
-    closeMobileSidebar();
-    void navigate({
-      to: "/pull-requests",
-      search: readPullRequestListPreferences(),
-    });
-  }, [closeMobileSidebar, navigate]);
   const handleSettingsClick = useCallback(() => {
     closeMobileSidebar();
     void navigate({ to: "/settings" });
@@ -263,6 +269,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigate({ to: "/brain" });
   }, [closeMobileSidebar, navigate]);
 
+  const handleAzureReposClick = useCallback(() => {
+    closeMobileSidebar();
+    void navigate({ to: "/azure-repos" });
+  }, [closeMobileSidebar, navigate]);
+
   const handleVaultClick = useCallback(() => {
     closeMobileSidebar();
     void navigate({ to: "/vault" });
@@ -275,10 +286,61 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigate({ to: "/usage" });
   }, [isMobile, navigate, setOpenMobile]);
 
-  const handleBackClick = useCallback(() => {
-    closeMobileSidebar();
-    void navigateToMainApp();
-  }, [closeMobileSidebar, navigateToMainApp]);
+  return [
+    {
+      key: "settings",
+      icon: <SettingsIcon className="text-current" />,
+      label: "Settings",
+      onClick: handleSettingsClick,
+      color: UTILITY_COLORS.settings,
+    },
+    {
+      key: "devops",
+      icon: <AzureDevOpsIcon className="size-4" />,
+      label: "DevOps",
+      onClick: handleDevOpsClick,
+      color: UTILITY_COLORS.devops,
+    },
+    {
+      key: "brain",
+      icon: <BrainIcon className="size-4 text-current" />,
+      label: "Cerebro",
+      onClick: handleBrainClick,
+      color: UTILITY_COLORS.brain,
+    },
+    {
+      key: "vault",
+      icon: <VaultIcon className="size-4 text-current" />,
+      label: "Baúl",
+      onClick: handleVaultClick,
+      color: UTILITY_COLORS.vault,
+    },
+    {
+      key: "devops-pr",
+      icon: <AzureDevOpsGlyphIcon className="size-4 text-current" />,
+      label: "DevOps PR",
+      onClick: handleAzureReposClick,
+      color: UTILITY_COLORS.pullRequests,
+    },
+    {
+      key: "usage",
+      icon: <ChartNoAxesColumnIcon className="text-current" />,
+      label:
+        allowance === null
+          ? "Usage"
+          : `Usage: ${allowance.remaining}% restante de ${allowance.provider} (${allowance.label})`,
+      onClick: handleUsageClick,
+      color: UTILITY_COLORS.usage,
+    },
+  ];
+}
+
+export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
+  const entries = useUtilityEntries();
+  const isOnUtilityPage = useLocation({
+    select: (location) => isSidebarUtilityPage(location.pathname),
+  });
+  const handleBackClick = useBackToMainApp();
 
   return (
     <SidebarMenu className="flex-row items-center">
@@ -290,50 +352,15 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
           </SidebarMenuButton>
         </SidebarMenuItem>
       ) : (
-        <>
+        entries.map((entry) => (
           <SidebarUtilityItem
-            icon={<SettingsIcon className="text-current" />}
-            label="Settings"
-            onClick={handleSettingsClick}
-            color={UTILITY_COLORS.settings}
+            key={entry.key}
+            icon={entry.icon}
+            label={entry.label}
+            onClick={entry.onClick}
+            color={entry.color}
           />
-          <SidebarUtilityItem
-            icon={<AzureDevOpsIcon className="size-4" />}
-            label="DevOps"
-            onClick={handleDevOpsClick}
-            color={UTILITY_COLORS.devops}
-          />
-          <SidebarUtilityItem
-            icon={<BrainIcon className="size-4 text-current" />}
-            label="Cerebro"
-            onClick={handleBrainClick}
-            color={UTILITY_COLORS.brain}
-          />
-          <SidebarUtilityItem
-            icon={<VaultIcon className="size-4 text-current" />}
-            label="Baúl"
-            onClick={handleVaultClick}
-            color={UTILITY_COLORS.vault}
-          />
-          {pullRequestsSupported ? (
-            <SidebarUtilityItem
-              icon={<PullRequestGlyph.pullRequest className="text-current" />}
-              label="Pull Requests"
-              onClick={handlePullRequestsClick}
-              color={UTILITY_COLORS.pullRequests}
-            />
-          ) : null}
-          <SidebarUtilityItem
-            icon={<ChartNoAxesColumnIcon className="text-current" />}
-            label={
-              allowance === null
-                ? "Usage"
-                : `Usage: ${allowance.remaining}% restante de ${allowance.provider} (${allowance.label})`
-            }
-            onClick={handleUsageClick}
-            color={UTILITY_COLORS.usage}
-          />
-        </>
+        ))
       )}
       <SidebarUpdatePill />
     </SidebarMenu>
