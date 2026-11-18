@@ -35,29 +35,26 @@ describe("graphTheme", () => {
     expect(folderColor(2, true)).toMatch(/^#[0-9a-f]{6}$/);
   });
 
-  it("gives each top-level folder its own hue so a markdown vault is colourful", () => {
+  it("gives each folder its own hue so a markdown vault is colourful", () => {
     expect(folderClusterKey("docs/guias/2026")).toBe("docs");
     expect(folderClusterKey("")).toBe("(raíz)");
 
-    const hues = ["docs", "clientes", "proyectos", "formacion", "mejoras"].map((folder) =>
-      clusterHue(folder),
+    const hues = ["docs", "docs/guias", "clientes", "proyectos", "formacion", "mejoras"].map(
+      (folder) => clusterHue(folder),
     );
-    // Five different clusters must not collapse into one hue.
-    expect(new Set(hues).size).toBeGreaterThanOrEqual(4);
+    expect(new Set(hues).size).toBeGreaterThanOrEqual(5);
   });
 
-  it("keeps the same folder family even when the file type differs", () => {
-    const note = fileColor("docs", "md");
-    const image = fileColor("docs", "png");
-    const otherFolder = fileColor("clientes", "md");
-
-    // A type changes the tone, a folder changes the hue.
-    expect(note).not.toBe(image);
-    expect(note).not.toBe(otherFolder);
-    expect(nodeColorCss(node(), true)).toBe(fileColor("docs/guias", "md", true, node().id));
-    expect(nodeColorCss(node(), true)).not.toBe(
-      nodeColorCss(node({ id: "docs/guias/OTRA.md" }), true),
-    );
+  it("paints files with the exact hue of their folder", () => {
+    const folder = nodeColorCss(node({ kind: "folder", id: "docs/guias", folder: "docs" }), true);
+    const note = nodeColorCss(node(), true);
+    const hex = (color: string) => color.slice(1);
+    // Same hue family: the dominant channel pattern matches, only brightness differs.
+    expect(hex(folder)).toHaveLength(6);
+    expect(note).toBe(fileColor("docs/guias", "md"));
+    expect(fileColor("docs", "md")).not.toBe(fileColor("clientes", "md"));
+    // Two notes in one folder share a colour.
+    expect(nodeColorCss(node(), true)).toBe(nodeColorCss(node({ id: "docs/guias/OTRA.md" }), true));
   });
 
   it("dims what a filter turned off", () => {

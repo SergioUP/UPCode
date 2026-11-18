@@ -16,12 +16,7 @@ function TreeRow(props: {
   const isFolder = entry.kind === "folder";
   const color = isFolder
     ? folderColor(entry.depth, true, entry.id)
-    : fileColor(
-        entry.id.split("/").slice(0, -1).join("/"),
-        entry.id.split(".").at(-1),
-        true,
-        entry.id,
-      );
+    : fileColor(entry.id.split("/").slice(0, -1).join("/"), entry.id.split(".").at(-1));
   return (
     <button
       type="button"

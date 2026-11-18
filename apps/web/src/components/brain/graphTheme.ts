@@ -1,11 +1,9 @@
 /**
  * The look of the vault brain.
  *
- * Colour means **which part of the vault a node belongs to**: every top-level
- * folder gets its own hue, so a vault of markdown (almost every vault) still
- * reads as a dozen colours instead of one. The file type modulates brightness
- * and saturation inside that hue, so a PDF and a note from the same folder are
- * still distinguishable.
+ * Colour means **which folder a node belongs to**: every folder gets its own
+ * vivid hue, and the files inside it share that exact hue, so a branch of the
+ * vault reads as one coloured family. The file type only nudges brightness.
  *
  * Colours are emitted as hex, not `hsl()`: three.js parses hex everywhere, and a
  * colour it cannot parse silently falls back to white.
@@ -18,19 +16,20 @@ import type { VaultGraphNode } from "@upcode/contracts";
 /** A black backdrop preserves saturated halos through the additive bloom pass. */
 export const BRAIN_BACKGROUND = "#000000";
 
-/** Hues far enough apart that neighbouring clusters never look alike. */
-const CLUSTER_HUES = [205, 330, 152, 272, 22, 190, 48, 300, 96, 250, 350, 170];
-
 function hashText(value: string): number {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) {
     hash ^= value.charCodeAt(index);
     hash = Math.imul(hash, 16777619);
   }
+  // Avalanche the low bits so near-identical folder names land far apart.
+  hash ^= hash >>> 15;
+  hash = Math.imul(hash, 2246822519);
+  hash ^= hash >>> 13;
   return hash >>> 0;
 }
 
-/** The top-level folder is the cluster; deeper paths only refine the label. */
+/** The top-level folder is the legend/filter cluster; colour goes per folder. */
 export function folderClusterKey(folder: string): string {
   const [first] = folder.split("/");
   return first !== undefined && first.length > 0 ? first : "(raíz)";
@@ -38,13 +37,12 @@ export function folderClusterKey(folder: string): string {
 
 const clusterHueCache = new Map<string, number>();
 
-export function clusterHue(cluster: string): number {
-  const cached = clusterHueCache.get(cluster);
+/** A stable hue per key (a folder path, or a cluster name), spread over the full wheel. */
+export function clusterHue(key: string): number {
+  const cached = clusterHueCache.get(key);
   if (cached !== undefined) return cached;
-  const hash = hashText(cluster);
-  const hue =
-    ((CLUSTER_HUES[hash % CLUSTER_HUES.length] ?? 205) + ((hash >>> 8) % 13) - 6 + 360) % 360;
-  clusterHueCache.set(cluster, hue);
+  const hue = hashText(key) % 360;
+  clusterHueCache.set(key, hue);
   return hue;
 }
 
@@ -75,15 +73,9 @@ function hslToHex(hue: number, saturation: number, lightness: number): string {
   return `#${hex(r)}${hex(g)}${hex(b)}`;
 }
 
-/**
- * How a file type refracts its folder's hue: notes keep it clean, images burn
- * brighter, documents go deeper. Unknown extensions stay in between.
- */
-function extensionTone(extension: string | undefined): { saturation: number; lightness: number } {
+/** Files keep their folder's hue; the type only nudges how bright the dot burns. */
+function extensionLightness(extension: string | undefined): number {
   switch ((extension ?? "").toLowerCase()) {
-    case "md":
-    case "txt":
-      return { saturation: 92, lightness: 64 };
     case "png":
     case "jpg":
     case "jpeg":
@@ -92,9 +84,10 @@ function extensionTone(extension: string | undefined): { saturation: number; lig
     case "svg":
     case "avif":
     case "heic":
-      return { saturation: 100, lightness: 74 };
+    case "canvas":
+    case "excalidraw":
+      return 70;
     case "pdf":
-      return { saturation: 80, lightness: 54 };
     case "doc":
     case "docx":
     case "xls":
@@ -102,45 +95,30 @@ function extensionTone(extension: string | undefined): { saturation: number; lig
     case "csv":
     case "pptx":
     case "ppt":
-      return { saturation: 72, lightness: 58 };
-    case "canvas":
-    case "excalidraw":
-      return { saturation: 96, lightness: 72 };
+      return 56;
     default:
-      return { saturation: 70, lightness: 60 };
+      return 62;
   }
 }
 
-/** Notes keep a folder family, with a stable individual tint rather than identical dots. */
-export function fileColor(
-  folder: string,
-  extension: string | undefined,
-  seen = true,
-  identity = "",
-): string {
-  const variation = identity ? hashText(identity) : 0;
-  const hue =
-    (clusterHue(folderClusterKey(folder)) + (identity ? (variation % 85) - 42 : 0) + 360) % 360;
+/** A file is painted with the hue of the folder that contains it. */
+export function fileColor(folder: string, extension: string | undefined, seen = true): string {
+  const hue = clusterHue(folder.length > 0 ? folder : "(raíz)");
   if (!seen) return hslToHex(hue, 26, 19);
-  const tone = extensionTone(extension);
-  return hslToHex(
-    hue,
-    tone.saturation,
-    tone.lightness + (identity ? ((variation >>> 8) % 9) - 4 : 0),
-  );
+  return hslToHex(hue, 100, extensionLightness(extension));
 }
 
-/** Folder hubs share their notes' palette; their rings distinguish structure from content. */
+/** A folder hub shares its files' colour; the ring distinguishes structure from content. */
 export function folderColor(depth: number, seen: boolean, folder = ""): string {
-  const hue = clusterHue(folderClusterKey(folder));
+  const hue = clusterHue(folder.length > 0 ? folder : "(raíz)");
   if (!seen) return hslToHex(hue, 26, 20);
-  return hslToHex(hue, 94, Math.max(58, 73 - depth * 2));
+  return hslToHex(hue, 100, Math.max(60, 70 - depth * 2));
 }
 
 /** The only entry point the scene and the legend share. */
 export function nodeColorCss(node: VaultGraphNode, seen: boolean): string {
   if (node.kind === "folder") return folderColor(node.depth, seen, node.id);
-  return fileColor(node.folder, node.extension, seen, node.id);
+  return fileColor(node.folder, node.extension, seen);
 }
 
 /**

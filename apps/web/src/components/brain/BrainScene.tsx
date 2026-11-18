@@ -58,6 +58,12 @@ type GraphHandle = ForceGraphMethods<NodeObject<BrainGraphNode>, BrainLink>;
  */
 const BRAIN_SHELL = { x: 74, y: 52, z: 62 } as const;
 
+/** Additive halo strength: strong enough to dazzle, low enough not to saturate to white. */
+const GLOW_OPACITY = { folder: 0.7, file: 0.55 } as const;
+
+/** Degrees-per-frame-ish spin of the camera around the brain, like watching a globe turn. */
+const SPIN_SPEED = 0.9;
+
 /**
  * The brain.
  *
@@ -88,6 +94,16 @@ export function BrainScene({
     return texture;
   }, []);
 
+  // One geometry per kind, scaled per node: thousands of dots, two buffers.
+  const sharedGeometry = useMemo(
+    () => ({
+      file: new THREE.SphereGeometry(1, 8, 8),
+      folder: new THREE.SphereGeometry(1, 14, 14),
+      ring: new THREE.TorusGeometry(1.5, 0.055, 4, 28),
+    }),
+    [],
+  );
+
   /** Labels and halos are built once per node and cached by id. */
   const nodeObjects = useRef(new Map<string, THREE.Object3D>());
 
@@ -101,15 +117,16 @@ export function BrainScene({
     const isFolder = node.kind === "folder";
 
     const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(radius, isFolder ? 18 : 10, isFolder ? 18 : 10),
+      isFolder ? sharedGeometry.folder : sharedGeometry.file,
       new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1 }),
     );
+    sphere.scale.setScalar(radius);
     group.add(sphere);
 
     // A bright orbital ring marks folder hubs without changing their graph role.
     if (isFolder) {
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(radius * 1.5, radius * 0.055, 6, 40),
+        sharedGeometry.ring,
         new THREE.MeshBasicMaterial({
           color,
           transparent: true,
@@ -117,6 +134,7 @@ export function BrainScene({
           depthWrite: false,
         }),
       );
+      ring.scale.setScalar(radius);
       ring.rotation.x = Math.PI / 2.4;
       group.add(ring);
     }
@@ -127,12 +145,12 @@ export function BrainScene({
           map: glowTexture,
           color,
           transparent: true,
-          opacity: isFolder ? 0.32 : 0.26,
+          opacity: isFolder ? GLOW_OPACITY.folder : GLOW_OPACITY.file,
           blending: THREE.AdditiveBlending,
           depthWrite: false,
         }),
       );
-      halo.scale.setScalar(radius * (isFolder ? 5.5 : 5));
+      halo.scale.setScalar(radius * (isFolder ? 8 : 6.5));
       group.add(halo);
     }
 
@@ -187,8 +205,8 @@ export function BrainScene({
             (child.material as THREE.SpriteMaterial).color.copy(color);
             (child.material as THREE.SpriteMaterial).opacity = lit
               ? isFolder
-                ? 0.32
-                : 0.26
+                ? GLOW_OPACITY.folder
+                : GLOW_OPACITY.file
               : 0.04;
           } else {
             (child.material as THREE.SpriteMaterial).opacity = lit ? 1 : 0.12;
@@ -217,7 +235,7 @@ export function BrainScene({
     const graph = graphRef.current;
     if (graph === undefined) return;
     const composer = graph.postProcessingComposer();
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1024, 1024), 0.36, 0.4, 0.72);
+    const bloom = new UnrealBloomPass(new THREE.Vector2(512, 512), 0.85, 0.9, 0.12);
     composer.addPass(bloom);
     return () => {
       composer.removePass(bloom);
@@ -272,7 +290,7 @@ export function BrainScene({
       dampingFactor?: boolean | number;
     };
     controls.autoRotate = autoRotate;
-    controls.autoRotateSpeed = 0.28;
+    controls.autoRotateSpeed = SPIN_SPEED;
     controls.enableDamping = true;
   }, [autoRotate]);
 
@@ -324,12 +342,10 @@ export function BrainScene({
           }
           return "#8da4cf";
         }}
-        linkOpacity={0.3}
-        linkWidth={(link) => (link.kind === "sameName" ? 1 : 0.45)}
-        linkDirectionalParticles={(link) => (detailed && link.kind === "sameName" ? 2 : 0)}
-        linkDirectionalParticleWidth={1.7}
-        linkDirectionalParticleSpeed={0.004}
-        linkDirectionalParticleColor={() => "#c9f5ff"}
+        linkOpacity={0.35}
+        // Width 0 draws cheap GL lines instead of a cylinder per edge.
+        linkWidth={0}
+        linkDirectionalParticles={0}
         d3AlphaDecay={0.014}
         d3VelocityDecay={0.32}
         warmupTicks={40}
