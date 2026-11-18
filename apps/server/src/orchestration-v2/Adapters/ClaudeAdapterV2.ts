@@ -1128,7 +1128,7 @@ export function claudeMcpQueryOverrides(input: {
   return {
     allowedTools: Array.from(new Set([...(input.allowedTools ?? []), ...mcpAllowedTools])),
     mcpServers: {
-      "upcode": {
+      upcode: {
         type: "http",
         url: session.endpoint,
         headers: {
@@ -2074,6 +2074,43 @@ function claudeNativeToolOutputValue(output: ClaudeNativeToolOutput): unknown | 
 function claudeNativeToolOutputText(output: ClaudeNativeToolOutput): string {
   const value = claudeNativeToolOutputValue(output);
   return typeof value === "string" ? value : value === undefined ? "" : jsonStringifyForTool(value);
+}
+
+/**
+ * Edit/Write results arrive as `{ filePath, structuredPatch: [{ oldStart, oldLines,
+ * newStart, newLines, lines }], ... }`. Render the hunks (which already carry
+ * surrounding context) as unified-diff text so the client shows a real diff
+ * instead of the raw JSON. Falls back to the plain output text for anything else
+ * (errors, unknown shapes).
+ */
+function claudeFileChangeDiffText(output: ClaudeNativeToolOutput): string {
+  const value = claudeNativeToolOutputValue(output);
+  if (typeof value === "object" && value !== null) {
+    const patch = Reflect.get(value, "structuredPatch");
+    if (Array.isArray(patch) && patch.length > 0) {
+      const hunks: string[] = [];
+      for (const hunk of patch) {
+        if (typeof hunk !== "object" || hunk === null) continue;
+        const { oldStart, oldLines, newStart, newLines, lines } = hunk as Record<string, unknown>;
+        if (
+          typeof oldStart !== "number" ||
+          typeof oldLines !== "number" ||
+          typeof newStart !== "number" ||
+          typeof newLines !== "number" ||
+          !Array.isArray(lines)
+        ) {
+          continue;
+        }
+        hunks.push(
+          `@@ -${oldStart},${oldLines} +${newStart},${newLines} @@\n${lines
+            .filter((line): line is string => typeof line === "string")
+            .join("\n")}`,
+        );
+      }
+      if (hunks.length > 0) return `${hunks.join("\n")}\n`;
+    }
+  }
+  return claudeNativeToolOutputText(output);
 }
 
 /**
@@ -4296,7 +4333,9 @@ export const makeClaudeAdapterV2 = Effect.fn("makeClaudeAdapterV2")(function* (
           const outputText =
             itemType === "command_execution"
               ? claudeCommandOutputText(input.output)
-              : claudeNativeToolOutputText(input.output);
+              : itemType === "file_change"
+                ? claudeFileChangeDiffText(input.output)
+                : claudeNativeToolOutputText(input.output);
           const turnItem: OrchestrationV2TurnItem =
             itemType === "command_execution"
               ? {

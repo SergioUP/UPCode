@@ -60,6 +60,8 @@ import { useAtomCommand } from "~/state/use-atom-command";
 
 import { DiffPanelLoadingState } from "../DiffPanelShell";
 import { DiffCommentAnnotation } from "../diffs/DiffCommentAnnotation";
+import { DiffChangeMinimap } from "../diffs/DiffChangeMinimap";
+import type { DiffMinimapMark } from "../diffs/diffChangeMinimap.logic";
 import { DiffFileTree } from "../diffs/DiffFileTree";
 import { useCodeViewFileReveal } from "../diffs/useCodeViewFileReveal";
 import { diffFileTreeEntries } from "../diffs/diffFileTree.logic";
@@ -680,6 +682,28 @@ function PullRequestCodeTab({
     },
     [items, requestTreeReveal, toggleFile],
   );
+  // A folded file has no lines to land on, so it is opened at its header instead.
+  const navigateToChange = useCallback(
+    (target: { readonly fileIndex: number; readonly mark: DiffMinimapMark | null }) => {
+      const file = files[target.fileIndex];
+      if (file === undefined) return;
+      const item = items.find((candidate) => candidate.fileDiff === file);
+      if (item === undefined) return;
+      if (item.collapsed === true || target.mark === null) {
+        revealFile(resolveFileDiffPath(file));
+        return;
+      }
+      viewer?.scrollTo({
+        type: "line",
+        id: item.id,
+        lineNumber: target.mark.line,
+        side: target.mark.kind === "deletion" ? "deletions" : "additions",
+        align: "center",
+      });
+    },
+    [files, items, revealFile, viewer],
+  );
+
   // Answered once the requested file has arrived: a large diff may still be paging when the
   // request comes in, so it waits for the slice that carries the path rather than dropping it.
   const answeredReveal = useRef<number | null>(null);
@@ -1615,6 +1639,7 @@ function PullRequestCodeTab({
             unsafeCSSExtra={REPLACE_FILE_COUNTS_CSS}
           />
         </div>
+        <DiffChangeMinimap files={files} onNavigate={navigateToChange} />
         {fileTreeOpen ? (
           <aside className="flex w-[min(20rem,40%)] min-w-48 shrink-0 border-l border-border/60">
             <DiffFileTree
