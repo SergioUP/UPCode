@@ -1,4 +1,19 @@
 import type { EnvironmentId, EnvironmentMachineKind, ProjectId } from "@upcode/contracts";
+import { canonicalRepositoryKey } from "@upcode/shared/sourceControl";
+
+/** A project used to read a remote PR is not necessarily a checkout of its repository. */
+export function hasPullRequestCheckout(
+  project: Pick<AssignableProject, "repositoryIdentity"> | undefined,
+  reference: { readonly host?: string | undefined; readonly repository: string },
+): boolean {
+  const key = project?.repositoryIdentity?.canonicalKey;
+  return Boolean(
+    key &&
+    reference.host &&
+    canonicalRepositoryKey(key.toLowerCase()) ===
+      canonicalRepositoryKey(`${reference.host}/${reference.repository}`.toLowerCase()),
+  );
+}
 
 /** The little of a project this needs: who holds it, and which repository it is a copy of. */
 export interface AssignableProject {

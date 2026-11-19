@@ -1639,7 +1639,11 @@ function PullRequestCodeTab({
             unsafeCSSExtra={REPLACE_FILE_COUNTS_CSS}
           />
         </div>
-        <DiffChangeMinimap files={files} onNavigate={navigateToChange} />
+        <DiffChangeMinimap
+          files={files}
+          layout={diffLayout === "split" ? "split" : "unified"}
+          onNavigate={navigateToChange}
+        />
         {fileTreeOpen ? (
           <aside className="flex w-[min(20rem,40%)] min-w-48 shrink-0 border-l border-border/60">
             <DiffFileTree

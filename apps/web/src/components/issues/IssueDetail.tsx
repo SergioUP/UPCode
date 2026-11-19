@@ -104,16 +104,16 @@ export function IssueDetail({
       style={{ borderTop: `3px solid ${draftColor}` } as CSSProperties}
     >
       <DialogHeader>
-        <span className="flex items-center gap-2">
+        <span className="flex flex-wrap items-center gap-2">
           <StatePill state={item.state} color={draftColor} />
-          <span className="text-xs text-muted-foreground">{item.type}</span>
-          <span className="font-mono text-2xs text-muted-foreground">#{item.id}</span>
+          <span className="text-sm text-muted-foreground">{item.type}</span>
+          <span className="font-mono text-sm text-muted-foreground">#{item.id}</span>
           <span className="ml-auto flex items-center gap-3 pr-8">
             <a
               href={item.url}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center gap-1 text-2xs text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
             >
               Abrir en Azure
               <ExternalLinkIcon className="size-3" />
@@ -125,15 +125,15 @@ export function IssueDetail({
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             aria-label="Título"
-            className="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-lg font-semibold outline-none hover:border-border focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+            className="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-xl font-semibold outline-none hover:border-border focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
           />
         </DialogTitle>
       </DialogHeader>
 
-      <DialogPanel className="max-h-[62vh]" scrollFade>
+      <DialogPanel className="max-h-[70dvh]" scrollFade>
         <div className="grid gap-3 sm:grid-cols-3">
           <label className="flex flex-col gap-1">
-            <span className="text-3xs uppercase tracking-wide text-muted-foreground">Estado</span>
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">Estado</span>
             <span className="inline-flex items-center gap-1.5">
               <span
                 className="size-2 shrink-0 rounded-full"
@@ -143,7 +143,7 @@ export function IssueDetail({
               <select
                 value={state}
                 onChange={(event) => setState(event.target.value)}
-                className="min-w-0 flex-1 rounded border bg-background px-1.5 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+                className="min-w-0 flex-1 rounded border bg-background px-1.5 py-1 text-sm outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
               >
                 {states.map((option) => (
                   <option key={option.name} value={option.name}>
@@ -155,13 +155,13 @@ export function IssueDetail({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-3xs uppercase tracking-wide text-muted-foreground">Persona</span>
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">Persona</span>
             <span className="inline-flex items-center gap-1.5">
               <AssigneeAvatar name={assignedTo || null} />
               <select
                 value={assignedTo}
                 onChange={(event) => setAssignedTo(event.target.value)}
-                className="min-w-0 flex-1 rounded border bg-background px-1.5 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+                className="min-w-0 flex-1 rounded border bg-background px-1.5 py-1 text-sm outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
               >
                 <option value="">Sin asignar</option>
                 {people.map((person) => (
@@ -174,13 +174,13 @@ export function IssueDetail({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-3xs uppercase tracking-wide text-muted-foreground">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
               Sprint (iteración)
             </span>
             <select
               value={iterationPath}
               onChange={(event) => setIterationPath(event.target.value)}
-              className="rounded border bg-background px-1.5 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+              className="rounded border bg-background px-1.5 py-1 text-sm outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
             >
               <option value={projectRoot}>Sin sprint</option>
               {iterations.map((iteration) => (
@@ -194,29 +194,29 @@ export function IssueDetail({
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-1">
-            <span className="text-3xs uppercase tracking-wide text-muted-foreground">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
               Área (solo lectura)
             </span>
-            <span className="truncate text-xs">{item.area ?? "Sin área"}</span>
+            <span className="truncate text-sm">{item.area ?? "Sin área"}</span>
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-3xs uppercase tracking-wide text-muted-foreground">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
               Sprint actual
             </span>
-            <span className="truncate text-xs text-muted-foreground">
+            <span className="truncate text-sm text-muted-foreground">
               {iterationName(iterationPath) ?? "sin sprint"}
             </span>
           </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <span className="inline-flex items-center gap-1 text-3xs uppercase tracking-wide text-muted-foreground">
+          <span className="inline-flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
             <TagIcon className="size-3" />
             Etiquetas locales (no van a Azure)
           </span>
           <span className="flex flex-wrap gap-1">
             {labels.length === 0 ? (
-              <span className="text-2xs text-muted-foreground">Ninguna</span>
+              <span className="text-sm text-muted-foreground">Ninguna</span>
             ) : (
               labels.map((label) => (
                 <span key={label} className="inline-flex items-center gap-0.5">
@@ -245,7 +245,7 @@ export function IssueDetail({
               value={labelDraft}
               onChange={(event) => setLabelDraft(event.target.value)}
               placeholder="Añadir etiqueta y Enter"
-              className="min-w-0 flex-1 rounded border bg-background px-2 py-1 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+              className="min-w-0 flex-1 rounded border bg-background px-2 py-1 text-sm outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
             />
             <datalist id={`labels-${item.id}`}>
               {knownLabels
@@ -261,38 +261,38 @@ export function IssueDetail({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <span className="flex items-center gap-2 text-3xs uppercase tracking-wide text-muted-foreground">
+          <span className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
             Descripción
             <button
               type="button"
-              className="ml-auto text-3xs normal-case text-primary hover:underline"
+              className="ml-auto text-xs normal-case text-primary hover:underline"
               onClick={() => setEditingDescription((current) => !current)}
             >
               {editingDescription ? "Cancelar edición" : "Editar"}
             </button>
           </span>
           {description.length === 0 && !editingDescription ? (
-            <p className="text-xs text-muted-foreground">Sin descripción.</p>
+            <p className="text-sm text-muted-foreground">Sin descripción.</p>
           ) : null}
           {editingDescription ? (
             <div
               ref={editorRef}
               contentEditable
               suppressContentEditableWarning
-              className={`${WORK_ITEM_HTML_CLASS} min-h-28 rounded border bg-background px-2 py-1.5 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring`}
+              className={`${WORK_ITEM_HTML_CLASS} min-h-28 rounded border bg-background px-3 py-2 outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring`}
               dangerouslySetInnerHTML={{ __html: workItemHtml(description) }}
             />
           ) : description.length > 0 ? (
             <div
-              className={`${WORK_ITEM_HTML_CLASS} text-xs`}
+              className={WORK_ITEM_HTML_CLASS}
               dangerouslySetInnerHTML={{ __html: workItemHtml(description) }}
             />
           ) : null}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2">
           <label className="flex flex-col gap-1">
-            <span className="text-3xs uppercase tracking-wide text-muted-foreground">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
               Añadir comentario
             </span>
             <textarea
@@ -300,21 +300,24 @@ export function IssueDetail({
               onChange={(event) => setComment(event.target.value)}
               rows={3}
               placeholder="Se publica en Azure al guardar"
-              className="resize-none rounded border bg-background px-2 py-1.5 text-xs outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+              className="resize-none rounded border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
             />
           </label>
           <div className="flex flex-col gap-1">
-            <span className="text-3xs uppercase tracking-wide text-muted-foreground">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
               Últimos comentarios
             </span>
-            <div className="flex max-h-40 flex-col gap-2 overflow-y-auto pr-1">
+            <div className="flex max-h-72 flex-col gap-2 overflow-y-auto pr-1">
               {(item.comments ?? []).length === 0 ? (
-                <span className="text-2xs text-muted-foreground">Sin comentarios.</span>
+                <span className="text-sm text-muted-foreground">Sin comentarios.</span>
               ) : (
                 (item.comments ?? []).map((entry) => (
                   <div key={entry.id} className="rounded border p-2">
-                    <span className="text-3xs text-muted-foreground">{entry.author}</span>
-                    <p className="mt-0.5 whitespace-pre-wrap text-xs">{entry.text}</p>
+                    <span className="text-sm text-muted-foreground">{entry.author}</span>
+                    <div
+                      className={`mt-2 ${WORK_ITEM_HTML_CLASS}`}
+                      dangerouslySetInnerHTML={{ __html: workItemHtml(entry.text) }}
+                    />
                   </div>
                 ))
               )}
@@ -325,7 +328,7 @@ export function IssueDetail({
 
       <DialogFooter>
         <span
-          className={`mr-auto min-w-0 flex-1 text-2xs ${
+          className={`mr-auto min-w-0 flex-1 text-sm ${
             notice?.tone === "error" ? "text-destructive" : "text-muted-foreground"
           }`}
         >

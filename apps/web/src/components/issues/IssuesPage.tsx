@@ -396,12 +396,12 @@ function IssuesWorkspace({
     <SidebarInset className="min-w-0">
       <IssuesHeader subtitle={`${organization} · ${ISSUE_WORK_ITEM_TYPE}`} />
 
-      <div className="flex h-[calc(100vh-var(--workspace-topbar-height))] min-h-0 min-w-0">
+      <div className="flex h-[calc(100dvh-var(--workspace-topbar-height))] min-h-0 min-w-0 flex-col md:flex-row">
         <nav
           aria-label="Vistas y filtros de Issues"
-          className="flex w-48 shrink-0 flex-col gap-4 border-r p-3"
+          className="flex max-h-[35dvh] w-full shrink-0 flex-row flex-wrap gap-3 overflow-y-auto border-b p-3 md:max-h-none md:w-48 md:flex-col md:flex-nowrap md:border-b-0 md:border-r"
         >
-          <div className="flex flex-col gap-1">
+          <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4 md:flex md:flex-col">
             {VIEWS.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
@@ -562,7 +562,7 @@ function IssuesWorkspace({
           </div>
         </nav>
 
-        <main className="flex min-w-0 flex-1 flex-col gap-2 p-3">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-3">
           {stale || visibleError ? (
             <p className="flex items-center gap-2 rounded border border-destructive/40 bg-destructive/10 px-2 py-1 text-2xs text-destructive">
               <CircleAlertIcon className="size-3.5 shrink-0" />

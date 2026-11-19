@@ -16,6 +16,7 @@ import { Button } from "../ui/button";
 import { SidebarInset } from "../ui/sidebar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { PullRequestDetailPanel } from "../pullRequest/PullRequestDetailPanel";
+import { hasPullRequestCheckout } from "../pullRequest/pullRequestProjectAssignment.logic";
 import { AzureReposPendingMailbox } from "./AzureReposPendingMailbox";
 import { AzurePicker, AzureReposDashboard, type AzureReposView } from "./AzureReposDashboard";
 import { relativeDate } from "./azureReposModel";
@@ -287,6 +288,10 @@ function AzureReposWorkspace({ environmentId }: { environmentId: EnvironmentId }
               <PullRequestDetailPanel
                 environmentId={environmentId}
                 reference={detail}
+                allowCheckout={hasPullRequestCheckout(
+                  localProjects.find((entry) => entry.id === detail.projectId),
+                  detail,
+                )}
                 shortcutsEnabled={false}
                 getShortcutContext={() => ({
                   terminalFocus: false,

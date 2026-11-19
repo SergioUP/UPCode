@@ -13,9 +13,10 @@ import { create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { DraftId, useComposerDraftStore } from "~/composerDraftStore";
 
-const { newThread, prepareThread, refresh, Wrapper, Trigger } = vi.hoisted(() => ({
+const { newThread, prepareThread, editorOpen, refresh, Wrapper, Trigger } = vi.hoisted(() => ({
   newThread: vi.fn(),
   prepareThread: vi.fn(),
+  editorOpen: vi.fn(),
   refresh: vi.fn(),
   Wrapper: ({ children }: { children?: ReactNode }) => children,
   Trigger: ({ children, render }: { children?: ReactNode; render?: ReactElement }) => (
@@ -44,6 +45,19 @@ vi.mock("~/hooks/useSettings", () => ({
 }));
 vi.mock("~/hooks/useLiveRefresh", () => ({ useLiveRefresh: () => {} }));
 vi.mock("~/hooks/useHandleNewThread", () => ({ useNewThreadHandler: () => newThread }));
+// The picker owns native/SSH launch behavior; this suite exercises PR checkout preparation.
+vi.mock("../chat/OpenInPicker", () => ({
+  OpenInPicker: ({ prepareOpen }: { prepareOpen: () => Promise<string | null> }) => (
+    <button
+      onClick={async () => {
+        const path = await prepareOpen();
+        if (path !== null) editorOpen(path);
+      }}
+    >
+      Open review in editor
+    </button>
+  ),
+}));
 vi.mock("~/lib/sourceControlActions", () => ({
   usePreparePullRequestThreadAction: () => ({ run: prepareThread, isAllowed: true, error: null }),
 }));
@@ -322,6 +336,42 @@ describe.each([
       />,
     );
   }
+
+  it("opens a separate PR checkout in the editor without creating a conversation", async () => {
+    editorOpen.mockClear();
+    prepareThread.mockResolvedValueOnce({
+      _tag: "Success",
+      value: {
+        branch: "feature",
+        worktreePath: "/workspace/pr",
+        isOnPullRequestHead: true,
+      },
+    });
+    await act(async () => render());
+    await click("Open review in editor");
+    expect(prepareThread).toHaveBeenCalledExactlyOnceWith({
+      reference: detail.url,
+      mode: "worktree",
+    });
+    expect(editorOpen).toHaveBeenCalledExactlyOnceWith("/workspace/pr");
+    expect(newThread).not.toHaveBeenCalled();
+  });
+
+  it("does not launch an editor on an outdated checkout", async () => {
+    editorOpen.mockClear();
+    prepareThread.mockResolvedValueOnce({
+      _tag: "Success",
+      value: {
+        branch: "feature",
+        worktreePath: "/workspace/pr",
+        isOnPullRequestHead: false,
+      },
+    });
+    await act(async () => render());
+    await click("Open review in editor");
+    expect(editorOpen).not.toHaveBeenCalled();
+    expect(newThread).not.toHaveBeenCalled();
+  });
 
   it(`${thread === stackThread ? "hides" : "offers"} the checkout`, async () => {
     await act(async () => render());

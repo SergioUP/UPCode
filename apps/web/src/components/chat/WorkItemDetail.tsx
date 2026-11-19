@@ -30,7 +30,7 @@ const when = (value: string | null | undefined) => {
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="text-2xs text-muted-foreground">{label}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-1 text-sm break-words">{children}</div>
     </div>
   );
@@ -188,15 +188,15 @@ export function WorkItemDetail({
               </div>
               <input
                 aria-label="Título"
-                className="w-full bg-transparent text-lg font-semibold outline-none focus:rounded-md focus:ring-1 focus:ring-inset focus:ring-ring"
+                className="w-full bg-transparent text-xl font-semibold outline-none focus:rounded-md focus:ring-1 focus:ring-inset focus:ring-ring"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
               />
             </div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4 border-y py-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 border-y py-4">
               <Fact label="Asignado a">
                 <span className="inline-flex items-center gap-2">
-                  <span className="inline-flex size-6 items-center justify-center rounded-full bg-primary/15 text-2xs font-medium text-primary">
+                  <span className="inline-flex size-6 items-center justify-center rounded-full bg-primary/15 text-xs font-medium text-primary">
                     {(item.assignedTo ?? "?").slice(0, 1)}
                   </span>
                   {item.assignedTo ?? "Sin asignar"}
@@ -296,14 +296,10 @@ export function WorkItemDetail({
                     <p className="text-xs text-muted-foreground">
                       {entry.author} · {when(entry.createdAt)}
                     </p>
-                    {entry.text.includes("<") ? (
-                      <div
-                        className={`mt-2 ${WORK_ITEM_HTML_CLASS}`}
-                        dangerouslySetInnerHTML={{ __html: workItemHtml(entry.text) }}
-                      />
-                    ) : (
-                      <p className="mt-2 whitespace-pre-wrap text-sm">{entry.text}</p>
-                    )}
+                    <div
+                      className={`mt-2 ${WORK_ITEM_HTML_CLASS}`}
+                      dangerouslySetInnerHTML={{ __html: workItemHtml(entry.text) }}
+                    />
                   </article>
                 ))
               )}
@@ -311,7 +307,7 @@ export function WorkItemDetail({
             {(item.fields ?? []).length > 0 ? (
               <section>
                 <h3 className="mb-3 text-sm font-medium">Campos</h3>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                   {(item.fields ?? []).map((entry) => (
                     <Fact key={entry.label} label={entry.label}>
                       {entry.value}

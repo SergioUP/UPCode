@@ -4,6 +4,7 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   assignProjectsToEnvironments,
   resolvePickableEnvironments,
+  hasPullRequestCheckout,
   type AssignableProject,
 } from "./pullRequestProjectAssignment.logic";
 
@@ -19,6 +20,28 @@ const project = (
 });
 
 const envs = (...ids: ReadonlyArray<string>) => ids as ReadonlyArray<EnvironmentId>;
+
+describe("remote PR checkout availability", () => {
+  const reference = { host: "dev.azure.com/acme", repository: "Project/app" };
+  it("does not treat an arbitrary API-routing project as a local checkout", () => {
+    expect(hasPullRequestCheckout(project("editor-data", "env-1"), reference)).toBe(false);
+    expect(
+      hasPullRequestCheckout(project("other-repo", "env-1", "github.com/acme/app"), reference),
+    ).toBe(false);
+    expect(hasPullRequestCheckout(undefined, reference)).toBe(false);
+  });
+  it("enables checkout only for the same Azure organization, project and repository", () => {
+    expect(
+      hasPullRequestCheckout(project("app", "env-1", "dev.azure.com/ACME/Project/app"), reference),
+    ).toBe(true);
+    expect(
+      hasPullRequestCheckout(project("app", "env-1", "dev.azure.com/other/Project/app"), reference),
+    ).toBe(false);
+    expect(
+      hasPullRequestCheckout(project("app", "env-1", "dev.azure.com/acme/Other/app"), reference),
+    ).toBe(false);
+  });
+});
 
 const plain = (assignment: Map<EnvironmentId, ProjectId[]>) =>
   Object.fromEntries([...assignment].map(([id, projectIds]) => [id, projectIds]));

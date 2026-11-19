@@ -23,7 +23,10 @@ export interface DiffMinimapModel {
  * the rows its hunks show. This is a map of the diff, not a pixel-exact mirror of the viewer, so
  * unchanged lines folded away between hunks count as a single row.
  */
-export function buildDiffMinimapModel(files: ReadonlyArray<FileDiffMetadata>): DiffMinimapModel {
+export function buildDiffMinimapModel(
+  files: ReadonlyArray<FileDiffMetadata>,
+  layout: "split" | "unified" = "unified",
+): DiffMinimapModel {
   const marks: DiffMinimapMark[] = [];
   const fileStarts: number[] = [];
   let row = 0;
@@ -49,20 +52,22 @@ export function buildDiffMinimapModel(files: ReadonlyArray<FileDiffMetadata>): D
             fileIndex,
             line: oldLine,
           });
-          row += content.deletions;
           oldLine += content.deletions;
         }
         if (content.additions > 0) {
           marks.push({
             kind: "addition",
-            row,
+            row: layout === "split" ? row : row + content.deletions,
             rows: content.additions,
             fileIndex,
             line: newLine,
           });
-          row += content.additions;
           newLine += content.additions;
         }
+        row +=
+          layout === "split"
+            ? Math.max(content.deletions, content.additions)
+            : content.deletions + content.additions;
       }
     }
   });
@@ -73,6 +78,7 @@ export function buildDiffMinimapModel(files: ReadonlyArray<FileDiffMetadata>): D
 export function resolveDiffMinimapTarget(
   model: DiffMinimapModel,
   fraction: number,
+  kind?: DiffMinimapMark["kind"],
 ): { readonly fileIndex: number; readonly mark: DiffMinimapMark | null } | null {
   if (model.fileStarts.length === 0 || model.totalRows === 0) return null;
   const row = Math.min(Math.max(fraction, 0), 1) * model.totalRows;
@@ -83,8 +89,12 @@ export function resolveDiffMinimapTarget(
   }
   let nearest: DiffMinimapMark | null = null;
   let nearestDistance = Number.POSITIVE_INFINITY;
-  for (const mark of model.marks) {
-    if (mark.fileIndex !== fileIndex) continue;
+  const fileMarks = model.marks.filter((mark) => mark.fileIndex === fileIndex);
+  const candidates =
+    kind && fileMarks.some((mark) => mark.kind === kind)
+      ? fileMarks.filter((mark) => mark.kind === kind)
+      : fileMarks;
+  for (const mark of candidates) {
     const distance = row < mark.row ? mark.row - row : Math.max(0, row - (mark.row + mark.rows));
     if (distance < nearestDistance) {
       nearest = mark;
@@ -92,4 +102,20 @@ export function resolveDiffMinimapTarget(
     }
   }
   return { fileIndex, mark: nearest };
+}
+
+/** Two SVG lanes keep minimum-height red and green marks from painting over each other. */
+export function buildDiffMinimapPaths(model: DiffMinimapModel, height: number) {
+  let additions = "";
+  let deletions = "";
+  if (height <= 0 || model.totalRows <= 0) return { additions, deletions };
+  const scale = height / model.totalRows;
+  for (const mark of model.marks) {
+    const size = Math.min(height, Math.max(mark.rows * scale, 2));
+    const top = Math.min(Math.max(0, mark.row * scale), height - size);
+    const rect = `M${mark.kind === "deletion" ? 0 : 1} ${top.toFixed(2)}h1v${size.toFixed(2)}h-1z`;
+    if (mark.kind === "addition") additions += rect;
+    else deletions += rect;
+  }
+  return { additions, deletions };
 }

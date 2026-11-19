@@ -6,7 +6,7 @@ import {
   type EnvironmentId,
   type ResolvedKeybindingsConfig,
 } from "@upcode/contracts";
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isOpenFavoriteEditorShortcut, shortcutLabelForCommand } from "../../keybindings";
 import { usePreferredEditor } from "../../editorPreferences";
 import { editorLabelForPlatform } from "../../editorLabels";
@@ -208,6 +208,8 @@ export const OpenInPicker = memo(function OpenInPicker({
   keybindings,
   availableEditors,
   openInCwd,
+  prepareOpen,
+  disabled = false,
   presentation = "toolbar",
   compact = false,
   enableShortcut = true,
@@ -217,6 +219,9 @@ export const OpenInPicker = memo(function OpenInPicker({
   keybindings: ResolvedKeybindingsConfig;
   availableEditors: ReadonlyArray<EditorId>;
   openInCwd: string | null;
+  /** Materialize a review checkout before opening; null cancels the launch. */
+  prepareOpen?: () => Promise<string | null>;
+  disabled?: boolean;
   presentation?: "toolbar" | "menu";
   compact?: boolean;
   enableShortcut?: boolean;
@@ -225,11 +230,14 @@ export const OpenInPicker = memo(function OpenInPicker({
   const isPanel = displayMode === "panel";
   const ActionGroup = isPanel ? "div" : Group;
   const panelAnchorRef = useRef<HTMLDivElement | null>(null);
+  const preparingRef = useRef(false);
+  const [preparing, setPreparing] = useState(false);
   const openInEditorMutation = useAtomCommand(shellEnvironment.openInEditor, "open in editor");
   const remote = useRemoteOpenState(environmentId);
   const canOperateHost = useEnvironmentScope(environmentId, AuthOrchestrationOperateScope);
   const isHostEditorDenied = remote.mode === "local-exec" && !canOperateHost;
-  const canOpenEditor = remote.mode !== "remote-unavailable" && !isHostEditorDenied;
+  const canOpenEditor =
+    remote.mode !== "remote-unavailable" && !isHostEditorDenied && !disabled && !preparing;
   const [menuOpen, setMenuOpen] = useComposerMenuState(isHostEditorDenied);
   const remoteCapableEditors = useRemoteCapableEditors();
   const [remoteHintSeen, markRemoteHintSeen] = useRemoteOpenHint();
@@ -245,21 +253,39 @@ export const OpenInPicker = memo(function OpenInPicker({
   const primaryOption = options.find(({ value }) => value === preferredEditor) ?? null;
 
   const openInEditor = useCallback(
-    (editorId: EditorId | null) => {
-      if (!openInCwd) return;
+    async (editorId: EditorId | null) => {
+      if (!openInCwd || disabled || preparingRef.current) return;
       const editor = editorId ?? preferredEditor;
       if (!editor) return;
       if (remote.mode === "remote-unavailable") return;
+      if (
+        remote.mode === "local-exec" &&
+        !readEnvironmentScope(environmentId, AuthOrchestrationOperateScope)
+      )
+        return;
+      let cwd = openInCwd;
+      if (prepareOpen) {
+        preparingRef.current = true;
+        setPreparing(true);
+        try {
+          const prepared = await prepareOpen();
+          if (prepared === null) return;
+          cwd = prepared;
+        } finally {
+          preparingRef.current = false;
+          setPreparing(false);
+        }
+      }
       if (remote.mode === "remote-links") {
         const url = buildRemoteOpenUrl({
           editor,
           host: remote.host.host,
-          absolutePath: openInCwd,
+          absolutePath: cwd,
         });
         if (url === undefined) return;
         // Only record hint-seen/preferred when the shell actually accepted
         // the URL (an older desktop build can refuse the editor scheme).
-        void openRemoteEditorUrl(url).then((opened) => {
+        await openRemoteEditorUrl(url).then((opened) => {
           if (!opened) return;
           markRemoteHintSeen();
           setPreferredEditor(editor);
@@ -270,7 +296,7 @@ export const OpenInPicker = memo(function OpenInPicker({
       const result = openInEditorMutation({
         environmentId,
         input: {
-          cwd: openInCwd,
+          cwd,
           editor,
         },
       });
@@ -279,18 +305,21 @@ export const OpenInPicker = memo(function OpenInPicker({
     },
     [
       environmentId,
+      disabled,
       markRemoteHintSeen,
       openInCwd,
       openInEditorMutation,
       preferredEditor,
+      prepareOpen,
       remote,
       setPreferredEditor,
     ],
   );
 
   const openFavoriteEditorShortcutLabel = useMemo(
-    () => shortcutLabelForCommand(keybindings, "editor.openFavorite"),
-    [keybindings],
+    () =>
+      enableShortcut ? shortcutLabelForCommand(keybindings, "editor.openFavorite") : undefined,
+    [enableShortcut, keybindings],
   );
 
   useEffect(() => {
@@ -320,7 +349,11 @@ export const OpenInPicker = memo(function OpenInPicker({
     preferredEditor,
     remote.mode,
   ]);
-  const primaryLabel = isPanel ? `Open in ${primaryOption?.label ?? "editor"}` : "Open";
+  const primaryLabel = preparing
+    ? "Preparing..."
+    : isPanel
+      ? `Open in ${primaryOption?.label ?? "editor"}`
+      : "Open";
 
   const editorItems = (
     <>
@@ -376,7 +409,7 @@ export const OpenInPicker = memo(function OpenInPicker({
           </MenuItem>
         )}
         <MenuSub>
-          <MenuSubTrigger density="touch" disabled={isHostEditorDenied}>
+          <MenuSubTrigger density="touch" disabled={isHostEditorDenied || disabled || preparing}>
             <SquareArrowOutUpRightIcon className="size-4" />
             <MenuItemLabel>Open in…</MenuItemLabel>
           </MenuSubTrigger>
@@ -435,7 +468,7 @@ export const OpenInPicker = memo(function OpenInPicker({
       )}
       <Menu open={menuOpen} onOpenChange={setMenuOpen}>
         <MenuTrigger
-          disabled={isHostEditorDenied}
+          disabled={isHostEditorDenied || disabled || preparing}
           render={
             <ThreadDetailsControl
               aria-label="Choose editor"

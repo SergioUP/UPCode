@@ -1,5 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off
-import { existsSync } from "node:fs";
+import * as NodeFS from "node:fs";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { converter } from "culori/fn";
 import { BUILT_IN_THEMES } from "@upcode/shared/themePalettes";
@@ -1204,7 +1204,7 @@ describe("redi theme", () => {
 
   it("ships the three typefaces it references, so it renders offline", () => {
     for (const file of ["anton.woff2", "geist-variable.woff2", "great-vibes.woff2"]) {
-      expect(existsSync(new URL(`../public/fonts/${file}`, import.meta.url))).toBe(true);
+      expect(NodeFS.existsSync(new URL(`../public/fonts/${file}`, import.meta.url))).toBe(true);
     }
   });
 });
@@ -1227,7 +1227,30 @@ describe("bludi theme", () => {
 
   it("ships the artwork its stylesheet paints", () => {
     for (const file of ["hero.webp", "hero-programmer.webp"]) {
-      expect(existsSync(new URL(`../public/themes/bludi/${file}`, import.meta.url))).toBe(true);
+      expect(NodeFS.existsSync(new URL(`../public/themes/bludi/${file}`, import.meta.url))).toBe(
+        true,
+      );
     }
+  });
+});
+
+describe("One Dark accessibility", () => {
+  it("keeps text, controls, code and terminal readable in both appearances", () => {
+    const theme = getThemeDefinition("one-dark")!;
+    for (const appearance of ["dark", "light"] as const) {
+      const colors = getThemeColorsForMode(theme, appearance)!;
+      for (const [foreground, background] of [
+        [colors.text, colors.canvas],
+        [colors.textMuted, colors.surface],
+        [colors.accentForeground, colors.accent],
+        [colors.sidebarForeground, colors.sidebarRowSelected],
+        [colors.codeForeground, colors.codeBackground],
+        [colors.terminalForeground, colors.terminalBackground],
+      ]) {
+        expect(contrastRatio(foreground!, background!)).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+    expect(resolveThemeAppearance("one-dark", false, false)).toBe("dark");
+    expect(resolveThemeAppearance("one-dark", false, false, "light")).toBe("light");
   });
 });

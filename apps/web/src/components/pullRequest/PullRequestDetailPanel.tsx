@@ -1,5 +1,6 @@
 import { parseChangeRequestUrl } from "@upcode/shared/changeRequestUrl";
 import { useAtomValue } from "@effect/atom-react";
+import { OpenInPicker } from "../chat/OpenInPicker";
 import { usePullRequestStack } from "~/state/usePullRequestStack";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import {
@@ -421,8 +422,11 @@ export function PullRequestDetailPanel({
   onBack,
   onSelectPullRequest,
   onGuideShown,
+  allowCheckout = true,
 }: {
   environmentId: EnvironmentId;
+  /** Remote dashboards may borrow a project for API reads without a local repository. */
+  allowCheckout?: boolean;
   shortcutsEnabled: boolean;
   getShortcutContext: () => ShortcutMatchContext;
   onSelectPullRequest?: ((reference: PullRequestRef) => void) | undefined;
@@ -981,8 +985,9 @@ export function PullRequestDetailPanel({
   const acting =
     pickableEnvironments.find((entry) => entry.environmentId === chosenEnvironmentId) ?? null;
   const actingEnvironmentId = acting?.environmentId ?? environmentId;
-  const checkoutRoot =
-    acting?.workspaceRoot ?? detail?.workspaceRoot ?? project?.workspaceRoot ?? null;
+  const checkoutRoot = allowCheckout
+    ? (acting?.workspaceRoot ?? detail?.workspaceRoot ?? project?.workspaceRoot ?? null)
+    : null;
   const canOperateThread = useEnvironmentScope(actingEnvironmentId, AuthOrchestrationOperateScope);
   const prepareThread = usePreparePullRequestThreadAction({
     environmentId: actingEnvironmentId,
@@ -1477,6 +1482,78 @@ export function PullRequestDetailPanel({
     if (!handoffSummary) return;
     void startHandoff(`checkout:${mode}`, null, mode);
   };
+
+  const prepareEditorCheckout = async () => {
+    if (!handoffSummary || !checkoutRoot || !prepareThread.isAllowed) return null;
+    const toastId = toastManager.add({
+      type: "loading",
+      title: "Preparing the pull request for your editor...",
+    });
+    try {
+      const prepared = await prepareThread.run({ reference: handoffSummary.url, mode: "worktree" });
+      if (prepared._tag === "Failure") {
+        toastManager.update(toastId, {
+          type: "error",
+          title: "Could not prepare the pull request checkout",
+          description: readableFailure(
+            squashAtomCommandFailure(prepared),
+            "Try again from the project.",
+          ),
+        });
+        return null;
+      }
+      if (!prepared.value.isOnPullRequestHead || prepared.value.worktreePath === null) {
+        toastManager.update(toastId, {
+          type: "warning",
+          title: "The review checkout has local changes",
+          description:
+            "It could not be updated to the PR's latest commits. Open its existing worktree to review your changes first.",
+        });
+        return null;
+      }
+      toastManager.update(toastId, {
+        type: "success",
+        title: "Pull request checkout ready",
+        description: "Opening the review worktree in your editor.",
+      });
+      return prepared.value.worktreePath;
+    } catch (error) {
+      toastManager.update(toastId, {
+        type: "error",
+        title: "Could not prepare the pull request checkout",
+        description: readableFailure(error, "Try again from the project."),
+      });
+      return null;
+    }
+  };
+
+  const openEditorControl = (
+    <>
+      {!allowCheckout ? (
+        <MenuItem disabled>
+          <FolderGit2Icon className="size-4" />
+          <span className="flex min-w-0 flex-col">
+            <span>No local checkout for this repository</span>
+            <span className="text-xs text-muted-foreground">
+              Clone it and add its folder as a project in this environment to open it in an editor.
+            </span>
+          </span>
+        </MenuItem>
+      ) : null}
+      <OpenInPicker
+        environmentId={actingEnvironmentId}
+        keybindings={keybindings}
+        availableEditors={environmentConfigs.get(actingEnvironmentId)?.availableEditors ?? []}
+        openInCwd={checkoutRoot}
+        prepareOpen={prepareEditorCheckout}
+        disabled={
+          !handoffSummary || !prepareThread.isAllowed || prepareThread.isPending || handoff !== null
+        }
+        enableShortcut={false}
+        presentation="menu"
+      />
+    </>
+  );
 
   /** One finding, handed over on its own — the surfaces that show findings call this. */
   const startFixFinding = (finding: PullRequestFinding) => {
@@ -2192,6 +2269,7 @@ export function PullRequestDetailPanel({
                   </TooltipPopup>
                 </Tooltip>
                 <MenuPopup align="end" side="bottom">
+                  {openEditorControl}
                   <PullRequestThreadLinks
                     display="menu-item"
                     environmentId={environmentId}

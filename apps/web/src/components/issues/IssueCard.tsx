@@ -166,7 +166,7 @@ export function IssueCard({
         onDragStart?.();
       }}
       onDragEnd={onDragEnd}
-      className={`group relative rounded-lg border transition hover:brightness-110 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring ${
+      className={`group relative rounded-lg border motion-safe:transition-[filter,transform] motion-safe:duration-150 hover:brightness-110 motion-safe:hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring ${
         compact ? "p-2" : "p-2.5"
       }`}
       style={

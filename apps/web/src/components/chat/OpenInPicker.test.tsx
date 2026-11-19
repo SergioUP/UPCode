@@ -128,7 +128,7 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-async function renderPicker() {
+async function renderPicker(prepareOpen?: () => Promise<string | null>) {
   await act(async () => {
     for (const listener of state.listeners) listener();
     const node = (
@@ -137,6 +137,7 @@ async function renderPicker() {
         keybindings={DEFAULT_RESOLVED_KEYBINDINGS}
         availableEditors={editors}
         openInCwd="/work/project"
+        {...(prepareOpen ? { prepareOpen } : {})}
         compact
       />
     );
@@ -222,5 +223,67 @@ describe("client editor links", () => {
     expect(state.run).not.toHaveBeenCalled();
     expect(state.setPreferred).not.toHaveBeenCalled();
     expect(state.markHintSeen).not.toHaveBeenCalled();
+  });
+});
+
+describe("prepared review checkouts", () => {
+  it("waits for the checkout and opens its directory only once", async () => {
+    state.allowed.add(selected);
+    const checkout = Promise.withResolvers<string | null>();
+    const prepare = vi.fn(() => checkout.promise);
+    await renderPicker(prepare);
+    const open = primaryButton().props.onClick;
+    let opening: Promise<unknown> | undefined;
+    await act(async () => {
+      opening = open();
+    });
+    expect(state.run).not.toHaveBeenCalled();
+    await act(async () => {
+      await open();
+    });
+    expect(prepare).toHaveBeenCalledOnce();
+    await act(async () => {
+      checkout.resolve("/work/pr-42");
+      await opening;
+    });
+    expect(state.run).toHaveBeenCalledExactlyOnceWith({
+      environmentId: selected,
+      input: { cwd: "/work/pr-42", editor: "vscode" },
+    });
+  });
+
+  it("does not open the original repository if preparation is cancelled", async () => {
+    state.allowed.add(selected);
+    await renderPicker(async () => null);
+    await act(async () => primaryButton().props.onClick());
+    expect(state.run).not.toHaveBeenCalled();
+    expect(state.setPreferred).not.toHaveBeenCalled();
+  });
+
+  it("rechecks host permission after checkout preparation", async () => {
+    state.allowed.add(selected);
+    const checkout = Promise.withResolvers<string | null>();
+    await renderPicker(() => checkout.promise);
+    let opening: Promise<unknown> | undefined;
+    await act(async () => {
+      opening = primaryButton().props.onClick();
+    });
+    state.allowed.delete(selected);
+    await act(async () => {
+      checkout.resolve("/work/pr-42");
+      await opening;
+    });
+    expect(state.run).not.toHaveBeenCalled();
+    expect(state.setPreferred).not.toHaveBeenCalled();
+  });
+
+  it("opens the prepared remote worktree over SSH", async () => {
+    state.remote = { mode: "remote-links", host: { kind: "ssh-alias", host: "test-host" } };
+    await renderPicker(async () => "/work/pr-42");
+    await act(async () => primaryButton().props.onClick());
+    expect(state.openUrl).toHaveBeenCalledExactlyOnceWith(
+      "vscode://vscode-remote/ssh-remote+test-host/work/pr-42",
+    );
+    expect(state.run).not.toHaveBeenCalled();
   });
 });

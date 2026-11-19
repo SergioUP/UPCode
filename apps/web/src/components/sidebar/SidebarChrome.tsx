@@ -302,6 +302,13 @@ function useUtilityEntries(): ReadonlyArray<SidebarUtilityEntry> {
       color: UTILITY_COLORS.devops,
     },
     {
+      key: "devops-pr",
+      icon: <AzureDevOpsGlyphIcon className="size-4 text-current" />,
+      label: "DevOps PR",
+      onClick: handleAzureReposClick,
+      color: UTILITY_COLORS.pullRequests,
+    },
+    {
       key: "brain",
       icon: <BrainIcon className="size-4 text-current" />,
       label: "Cerebro",
@@ -314,13 +321,6 @@ function useUtilityEntries(): ReadonlyArray<SidebarUtilityEntry> {
       label: "Baúl",
       onClick: handleVaultClick,
       color: UTILITY_COLORS.vault,
-    },
-    {
-      key: "devops-pr",
-      icon: <AzureDevOpsGlyphIcon className="size-4 text-current" />,
-      label: "DevOps PR",
-      onClick: handleAzureReposClick,
-      color: UTILITY_COLORS.pullRequests,
     },
     {
       key: "usage",
