@@ -1,0 +1,62 @@
+import { RunId, ThreadId } from "@upcode/contracts";
+import { describe, expect, it } from "vitest";
+
+import { agentBarStatus } from "./AgentBarCoordinator";
+
+const startedAt = "2026-11-20T10:00:00.000Z";
+const completedAt = "2026-11-20T10:05:00.000Z";
+const thread = {
+  archivedAt: null,
+  lineage: {
+    parentThreadId: null,
+    relationshipToParent: null,
+    rootThreadId: ThreadId.make("root-thread"),
+  },
+  runtime: null,
+  latestRun: {
+    runId: RunId.make("run"),
+    status: "completed",
+    assistantMessageId: null,
+    requestedAt: startedAt,
+    startedAt,
+    completedAt,
+  },
+  lastVisitedAt: startedAt,
+  hasPendingApprovals: false,
+  hasPendingUserInput: false,
+  hasActionableProposedPlan: false,
+  interactionMode: "default",
+} satisfies Parameters<typeof agentBarStatus>[0];
+
+describe("Agent Bar", () => {
+  it("clears completion when the thread is reviewed and honors server visit tracking", () => {
+    expect(agentBarStatus(thread, completedAt)).toBe("done");
+    expect(agentBarStatus({ ...thread, lastVisitedAt: completedAt }, startedAt)).toBeNull();
+    expect(agentBarStatus({ ...thread, lastVisitedAt: undefined }, startedAt)).toBe("done");
+  });
+
+  it("shows attention over a previous completion and omits archived threads and subagents", () => {
+    expect(agentBarStatus({ ...thread, hasPendingUserInput: true }, undefined)).toBe("input");
+    expect(agentBarStatus({ ...thread, hasPendingApprovals: true }, undefined)).toBe("approval");
+    expect(agentBarStatus({ ...thread, archivedAt: completedAt }, undefined)).toBeNull();
+    expect(
+      agentBarStatus(
+        {
+          ...thread,
+          lineage: { ...thread.lineage, relationshipToParent: "subagent" },
+        },
+        undefined,
+      ),
+    ).toBeNull();
+  });
+
+  it("distinguishes a failed run from a thread that has never run", () => {
+    expect(
+      agentBarStatus(
+        { ...thread, latestRun: { ...thread.latestRun, status: "failed" } },
+        undefined,
+      ),
+    ).toBe("failed");
+    expect(agentBarStatus({ ...thread, latestRun: null }, undefined)).toBeNull();
+  });
+});

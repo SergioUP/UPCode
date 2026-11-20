@@ -93,3 +93,9 @@ view.
 
 Write updates to a temporary file and rename it into place so clients never read a partial theme.
 Invalid files are not published.
+
+## Agent Bar on Windows
+
+In the Windows desktop app, turn on **Settings → GUI → Agent Bar** to keep active threads and
+unread results visible. Click an icon to open its thread. Drag the top handle to move the bar
+between monitors, or use its notification-area menu to hide it or change whether it stays on top.

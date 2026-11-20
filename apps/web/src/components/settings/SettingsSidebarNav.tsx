@@ -80,6 +80,7 @@ const SETTINGS_SECTION_ICONS: Readonly<
   "/settings/general": Settings2Icon,
   "/settings/diagnostics": Settings2Icon,
   "/settings/appearance": PaletteIcon,
+  "/settings/gui": PanelsTopLeftIcon,
   "/settings/projects": PanelsTopLeftIcon,
   "/settings/keybindings": KeyboardIcon,
   "/settings/snap-shot": SnapShotIcon,
@@ -114,8 +115,12 @@ export function SettingsSidebarNav({ pathname }: { pathname: string }) {
   const currentHash = useLocation({ select: (location) => location.hash });
   const currentSearch = useLocation({ select: (location) => location.search });
   const scopeSearch = useMemo(() => validateSettingsScopeSearch(currentSearch), [currentSearch]);
+  const showGuiSettings =
+    typeof window !== "undefined" && window.desktopBridge?.getClientPlatform?.() === "win32";
   const navItems = SETTINGS_NAV_ITEMS.filter(
-    (item) => item.to !== "/settings/projects" || isSettingsOverviewVisible(scopeSearch),
+    (item) =>
+      (item.to !== "/settings/projects" || isSettingsOverviewVisible(scopeSearch)) &&
+      (item.to !== "/settings/gui" || showGuiSettings),
   );
   const { isMobile, setOpenMobile, open, setOpen } = useSidebar();
   const searchInputRef = useRef<HTMLInputElement>(null);

@@ -1,7 +1,7 @@
 import * as Schema from "effect/Schema";
 
 import { SnapShotSource } from "./chatAttachment.ts";
-import { EnvironmentId, TrimmedNonEmptyString } from "./baseSchemas.ts";
+import { EnvironmentId, ThreadId, TrimmedNonEmptyString } from "./baseSchemas.ts";
 import { BrowserProfileId } from "./browserProfile.ts";
 import type {
   BrowserImportResult,
@@ -1115,6 +1115,33 @@ export const DesktopPreviewRecordingSaveInputSchema = Schema.Struct({
 export const SystemSettingsPaneSchema = Schema.Literals(["full-disk-access"]);
 export type SystemSettingsPane = typeof SystemSettingsPaneSchema.Type;
 
+export const DesktopAgentBarThreadRef = Schema.Struct({
+  environmentId: EnvironmentId,
+  threadId: ThreadId,
+});
+export type DesktopAgentBarThreadRef = typeof DesktopAgentBarThreadRef.Type;
+
+export const DesktopAgentBarEntry = Schema.Struct({
+  ...DesktopAgentBarThreadRef.fields,
+  title: Schema.String.check(Schema.isMaxLength(300)),
+  provider: Schema.String.check(Schema.isMaxLength(80)),
+  status: Schema.Literals([
+    "working",
+    "waiting",
+    "input",
+    "approval",
+    "done",
+    "failed",
+    "limited",
+    "offline",
+  ]),
+});
+export type DesktopAgentBarEntry = typeof DesktopAgentBarEntry.Type;
+
+export const DesktopAgentBarState = Schema.NullOr(
+  Schema.Array(DesktopAgentBarEntry).check(Schema.isMaxLength(500)),
+);
+
 export interface DesktopBridge {
   getAppBranding: () => DesktopAppBranding | null;
   /** Absolute path of a dropped or picked file; absent on desktop builds predating it. */
@@ -1122,6 +1149,8 @@ export interface DesktopBridge {
   /** The desktop client's OS platform, read from Electron's preload process. */
   getClientPlatform?: () => string;
   setNotificationBadge?: (badge: { count: number; image: string | null }) => Promise<void>;
+  setAgentBarState?: (state: typeof DesktopAgentBarState.Type) => Promise<void>;
+  onAgentBarOpenThread?: (listener: (thread: DesktopAgentBarThreadRef) => void) => () => void;
   onNotificationBadgeClear?: (listener: () => void) => () => void;
   onTrackpadScrollEnd?: (listener: () => void) => () => void;
   /**

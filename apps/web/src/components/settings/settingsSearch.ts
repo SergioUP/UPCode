@@ -18,6 +18,7 @@ export type SettingsPath =
   | "/settings/general"
   | "/settings/diagnostics"
   | "/settings/appearance"
+  | "/settings/gui"
   | "/settings/keybindings"
   | "/settings/snap-shot"
   | "/settings/providers"
@@ -97,6 +98,7 @@ export const SETTINGS_SECTION_LABELS: Readonly<Record<SettingsPath, string>> = {
   "/settings/projects": "Project",
   "/settings/general": "General",
   "/settings/appearance": "Appearance",
+  "/settings/gui": "GUI",
   "/settings/keybindings": "Keybindings",
   "/settings/snap-shot": "SnapShots",
   "/settings/providers": "Providers",
@@ -164,6 +166,14 @@ const SOURCE_CONTROL_HOST_SEARCH_ITEMS = sourceControlClients.definitions.flatMa
  * that may not be mounted point at their nearest stable section instead.
  */
 export const SETTINGS_SEARCH_ITEMS = [
+  {
+    id: "agent-bar",
+    title: "Agent Bar",
+    to: "/settings/gui",
+    desktopOnly: true,
+    windowsOnly: true,
+    searchTerms: ["widget floating agent status barra agentes windows"],
+  },
   {
     id: "storage-worktree-keep-when",
     targetId: "storage-worktrees",
@@ -1021,6 +1031,7 @@ const SETTINGS_CATEGORY_SCOPES: Readonly<Record<SettingsPath, SettingsSearchScop
   "/settings/projects": "project",
   "/settings/general": null,
   "/settings/appearance": null,
+  "/settings/gui": null,
   "/settings/snap-shot": null,
   // Keybindings fan out to the selection; Providers shows the representative
   // environment at any selection. Neither needs a particular scope to render.
