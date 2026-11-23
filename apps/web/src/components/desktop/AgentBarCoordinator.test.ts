@@ -7,6 +7,7 @@ const startedAt = "2026-11-20T10:00:00.000Z";
 const completedAt = "2026-11-20T10:05:00.000Z";
 const thread = {
   archivedAt: null,
+  settledOverride: null,
   lineage: {
     parentThreadId: null,
     relationshipToParent: null,
@@ -29,6 +30,11 @@ const thread = {
 } satisfies Parameters<typeof agentBarStatus>[0];
 
 describe("Agent Bar", () => {
+  it("hides settled threads even when their last completion is unread", () => {
+    expect(agentBarStatus({ ...thread, settledOverride: "settled" }, undefined)).toBeNull();
+    expect(agentBarStatus({ ...thread, settledOverride: "active" }, undefined)).toBe("done");
+  });
+
   it("clears completion when the thread is reviewed and honors server visit tracking", () => {
     expect(agentBarStatus(thread, completedAt)).toBe("done");
     expect(agentBarStatus({ ...thread, lastVisitedAt: completedAt }, startedAt)).toBeNull();

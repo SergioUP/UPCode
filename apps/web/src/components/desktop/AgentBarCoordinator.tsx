@@ -28,6 +28,7 @@ export function agentBarStatus(
   thread: Pick<
     EnvironmentThreadShell,
     | "archivedAt"
+    | "settledOverride"
     | "lineage"
     | "runtime"
     | "latestRun"
@@ -40,7 +41,13 @@ export function agentBarStatus(
     Partial<Pick<EnvironmentThreadShell, "pendingBackgroundTasks">>,
   localLastVisitedAt: string | undefined,
 ): DesktopAgentBarEntry["status"] | null {
-  if (thread.archivedAt !== null || thread.lineage.relationshipToParent === "subagent") return null;
+  if (
+    thread.archivedAt !== null ||
+    thread.settledOverride === "settled" ||
+    thread.lineage.relationshipToParent === "subagent"
+  ) {
+    return null;
+  }
   const status = resolveSidebarThreadStatus(thread);
   if (status !== "ready" && status !== "waiting") return status;
   if (backgroundWorkHoldsCompletion(thread.pendingBackgroundTasks ?? [])) return "waiting";
