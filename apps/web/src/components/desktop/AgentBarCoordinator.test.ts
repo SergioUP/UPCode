@@ -32,12 +32,15 @@ const thread = {
 describe("Agent Bar", () => {
   it("hides settled threads even when their last completion is unread", () => {
     expect(agentBarStatus({ ...thread, settledOverride: "settled" }, undefined)).toBeNull();
+    expect(
+      agentBarStatus({ ...thread, settledOverride: "settled", latestRun: null }, undefined),
+    ).toBeNull();
     expect(agentBarStatus({ ...thread, settledOverride: "active" }, undefined)).toBe("done");
   });
 
-  it("clears completion when the thread is reviewed and honors server visit tracking", () => {
+  it("clears the completion badge but keeps reviewed open threads in the bar", () => {
     expect(agentBarStatus(thread, completedAt)).toBe("done");
-    expect(agentBarStatus({ ...thread, lastVisitedAt: completedAt }, startedAt)).toBeNull();
+    expect(agentBarStatus({ ...thread, lastVisitedAt: completedAt }, startedAt)).toBe("idle");
     expect(agentBarStatus({ ...thread, lastVisitedAt: undefined }, startedAt)).toBe("done");
   });
 
@@ -63,7 +66,7 @@ describe("Agent Bar", () => {
         undefined,
       ),
     ).toBe("failed");
-    expect(agentBarStatus({ ...thread, latestRun: null }, undefined)).toBeNull();
+    expect(agentBarStatus({ ...thread, latestRun: null }, undefined)).toBe("idle");
   });
 
   it("does not show a parked provider session as waiting for work", () => {
@@ -76,8 +79,8 @@ describe("Agent Bar", () => {
       updatedAt: completedAt,
     };
     expect(agentBarStatus({ ...thread, runtime }, undefined)).toBe("done");
-    expect(
-      agentBarStatus({ ...thread, runtime, lastVisitedAt: completedAt }, undefined),
-    ).toBeNull();
+    expect(agentBarStatus({ ...thread, runtime, lastVisitedAt: completedAt }, undefined)).toBe(
+      "idle",
+    );
   });
 });

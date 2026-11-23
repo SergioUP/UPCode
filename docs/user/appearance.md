@@ -96,6 +96,7 @@ Invalid files are not published.
 
 ## Agent Bar on Windows
 
-In the Windows desktop app, turn on **Settings → GUI → Agent Bar** to keep active threads and
-unread results visible. Click an icon to open its thread. Drag the top handle to move the bar
+In the Windows desktop app, turn on **Settings → GUI → Agent Bar** to keep open threads visible.
+Settled threads leave the bar. Idle threads show their project icon without a status badge.
+Click an icon to open its thread. Drag the top handle to move the bar
 between monitors, or use its notification-area menu to hide it or change whether it stays on top.

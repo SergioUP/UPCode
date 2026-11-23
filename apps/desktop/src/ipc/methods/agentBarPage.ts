@@ -21,6 +21,7 @@ export const agentBarPage = `<!doctype html>
   .icon-text[data-colored] { font: 700 13px "Cascadia Mono", Consolas, monospace; background: color-mix(in srgb, currentColor 14%, transparent) }
   button:hover, button:focus-visible { outline: 1px solid #b8c9e8; outline-offset: 2px }
   .badge { position: absolute; bottom: -3px; right: -3px; width: 18px; height: 18px; display: grid; place-items: center; border: 2px solid #171b25; border-radius: 50%; background: #89c8ff; color: #111721; font: 800 11px "Segoe UI", sans-serif }
+  [data-status=idle] .badge { display: none }
   [data-status=input] .badge, [data-status=approval] .badge { background: #ffc478 }
   [data-status=done] .badge { background: #8bddaf }
   [data-status=failed] .badge, [data-status=limited] .badge { background: #ffa4ad }
@@ -29,7 +30,7 @@ export const agentBarPage = `<!doctype html>
   [data-brand=cursor] { color: #e1d7ff }
 </style>
 <div class="grip" title="Drag the agent bar" aria-hidden="true">⋮⋮</div>
-<main id="threads" aria-label="Agent threads"><span class="empty" title="No active or unread threads">–</span></main>
+<main id="threads" aria-label="Agent threads"><span class="empty" title="No open threads">–</span></main>
 <script>
   const list = document.querySelector('#threads');
   const buttons = new Map();
@@ -37,7 +38,7 @@ export const agentBarPage = `<!doctype html>
     working: ['•', 'Working'], waiting: ['◷', 'Waiting'],
     input: ['!', 'Needs your input'], approval: ['!', 'Needs approval'],
     done: ['✓', 'Finished · unread'], failed: ['×', 'Failed'],
-    limited: ['!', 'Usage limit reached'], offline: ['–', 'Offline']
+    limited: ['!', 'Usage limit reached'], offline: ['–', 'Offline'], idle: ['', 'Idle']
   };
   const glyphs = { claude: '✳', codex: '⌘', cursor: '◇' };
   const empty = list.firstElementChild;

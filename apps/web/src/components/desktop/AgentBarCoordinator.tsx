@@ -52,9 +52,9 @@ export function agentBarStatus(
   if (status !== "ready" && status !== "waiting") return status;
   if (backgroundWorkHoldsCompletion(thread.pendingBackgroundTasks ?? [])) return "waiting";
   if (thread.latestRun?.status === "failed") return "failed";
-  if (thread.latestRun?.status !== "completed") return null;
+  if (thread.latestRun?.status !== "completed") return "idle";
   const lastVisitedAt = resolveThreadLastVisitedAt(thread.lastVisitedAt, localLastVisitedAt);
-  return hasUnseenCompletion({ ...thread, lastVisitedAt }) ? "done" : null;
+  return hasUnseenCompletion({ ...thread, lastVisitedAt }) ? "done" : "idle";
 }
 
 export function AgentBarCoordinator() {

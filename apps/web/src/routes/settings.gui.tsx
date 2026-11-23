@@ -17,7 +17,7 @@ function GuiSettings() {
         {...searchableSetting("agent-bar")}
         description={
           supported
-            ? "Show a floating strip of active and unread threads. Click an icon to open its thread."
+            ? "Show open threads in a floating bar. Click an icon to open its thread."
             : "The floating Agent Bar is available in the UPCode desktop app for Windows."
         }
         control={

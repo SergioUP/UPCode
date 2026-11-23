@@ -1143,6 +1143,7 @@ export const DesktopAgentBarEntry = Schema.Struct({
     "failed",
     "limited",
     "offline",
+    "idle",
   ]),
 });
 export type DesktopAgentBarEntry = typeof DesktopAgentBarEntry.Type;
