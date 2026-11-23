@@ -9,6 +9,56 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+it.effect(
+  "counts active and fixed PR conversations without counting replies or other statuses",
+  () =>
+    Effect.gen(function* () {
+      const userComment = { commentType: "text" };
+      vi.stubGlobal(
+        "fetch",
+        vi.fn<typeof fetch>().mockImplementation(async (url) => {
+          const pathname = new URL(String(url)).pathname;
+          if (pathname.endsWith("/2/threads")) return new Response("", { status: 403 });
+          if (pathname.endsWith("/1/threads")) {
+            return Response.json({
+              value: [
+                { status: "active", comments: [userComment, userComment] },
+                { status: "active", comments: [userComment] },
+                { status: "active", comments: [userComment] },
+                { status: "fixed", comments: [userComment] },
+                ...["pending", "closed", "wontFix", "byDesign"].map((status) => ({
+                  status,
+                  comments: [userComment],
+                })),
+                { status: "fixed", isDeleted: true, comments: [userComment] },
+                { status: "active", comments: [{ commentType: "system" }] },
+                { status: "active", comments: [{ ...userComment, isDeleted: true }] },
+              ],
+            });
+          }
+          return Response.json(
+            {
+              value: [1, 2].map((pullRequestId) => ({ pullRequestId, repository: { id: "repo" } })),
+            },
+            { headers: { "X-VSS-UserData": "c6c7b32c-cdca-61d3-8a1a-d2b19b6ccac9:viewer" } },
+          );
+        }),
+      );
+      const workspace = yield* AzureDevOpsWorkspace.make;
+      const prs = yield* workspace.listPullRequests("Shopify", "repo", "all");
+      assert.deepStrictEqual(prs[0]?.commentCounts, { active: 3, resolved: 1 });
+      assert.isUndefined(prs[1]?.commentCounts);
+    }).pipe(
+      Effect.provide(
+        ServerSettings.layerTest({
+          sourceControlHosts: {
+            "azure-devops": { organization: "upango", personalAccessToken: "private-pat" },
+          },
+        }),
+      ),
+    ),
+);
+
 it.effect("does not report connected when the configured credential is rejected", () =>
   Effect.gen(function* () {
     vi.stubGlobal(

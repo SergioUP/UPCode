@@ -1,6 +1,6 @@
 // @effect-diagnostics globalFetchInEffect:off globalTimersInEffect:off preferSchemaOverJson:off -- This Azure REST boundary owns the PAT, timeout and untrusted JSON envelope.
 import * as Effect from "effect/Effect";
-import { AzureDevOpsWorkspaceError } from "@upcode/contracts";
+import { AzureDevOpsWorkspaceError, type AzureDevOpsPullRequest } from "@upcode/contracts";
 import { readSourceControlHostSettings } from "@upcode/source-control-core/client/definition";
 import { settings as azureSettings } from "@upcode/source-control-azure-devops/client/definition";
 import * as ServerSettings from "./serverSettings.ts";
@@ -727,7 +727,11 @@ export const make = Effect.gen(function* () {
         ),
       ),
     );
-  const listPullRequests = (project: string, repositoryId?: string) =>
+  const listPullRequests = (
+    project: string,
+    repositoryId?: string,
+    commentCountsScope?: "mine" | "all",
+  ) =>
     Effect.gen(function* () {
       const { organization } = yield* credentials;
       const resource = repositoryId
@@ -761,7 +765,7 @@ export const make = Effect.gen(function* () {
           Effect.orElseSucceed(() => null),
         );
       }
-      return rows.map((pr) => {
+      const pulls: AzureDevOpsPullRequest[] = rows.map((pr) => {
         const repository = (pr.repository ?? {}) as Record<string, unknown>;
         const createdBy = (pr.createdBy ?? {}) as Record<string, unknown>;
         const links = (pr._links ?? {}) as { web?: { href?: string } };
@@ -801,6 +805,56 @@ export const make = Effect.gen(function* () {
           }),
         };
       });
+      if (!commentCountsScope) return pulls;
+      const selected =
+        commentCountsScope === "mine" ? pulls.filter((pr) => pr.involvesViewer === true) : pulls;
+      return yield* Effect.forEach(
+        selected,
+        (pr) =>
+          request({
+            path: path(
+              project,
+              `git/repositories/${encode(pr.repositoryId)}/pullrequests/${pr.id}/threads`,
+            ),
+          }).pipe(
+            Effect.map((result) => {
+              const response = result as { value?: unknown } | null;
+              const threads = Array.isArray(result) ? result : response?.value;
+              if (!Array.isArray(threads)) return pr;
+              const commentCounts = { active: 0, resolved: 0 };
+              for (const thread of threads as Array<{
+                status?: unknown;
+                isDeleted?: boolean;
+                comments?: Array<{ commentType?: unknown; isDeleted?: boolean }>;
+              } | null>) {
+                if (
+                  !thread ||
+                  thread.isDeleted ||
+                  !Array.isArray(thread.comments) ||
+                  !thread.comments.some(
+                    (comment) =>
+                      comment &&
+                      !comment.isDeleted &&
+                      comment.commentType !== "system" &&
+                      comment.commentType !== 3,
+                  )
+                )
+                  continue;
+                if (thread.status === "active" || thread.status === 1) commentCounts.active++;
+                if (
+                  thread.status === "fixed" ||
+                  thread.status === "resolved" ||
+                  thread.status === 2
+                ) {
+                  commentCounts.resolved++;
+                }
+              }
+              return { ...pr, commentCounts };
+            }),
+            Effect.orElseSucceed(() => pr),
+          ),
+        { concurrency: 6 },
+      );
     });
   const getPullRequestDetail = (project: string, repositoryId: string, id: number) =>
     Effect.gen(function* () {

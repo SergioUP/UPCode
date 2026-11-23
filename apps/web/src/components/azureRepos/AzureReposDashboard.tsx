@@ -10,10 +10,12 @@ import {
   FolderIcon,
   GitBranchIcon,
   LayersIcon,
+  MessageSquareIcon,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { cn } from "../../lib/utils";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
 import { PullRequestStateGlyph } from "../pullRequest/pullRequestPresentation";
 import {
@@ -128,9 +130,46 @@ function ReviewBadge({ pr }: { pr: AzureDevOpsPullRequest }) {
   );
 }
 
+function PullRequestCommentCount({
+  counts,
+  loading,
+}: {
+  counts: AzureDevOpsPullRequest["commentCounts"];
+  loading: boolean;
+}) {
+  const label = counts
+    ? `${counts.resolved} resueltos · ${counts.active} pendientes`
+    : loading
+      ? "Cargando comentarios"
+      : "Recuento de comentarios no disponible";
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span
+            role="img"
+            aria-label={label}
+            className={cn(
+              "inline-flex items-center gap-1.5 whitespace-nowrap tabular-nums",
+              counts && counts.active > 0 ? "text-warning-foreground" : "text-muted-foreground",
+            )}
+          />
+        }
+      >
+        <MessageSquareIcon aria-hidden className="size-3.5 shrink-0" />
+        {counts ? `${counts.resolved}/${counts.active + counts.resolved}` : "—"}
+      </TooltipTrigger>
+      <TooltipPopup>{label}</TooltipPopup>
+    </Tooltip>
+  );
+}
+
 export function AzureReposDashboard({
   repositories,
   pullRequests,
+  commentsLoading,
+  scope,
+  onScopeChange,
   repositoryId,
   onRepositoryChange,
   onOpenPullRequest,
@@ -142,6 +181,9 @@ export function AzureReposDashboard({
 }: {
   repositories: readonly Repository[];
   pullRequests: readonly AzureDevOpsPullRequest[];
+  commentsLoading: boolean;
+  scope: PullRequestScope;
+  onScopeChange: (scope: PullRequestScope) => void;
   repositoryId: string;
   onRepositoryChange: (id: string) => void;
   onOpenPullRequest: (pr: AzureDevOpsPullRequest) => void;
@@ -153,7 +195,6 @@ export function AzureReposDashboard({
   now: number;
 }) {
   const [inspectedId, setInspectedId] = useState("");
-  const [scope, setScope] = useState<PullRequestScope>("mine");
   const inspected =
     repositories.find((repo) => repo.id === (repositoryId || inspectedId)) ?? repositories[0];
   const visiblePrs = filterPullRequests(pullRequests, repositoryId, scope);
@@ -364,7 +405,7 @@ export function AzureReposDashboard({
                     <AzurePicker
                       label="PR"
                       value={scope}
-                      onChange={(value) => setScope(value === "all" ? "all" : "mine")}
+                      onChange={(value) => onScopeChange(value === "all" ? "all" : "mine")}
                       options={[
                         { value: "mine", label: "Creadas por mí o asignadas a mí" },
                         { value: "all", label: "Todas" },
@@ -378,13 +419,19 @@ export function AzureReposDashboard({
                   <table className="w-full min-w-[520px] border-collapse text-left text-xs">
                     <thead>
                       <tr className="border-b text-2xs font-normal text-muted-foreground">
-                        {["#", "Título", "Repositorio", "Estado", "Revisor / Autor", "Creada"].map(
-                          (heading) => (
-                            <th key={heading} scope="col" className="px-2 py-3 font-medium">
-                              {heading}
-                            </th>
-                          ),
-                        )}
+                        {[
+                          "#",
+                          "Título",
+                          "Repositorio",
+                          "Estado",
+                          "Comentarios",
+                          "Revisor / Autor",
+                          "Creada",
+                        ].map((heading) => (
+                          <th key={heading} scope="col" className="px-2 py-3 font-medium">
+                            {heading}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
@@ -417,6 +464,12 @@ export function AzureReposDashboard({
                           </td>
                           <td className="px-2 py-2">
                             <ReviewBadge pr={pr} />
+                          </td>
+                          <td className="px-2 py-2">
+                            <PullRequestCommentCount
+                              counts={pr.commentCounts}
+                              loading={commentsLoading}
+                            />
                           </td>
                           <td
                             className="max-w-32 truncate px-2 py-2"

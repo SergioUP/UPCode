@@ -3204,7 +3204,7 @@ const layerWsRpcUpango = () =>
         [WS_METHODS.azureDevOpsListBranches]: (input) =>
           tracker.listBranches(input.project, input.repositoryId),
         [WS_METHODS.azureDevOpsListPullRequests]: (input) =>
-          tracker.listPullRequests(input.project, input.repositoryId),
+          tracker.listPullRequests(input.project, input.repositoryId, input.commentCountsScope),
         [WS_METHODS.azureDevOpsGetPullRequestDetail]: (input) =>
           tracker.getPullRequestDetail(input.project, input.repositoryId, input.id),
         [WS_METHODS.azureDevOpsUpdateWorkItem]: (input) => tracker.updateWorkItem(input),

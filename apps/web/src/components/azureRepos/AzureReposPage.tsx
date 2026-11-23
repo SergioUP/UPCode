@@ -1,7 +1,7 @@
 import type { AzureDevOpsPullRequest, EnvironmentId, PullRequestRef } from "@upcode/contracts";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeftIcon, DatabaseIcon, FolderIcon, RefreshCwIcon, SettingsIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { parseChangeRequestUrl } from "@upcode/shared/changeRequestUrl";
 import { findProjectForChangeRequest } from "../../lib/openPullRequestLink";
 import { azureDevOps } from "../../state/azureDevOps";
@@ -19,7 +19,7 @@ import { PullRequestDetailPanel } from "../pullRequest/PullRequestDetailPanel";
 import { hasPullRequestCheckout } from "../pullRequest/pullRequestProjectAssignment.logic";
 import { AzureReposPendingMailbox } from "./AzureReposPendingMailbox";
 import { AzurePicker, AzureReposDashboard, type AzureReposView } from "./AzureReposDashboard";
-import { relativeDate } from "./azureReposModel";
+import { relativeDate, type PullRequestScope } from "./azureReposModel";
 
 export function AzureReposPage() {
   const environmentId = usePrimaryEnvironmentId();
@@ -90,8 +90,35 @@ function AzureReposWorkspace({ environmentId }: { environmentId: EnvironmentId }
   const repository = repositories.data?.some((repo) => repo.id === current?.repository)
     ? (current?.repository ?? "")
     : "";
+  const view = current?.view ?? "summary";
+  const [prScope, setPrScope] = useState<PullRequestScope>("mine");
+  const pullRequestComments = useEnvironmentQuery(
+    project && (view === "summary" || view === "prs")
+      ? azureDevOps.pullRequests({
+          environmentId,
+          input: {
+            project,
+            commentCountsScope: prScope,
+            ...(repository ? { repositoryId: repository } : {}),
+          },
+        })
+      : null,
+  );
+  const pullRequestsWithCommentCounts = useMemo(() => {
+    const counts = new Map(
+      pullRequestComments.data?.map((pr) => [`${pr.repositoryId}:${pr.id}`, pr.commentCounts]),
+    );
+    return (pullRequests.data ?? []).map((pr) => {
+      const commentCounts = counts.get(`${pr.repositoryId}:${pr.id}`);
+      return commentCounts ? { ...pr, commentCounts } : pr;
+    });
+  }, [pullRequests.data, pullRequestComments.data]);
   const [now, setNow] = useState(Date.now);
   const [detail, setDetail] = useState<PullRequestRef | null>(null);
+  const closeDetail = () => {
+    setDetail(null);
+    pullRequestComments.refresh();
+  };
   const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 60_000);
@@ -117,6 +144,7 @@ function AzureReposWorkspace({ environmentId }: { environmentId: EnvironmentId }
     projects.refresh();
     repositories.refresh();
     pullRequests.refresh();
+    pullRequestComments.refresh();
     setNow(Date.now());
     setNotice(null);
   };
@@ -238,7 +266,10 @@ function AzureReposWorkspace({ environmentId }: { environmentId: EnvironmentId }
             <AzureReposDashboard
               key={`${environmentId}:${config.data.organization}:${project}`}
               repositories={repositories.error ? [] : (repositories.data ?? [])}
-              pullRequests={pullRequests.error ? [] : (pullRequests.data ?? [])}
+              pullRequests={pullRequests.error ? [] : pullRequestsWithCommentCounts}
+              commentsLoading={pullRequestComments.isPending}
+              scope={prScope}
+              onScopeChange={setPrScope}
               repositoryId={repository}
               onRepositoryChange={(value) => change({ repository: value })}
               onOpenPullRequest={openPr}
@@ -276,7 +307,7 @@ function AzureReposWorkspace({ environmentId }: { environmentId: EnvironmentId }
       <Dialog
         open={detail !== null}
         onOpenChange={(open) => {
-          if (!open) setDetail(null);
+          if (!open) closeDetail();
         }}
       >
         <DialogContent className="h-[90dvh] max-w-[min(1200px,95vw)]" showCloseButton={false}>
@@ -301,11 +332,13 @@ function AzureReposWorkspace({ environmentId }: { environmentId: EnvironmentId }
                   isWeb: true,
                   isDesktop: false,
                 })}
-                onClose={() => setDetail(null)}
-                onBack={() => setDetail(null)}
+                onClose={closeDetail}
+                onBack={closeDetail}
                 onSelectPullRequest={setDetail}
-                onActed={() => {
+                onActed={(_, phase) => {
+                  if (phase === "sent" || phase === "failed") return;
                   pullRequests.refresh();
+                  pullRequestComments.refresh();
                   repositories.refresh();
                 }}
               />

@@ -109,6 +109,12 @@ export const AzureDevOpsPullRequest = Schema.Struct({
   involvesViewer: Schema.optionalKey(Schema.NullOr(Schema.Boolean)),
   isDraft: Schema.Boolean,
   createdAt: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  commentCounts: Schema.optionalKey(
+    Schema.Struct({
+      active: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+      resolved: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+    }),
+  ),
   reviewers: Schema.optionalKey(
     Schema.Array(
       Schema.Struct({

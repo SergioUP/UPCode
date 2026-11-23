@@ -906,6 +906,7 @@ const WsAzureDevOpsListPullRequestsRpc = Rpc.make(WS_METHODS.azureDevOpsListPull
   payload: Schema.Struct({
     ...AzureProjectInput.fields,
     repositoryId: Schema.optionalKey(TrimmedNonEmptyString),
+    commentCountsScope: Schema.optionalKey(Schema.Literals(["mine", "all"])),
   }),
   success: Schema.Array(AzureDevOpsPullRequest),
   error: azureReadError,
