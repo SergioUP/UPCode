@@ -3,9 +3,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { scopeThreadRef, scopedThreadKey } from "@upcode/client-runtime/environment";
 import {
   presentThreadShell,
+  scopeProject,
   type EnvironmentThreadShell,
 } from "@upcode/client-runtime/state/models";
 import type { DesktopAgentBarEntry } from "@upcode/contracts";
+import { backgroundWorkHoldsCompletion } from "@upcode/shared/orchestrationV2PendingBackgroundWork";
 import * as Option from "effect/Option";
 import { Atom } from "effect/reactivity";
 import { useEffect, useMemo, useRef } from "react";
@@ -20,6 +22,7 @@ import {
   resolveThreadLastVisitedAt,
 } from "../Sidebar.logic";
 import { toastManager } from "../ui/toast";
+import { agentBarProjectIcon } from "./agentBarProjectIcon";
 
 export function agentBarStatus(
   thread: Pick<
@@ -33,12 +36,14 @@ export function agentBarStatus(
     | "hasPendingUserInput"
     | "hasActionableProposedPlan"
     | "interactionMode"
-  >,
+  > &
+    Partial<Pick<EnvironmentThreadShell, "pendingBackgroundTasks">>,
   localLastVisitedAt: string | undefined,
 ): DesktopAgentBarEntry["status"] | null {
   if (thread.archivedAt !== null || thread.lineage.relationshipToParent === "subagent") return null;
   const status = resolveSidebarThreadStatus(thread);
-  if (status !== "ready") return status;
+  if (status !== "ready" && status !== "waiting") return status;
+  if (backgroundWorkHoldsCompletion(thread.pendingBackgroundTasks ?? [])) return "waiting";
   if (thread.latestRun?.status === "failed") return "failed";
   if (thread.latestRun?.status !== "completed") return null;
   const lastVisitedAt = resolveThreadLastVisitedAt(thread.lastVisitedAt, localLastVisitedAt);
@@ -59,15 +64,50 @@ function AgentBarUpdates({
 }) {
   const navigate = useNavigate();
   const environmentIds = useEnvironmentIds();
-  const shellsAtom = useMemo(
-    () =>
-      Atom.make((get) =>
-        environmentIds.map((id) => ({ id, shell: get(environmentShell.stateValueAtom(id)) })),
-      ),
-    [environmentIds],
-  );
-  const shells = useAtomValue(shellsAtom);
   const visits = useUiStateStore((state) => state.threadLastVisitedAtById);
+  const rowsAtom = useMemo(
+    () =>
+      Atom.make((get): ReadonlyArray<DesktopAgentBarEntry> => {
+        const rows: DesktopAgentBarEntry[] = [];
+        for (const id of environmentIds) {
+          const shell = get(environmentShell.stateValueAtom(id));
+          if (Option.isNone(shell.snapshot)) continue;
+          const projects = new Map(
+            shell.snapshot.value.projects.map((project) => [project.id, project]),
+          );
+          const icons = new Map<string, NonNullable<DesktopAgentBarEntry["project"]>>();
+          for (const source of shell.snapshot.value.threads) {
+            const thread = presentThreadShell(id, source);
+            const status = agentBarStatus(
+              thread,
+              visits[scopedThreadKey(scopeThreadRef(id, thread.id))],
+            );
+            if (!status) continue;
+            const project = projects.get(thread.projectId);
+            let icon = icons.get(thread.projectId);
+            if (project && !icon) {
+              icon = agentBarProjectIcon(get, scopeProject(id, project));
+              icons.set(thread.projectId, icon);
+            }
+            rows.push({
+              environmentId: id,
+              threadId: thread.id,
+              title: thread.title.slice(0, 300),
+              provider: (thread.runtime?.providerName ?? thread.modelSelection.instanceId).slice(
+                0,
+                80,
+              ),
+              status: shell.status === "live" ? status : "offline",
+              ...(icon ? { project: icon } : {}),
+            });
+            if (rows.length === 500) return rows;
+          }
+        }
+        return rows;
+      }),
+    [environmentIds, visits],
+  );
+  const rows = useAtomValue(rowsAtom);
   const lastPayload = useRef<string | null>(null);
 
   useEffect(() => {
@@ -86,27 +126,6 @@ function AgentBarUpdates({
   }, [navigate, publish]);
 
   useEffect(() => {
-    const rows: DesktopAgentBarEntry[] = [];
-    for (const { id, shell } of shells) {
-      if (Option.isNone(shell.snapshot)) continue;
-      for (const source of shell.snapshot.value.threads) {
-        const thread = presentThreadShell(id, source);
-        const status = agentBarStatus(
-          thread,
-          visits[scopedThreadKey(scopeThreadRef(id, thread.id))],
-        );
-        if (!status) continue;
-        rows.push({
-          environmentId: id,
-          threadId: thread.id,
-          title: thread.title.slice(0, 300),
-          provider: (thread.runtime?.providerName ?? thread.modelSelection.instanceId).slice(0, 80),
-          status: shell.status === "live" ? status : "offline",
-        });
-        if (rows.length === 500) break;
-      }
-      if (rows.length === 500) break;
-    }
     const encoded = JSON.stringify(rows);
     if (lastPayload.current === encoded) return;
     lastPayload.current = encoded;
@@ -115,7 +134,7 @@ function AgentBarUpdates({
       console.error("Could not update the agent bar", error);
       toastManager.add({ type: "error", title: "Could not update the Agent Bar" });
     });
-  }, [publish, shells, visits]);
+  }, [publish, rows]);
 
   return null;
 }

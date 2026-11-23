@@ -1,4 +1,4 @@
-import { RunId, ThreadId } from "@upcode/contracts";
+import { ProviderInstanceId, RunId, ThreadId } from "@upcode/contracts";
 import { describe, expect, it } from "vitest";
 
 import { agentBarStatus } from "./AgentBarCoordinator";
@@ -58,5 +58,20 @@ describe("Agent Bar", () => {
       ),
     ).toBe("failed");
     expect(agentBarStatus({ ...thread, latestRun: null }, undefined)).toBeNull();
+  });
+
+  it("does not show a parked provider session as waiting for work", () => {
+    const runtime = {
+      status: "idle" as const,
+      activeRunId: null,
+      providerInstanceId: ProviderInstanceId.make("codex"),
+      providerName: "Codex",
+      lastError: null,
+      updatedAt: completedAt,
+    };
+    expect(agentBarStatus({ ...thread, runtime }, undefined)).toBe("done");
+    expect(
+      agentBarStatus({ ...thread, runtime, lastVisitedAt: completedAt }, undefined),
+    ).toBeNull();
   });
 });

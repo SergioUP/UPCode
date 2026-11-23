@@ -11,6 +11,7 @@ import type {
 import { AuthAccessTokenResult, AuthSessionState, AuthWebSocketTicketResult } from "./auth.ts";
 import { AdvertisedEndpoint } from "./remoteAccess.ts";
 import { ExecutionEnvironmentDescriptor } from "./environment.ts";
+import { ProjectFaviconDataUrl } from "./project.ts";
 import { type ClientSettings, type QuitConfirmationMode, SnapShotShortcut } from "./settings.ts";
 import type { EditorId } from "./editor.ts";
 import type { PreviewForwardedShortcut } from "./keybindings.ts";
@@ -1123,6 +1124,14 @@ export type DesktopAgentBarThreadRef = typeof DesktopAgentBarThreadRef.Type;
 
 export const DesktopAgentBarEntry = Schema.Struct({
   ...DesktopAgentBarThreadRef.fields,
+  project: Schema.optionalKey(
+    Schema.Struct({
+      title: Schema.String.check(Schema.isMaxLength(300)),
+      text: Schema.String.check(Schema.isMaxLength(32)),
+      color: Schema.NullOr(Schema.String.check(Schema.isPattern(/^#[0-9a-f]{6}$/))),
+      image: Schema.NullOr(ProjectFaviconDataUrl),
+    }),
+  ),
   title: Schema.String.check(Schema.isMaxLength(300)),
   provider: Schema.String.check(Schema.isMaxLength(80)),
   status: Schema.Literals([

@@ -101,6 +101,14 @@ export const ProjectFaviconPath = TrimmedNonEmptyString.check(
 );
 export type ProjectFaviconPath = typeof ProjectFaviconPath.Type;
 
+export const PROJECT_FAVICON_MAX_DATA_URL_LENGTH = 32 * 1024;
+export const ProjectFaviconDataUrl = Schema.String.check(
+  Schema.isMaxLength(PROJECT_FAVICON_MAX_DATA_URL_LENGTH),
+  Schema.isPattern(
+    /^data:image\/(?:png|jpeg|gif|webp|avif|svg\+xml|x-icon|vnd\.microsoft\.icon);base64,[A-Za-z0-9+/]+={0,2}$/,
+  ),
+);
+
 /** A project's chosen icon, as clients set it. */
 export const ProjectIconOverride = Schema.Union([
   ProjectLucideIcon,

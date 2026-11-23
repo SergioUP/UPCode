@@ -1,4 +1,8 @@
-import { EnvironmentId } from "@upcode/contracts";
+import {
+  EnvironmentId,
+  PROJECT_FAVICON_MAX_DATA_URL_LENGTH,
+  ProjectFaviconDataUrl,
+} from "@upcode/contracts";
 import { mediaMimeType } from "@upcode/shared/filePreview";
 import {
   getProjectFaviconCacheKey,
@@ -10,7 +14,7 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
 export const PROJECT_FAVICON_THUMBNAIL_SIZE = 96;
-export const PROJECT_FAVICON_MAX_DATA_URL_LENGTH = 32 * 1024;
+export { PROJECT_FAVICON_MAX_DATA_URL_LENGTH };
 /** Larger sources are not worth decoding for an icon and are left to the remote URL. */
 export const PROJECT_FAVICON_MAX_SOURCE_BYTES = 4 * 1024 * 1024;
 export const PROJECT_FAVICON_CACHE_MAX_BYTES = 1024 * 1024;
@@ -22,22 +26,16 @@ export interface ProjectFaviconTarget {
   readonly faviconPath?: string | null | undefined;
 }
 
-const ImageDataUrl = Schema.String.check(
-  Schema.isMaxLength(PROJECT_FAVICON_MAX_DATA_URL_LENGTH),
-  Schema.isPattern(
-    /^data:image\/(?:png|jpeg|gif|webp|avif|svg\+xml|x-icon|vnd\.microsoft\.icon);base64,[A-Za-z0-9+/]+={0,2}$/,
-  ),
-);
 const Entry = Schema.Struct({
   environmentId: EnvironmentId,
   cwd: Schema.String,
   faviconPath: Schema.NullOr(Schema.String),
   revision: Schema.String,
-  dataUrl: ImageDataUrl,
+  dataUrl: ProjectFaviconDataUrl,
 });
 export type ProjectFaviconEntry = typeof Entry.Type;
 const decodeEntry = Schema.decodeUnknownOption(Entry);
-const isImageDataUrl = Schema.is(ImageDataUrl);
+const isImageDataUrl = Schema.is(ProjectFaviconDataUrl);
 
 function keyFor(target: ProjectFaviconTarget) {
   return getProjectFaviconResourceKey(target.environmentId, target.cwd, target.faviconPath);
